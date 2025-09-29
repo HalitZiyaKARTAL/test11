@@ -1,0 +1,354 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel=icon href="data:image/bmp;base64,Qk0dAAAAAAAAABoAAAAMAAAAAQABAAEAGAAAAP8A/wA="><script src="https://cdn.plot.ly/plotly-2.18.2.min.js"></script></head><body>
+
+<script>
+ log(1,2);
+/* BLOCK_1: beginning of creation of html&css data&function */
+log(1,3);
+function htmlmaker_temporary(){log(2,1);!htmlmaker_temporary[-2]&&(log(2,2),document.head.appendChild(document.createElement('style')).innerHTML=htmlmaker_temporary[-1]=`body{background:#222;color:#eee;font-family:sans-serif;margin:0;padding:2px;}
+.container{margin:2px 0;display:flex;align-items:center;flex-wrap:wrap;}
+label{white-space:nowrap;}
+
+input[type=number]{width:45px;}
+.input-group{display:flex;align-items:center;margin-right:10px;margin-bottom:2px;}
+.input-group label{margin-right:2px;}
+.input-group input,.input-group select{margin-left:2px;}
+.checkbox-group{display:flex;align-items:center;margin-right:10px;margin-bottom:2px;}
+.checkbox-group input[type="checkbox"]{margin-left:5px;margin-right:0;margin-top:0;margin-bottom:0;}
+input:disabled{background-color:#555;color:#999;cursor:not-allowed;}
+.dynamic-textarea{background-color:#444;color:#eee;resize:vertical;overflow-y:auto;max-height:50vh;box-sizing:border-box;max-width:800px;}
+textarea#importData{flex-grow:1;min-height:40px;}
+textarea#readExprOutput{width:100%;min-height:24px;}
+
+#plot{width:100%;height:500px;margin-top:3px;margin-bottom:3px;}
+table{border-collapse:collapse;width:100%;margin-top:10px;table-layout:fixed;}
+th,td{border:1px solid #555;padding:5px;text-align:left;overflow:hidden;white-space:nowrap;}
+th{background:#333;}
+#stats-table td:nth-child(2),#stats-table td:nth-child(3),#stats-table td:nth-child(4),#stats-table td:nth-child(5){text-align:right;padding-right:10px;}
+
+.ci{background:none;border:none;color:inherit;font:inherit;padding:0;width:50px;text-align:center;}
+.ci:focus{outline:none;background-color:#fff;color:#000;}
+.ci:disabled{background:#444;color:#888;cursor:not-allowed;}
+#r,#fc{margin-top:3px;}
+#fc table{margin-top:3px;}
+.move-controls{display:flex;align-items:center;gap:5px;margin-bottom:2px;}
+#targetFpsWarn{color:#f99;font-size:smaller;margin-left:1px;}
+.button-group{display:flex;flex-direction:column;gap:2px;margin-left:5px;}
+.button-group button{flex-basis:auto;padding:3px 6px;font-size:0.9em;}
+.io-controls button{padding:3px 6px;font-size:0.9em;margin-left:5px;}`,
+
+
+
+
+
+log(2,3),document.body.innerHTML=htmlmaker_temporary[-2]=`<div class="container"><div class="input-group"><label for="T.0.0.5">N:</label><input type="number" id="T.0.0.5"></div><div class="input-group"><label for="T.0.0.6">a:</label><input type="number" id="T.0.0.6"></div><div class="input-group"><label for="T.0.0.7">w:</label><input type="number" id="T.0.0.7"></div><div class="input-group"><label for="T.0.0.8">Rays:</label><input type="number" id="T.0.0.8"></div><div class="input-group"><label for="T.0.0.13">Ray Color:</label><input type="color" id="T.0.0.13"></div></div>
+
+<div class="container"><div class="input-group"><label for="d">θ:</label><input type="number" id="d" step="any"></div><div class="input-group"><label for="xO">X:</label><input type="number" id="xO" step="any"></div><div class="input-group"><label for="yO">Y:</label><input type="number" id="yO" step="any"></div></div>
+
+<div class="container"><div class="input-group"><label for="T.0.0.11">Δθ:</label><input type="number" id="T.0.0.11" step="any"></div><div class="input-group"><label for="T.0.0.12">ΔMove:</label><input type="number" id="T.0.0.12" min="0" step="any"></div><div class="move-controls"><button id="applyMovementOnceBtn">Apply Movement Once</button><button id="toggleAutoDriveBtn">AI Driver: OFF</button><button id="toggleTesterBtn">Tester: OFF</button><div class="checkbox-group" style="margin-left: 5px;"><label for="T.0.0.130">Parallelization:</label><input type="checkbox" id="T.0.0.130"></div></div></div>
+
+<div class="container"><div class="input-group"><label for="T.0.0.9">Loop Freq (CPS):</label><input type="number" id="T.0.0.9" min="1"></div><div class="checkbox-group"><label for="T.0.0.14">Loop:</label><input type="checkbox" id="T.0.0.14"></div><div class="input-group"><label for="T.0.0.10">FPS<span id="targetFpsWarn"></span>:</label><input type="number" id="T.0.0.10" min="1"></div><button id="toggleMaxFpsBtn">Max FPS: ON</button><div class="checkbox-group"><label for="T.0.0.26">Max=Move FPS:</label><input type="checkbox" id="T.0.0.26"></div><button id="accuracyModeBtn">Accuracy: Per Frame</button></div>
+
+<div class="container"><div class="input-group"><label for="nnParams">NN Parameters:</label><input type="text" id="nnParams" style="width:150px;"></div></div>
+
+<div class="container"><label for="cI">Active Car:</label><select id="cI"></select><button id="addCarBtn">Add Car</button><button id="resetBtn">Reset Stats</button><button id="stopCycleBtn">Revive Crashed Cars</button><button id="deathRayBtn">Show Dead Rays: ON</button><button id="staticViewBtn">Static View: OFF</button><button id="toggleFreezeSizesBtn" style="margin-left:10px;padding:3px 6px;font-size:0.9em;">Freeze Sizes: OFF</button></div>
+
+<div class="container" style="align-items:flex-start;flex-wrap:wrap;"><label for="importData" style="margin-top:2px;margin-right:5px;white-space:nowrap;">Import Data:</label><textarea id="importData" class="dynamic-textarea" rows="2"></textarea><div class="button-group" style="margin-left:5px;"><button id="loadFromFileBtn">Load File</button><button id="importBtn">Apply Import</button></div></div>
+
+<div class="container" style="align-items:flex-start;"><div class="input-group" style="flex-basis:200px;"><label for="readExprInput" style="margin-top:2px;">Read State:</label><input type="text" id="readExprInput" placeholder="e.g., T, D, T[0][0][8]" style="width:150px;"></div><div class="io-controls" style="margin-bottom:2px;display:flex;flex-wrap:wrap;align-items:center;"><button id="readExprBtn">Read</button><button id="copyReadOutputBtn">Copy</button><button id="downloadReadOutputBtn">Download .txt</button><button id="sendToImportAreaBtn">To Import Area</button><button id="exportAllClipboardBtn">Exp All (Clip)</button><button id="exportTTextareaBtn">Exp T</button><button id="exportDTextareaBtn">Exp D</button><button id="exportLogsTextareaBtn">Exp Logs</button></div><div class="input-group" style="margin-left:0;flex-grow:1;width:100%;"><label for="readExprOutput" style="margin-top:2px;">Value:</label><textarea id="readExprOutput" class="dynamic-textarea" rows="1"></textarea></div></div>
+
+<input type="file" id="fileImporter" accept=".txt,.js,.json,text/plain" style="display:none;">
+
+
+
+
+
+<div id="plot"></div>
+
+<div class="container" style="justify-content: center; margin-bottom: 5px;"><button id="toggleLeaderboardBtn">Leaderboard: ON</button></div>
+
+<div id="leaderboard-table-container" style="margin-bottom:10px; margin-top: 5px;"></div>
+
+<div id="r"></div>
+
+<div id="fc"></div>`,log(2,4));log(2,5);}
+htmlmaker_temporary();
+log(1,4);
+/* BLOCK_1: ending of creation of html&css data&function */
+
+
+
+
+
+/* BLOCK_2: beginning of aliases, constants, and global state */
+log(1,5);
+var T=[],D=[],Ds=[],debuglogs,magicdata,tested=[[]],cachedRoadGeometry=null,cachedRoadTrace=null,LARGE_NUM_FOR_INFINITY=1e6;
+const $=id=>document.getElementById(id),
+P=performance,M=Math,RAD=M.PI/180,COS=M.cos,SIN=M.sin,SQRT=M.sqrt,ABS=M.abs,MAX=M.max,MIN=M.min,FLOOR=M.floor,CARPROP_VALIDATORS={xO:x=>+x,yO:x=>+x,d:x=>+x%360},
+activations={identity:x=>x,relu:x=>MAX(0,x),tanh:x=>M.tanh(x),sigmoid:x=>1/(1+M.exp(-x))},validActivationNames=Object.keys(activations),
+traceCfgs={road:{type:"scatter",mode:"lines",line:{color:"#aaa",width:1.5},name:"Road",legendgroup:"road",showlegend:!0,hoverinfo:"skip"},ray:{type:"scatter",mode:"lines",line:{width:1},showlegend:!1,hoverinfo:"skip"},car:{type:"scatter",mode:"markers",marker:{size:8,symbol:"circle"},showlegend:!0,hoverinfo:"name+x+y"}};
+log(1,6);
+/* BLOCK_2: ending of aliases, constants, and global state */
+
+
+
+
+
+/* BLOCK_3: beginning of logging and utilities */
+log(1,7);
+function log(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs||!debuglogs[-1])&&(s=2,debuglogs=Array(1997).fill().map(()=>[]),debuglogs[-1]=[2],debuglogs[-2]=[],debuglogs[0]=[0],debuglogs[999]=[0],[63,5,...Array(98).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs[0][0]+=v,debuglogs[i+1]=[v,...Array(v).fill(0)],debuglogs[1001+i]=[0],debuglogs[999].push(0),s+=v,debuglogs[-1].push(s)}),debuglogs[998]=[0,1,...Array(debuglogs[0][0]).fill(1)],debuglogs[998][0]=debuglogs[998].filter(x=>!x).length-1,debuglogs[1000]=[0],log(1,1));if(debuglogs[998][1]&&(s=debuglogs[-1][f-1]+c-1,debuglogs[998][0]==0||debuglogs[998][s])){debuglogs[-2][s]||(debuglogs[-2][s]=f+'.'+c,debuglogs[0].push(s),(debuglogs[0].length>debuglogs[0][0]+3||debuglogs[1000].length>1003||debuglogs[1000+f].length>103)&&[[0,'Sequential',debuglogs[0][0]],[1000,'Recent',1000],[1000+f,`Function ${f}`,100]].forEach(([a,t,l])=>debuglogs[a].length>l+3&&alert(`${t} overflow: ${debuglogs[a].length}, limit: ${l+3}`)));debuglogs[f][c]++;debuglogs[999][f]=++debuglogs[1000+f][0];debuglogs[1000][0]=++debuglogs[999][0];debuglogs[1000][(debuglogs[1000][0]%1000)+1]=debuglogs[-2][s];debuglogs[1000+f][(debuglogs[1000+f][0]%100)+1]=c}};log(1,8);
+
+function resizeTextareaIfUnlocked(textareaElement){if(!T[0]?.[0]?.[102]){textareaElement.style.height="auto";textareaElement.style.height=textareaElement.scrollHeight+"px"}};
+log(1,9);
+/* BLOCK_3: ending of logging and utilities */
+
+
+log(1,10);
+
+
+/* BLOCK_4: beginning of state import/export functions */
+log(1,11);
+function exportAllToClipboard(){try{const tJson=JSON.stringify(T);const dJson=JSON.stringify(D);const logsJson=JSON.stringify(debuglogs);const exportString=`T=${tJson};D=${dJson};debuglogs=${logsJson};tested=${JSON.stringify(tested)};`;navigator.clipboard.writeText(exportString).then(()=>{alert("All state (T, D, debuglogs, tested) copied to clipboard.")}).catch(err=>{console.error("Failed to copy state to clipboard:",err);prompt("Cannot auto-copy. Please copy manually:",exportString)});log(101,1)}catch(error){console.error("Export All to Clipboard failed:",error);log(101,2);alert(`Export All Error: ${error}`)}
+};log(1,12);
+
+function exportToTextarea(dataType){const targetTextArea=$("readExprOutput");let exportString="";let dataToExport;let varName="";try{switch(dataType){case"T":dataToExport=T;varName="T";break;case"D":dataToExport=D;varName="D";break;case"debuglogs":dataToExport=debuglogs;varName="debuglogs";break;case"tested":dataToExport=tested;varName="tested";break;default:alert("Unknown data type for export.");return}
+exportString=`${varName}=${JSON.stringify(dataToExport,null,2)};`;targetTextArea.value=exportString;resizeTextareaIfUnlocked(targetTextArea);targetTextArea.focus();log(102,1);navigator.clipboard.writeText(exportString).then(()=>{console.log(`${dataType} data populated to 'Value' area and copied to clipboard.`)}).catch(err=>{console.warn(`Note: Could not auto-copy ${dataType} to clipboard. It is in the 'Value' area.`,err)})}catch(error){console.error(`Export ${dataType} to 'Value' area failed:`,error);targetTextArea.value=`Error exporting ${dataType}: ${error.message}`;log(102,2);alert(`Export ${dataType} Error: ${error}`)}
+};log(1,13);
+
+function importState(){const importString=$("importData").value;if(!importString){alert("Import field is empty.");return}
+try{const assignments={};const regex=/\b(T|D|debuglogs|tested|eval)\s*=\s*([^;]*);/g;let match;while((match=regex.exec(importString))!==null)assignments[match[1]]=match[2];const attempted_T=!!assignments["T"],attempted_D=!!assignments["D"],attempted_Logs=!!assignments["debuglogs"],attempted_tested=!!assignments["tested"],attempted_eval=!!assignments["eval"];log(103,1);let T_parsed_data=null,D_parsed_data=null,Logs_parsed_data=null,tested_parsed_data=null;let T_successfully_parsed=!1,D_successfully_parsed=!1,Logs_successfully_parsed=!1,tested_successfully_parsed=!1;let num_rays_for_validation=T[0]?.[0]?.[8];if(attempted_T){T_parsed_data=JSON.parse(assignments["T"]);if(!T_parsed_data||!T_parsed_data[0]?.[0]||typeof T_parsed_data[0][0][8]!=="number")throw new Error("Imported T structure invalid.");num_rays_for_validation=T_parsed_data[0][0][8];T_successfully_parsed=!0;log(103,2)}
+if(attempted_D){D_parsed_data=JSON.parse(assignments["D"]);if(!D_parsed_data[0]?.[0]?.inputSize||!Array.isArray(D_parsed_data[1]))throw new Error("Imported D structure invalid (missing inputSize or weights array).");if(num_rays_for_validation===undefined)throw new Error("Cannot validate D: Number of rays (from current or imported T) is unavailable.");const expectedInputSize=num_rays_for_validation+10;if(D_parsed_data[0][0].inputSize!==expectedInputSize)throw new Error(`D input size (${D_parsed_data[0][0].inputSize}) mismatch with T rays (${num_rays_for_validation}). Expected ${expectedInputSize}.`);D_successfully_parsed=!0;log(103,3)}
+if(attempted_Logs){Logs_parsed_data=JSON.parse(assignments["debuglogs"]);if(Logs_parsed_data&&!Array.isArray(Logs_parsed_data[0]))throw new Error("Imported debuglogs structure invalid (expected array at index 0).");Logs_successfully_parsed=!0;log(103,4)}
+if(attempted_tested){tested_parsed_data=JSON.parse(assignments["tested"]);if(!tested_parsed_data||!Array.isArray(tested_parsed_data[0])||!Array.isArray(tested_parsed_data[0][0]))throw new Error("Imported tested structure invalid (expected tested[0][0] to be an array).");tested_successfully_parsed=!0;log(103,5)}
+if(!T_successfully_parsed&&!D_successfully_parsed&&!Logs_successfully_parsed&&!tested_successfully_parsed&&!attempted_eval){alert("No valid T, D, debuglogs, or tested data parsed, and no eval code found in import string.");log(103,6);return}
+if(T_successfully_parsed)T=T_parsed_data;if(D_successfully_parsed)D=D_parsed_data;if(Logs_successfully_parsed)debuglogs=Logs_parsed_data?Logs_parsed_data:[[]];if(tested_successfully_parsed)tested=tested_parsed_data;let requiresRedraw=!1,requiresTableRebuild=!1;if(T_successfully_parsed){const nnParamString=T[0][0][100]??"20,10,10,2";$("nnParams").value=nnParamString;if(!setupNNFromParams(nnParamString))log(103,7);[5,6,7,8,9,10,11,12,13,14,26].forEach(idx=>{const el=$(`T.0.0.${idx}`),val=T[0][0][idx];if(el&&val!==undefined&&val!==null){el.type==="checkbox"?el.checked=!!val:el.value=val}});cachedRoadGeometry=null;cachedRoadTrace=null;for(val of[27,34,52,67,74])for(j=0;j<7;j++)T[0][0][val+j]=0;T[0][0][18]=0;T[0][0][59]=P.now();T[0][0][86]=0;requiresRedraw=!0;requiresTableRebuild=!0;T[0][0][89]=1}else if(D_successfully_parsed){resizeCarRayData(T[0][0][8]);log(103,8);requiresRedraw=!0;requiresTableRebuild=!0}
+if(tested_successfully_parsed)T[0][0][114]=1;if(attempted_eval){const masterSwitchSourceT=T_successfully_parsed?T_parsed_data:T;if(masterSwitchSourceT[0]?.[0]?.[101]){log(103,9);alert("Warning: Master switch is set to KILL. The 'eval=' part of the import was skipped.")}else{try{eval(assignments["eval"]);log(103,10);requiresRedraw=!0;requiresTableRebuild=!0}catch(e){log(103,11);console.error("Error during eval execution:",e);throw new Error(`Eval execution failed: ${e.message}`)}}}
+if(T_successfully_parsed||D_successfully_parsed||Logs_successfully_parsed||tested_successfully_parsed||attempted_eval){updateCarSelect();updateUIInputs();updateButtonStates();if(requiresRedraw)T[0][0][88]=1;if(requiresTableRebuild)T[0][0][89]=1;RRIF();alert("Import operation completed. Check console for details if errors occurred.")}
+log(103,12)}catch(error){console.error("Import failed:",error);log(103,13);alert(`Import Error: ${error.message||error}`)}
+};log(1,14);
+
+function readExpression(){const exprRaw=$("readExprInput").value.trim();const outputField=$("readExprOutput");outputField.value="";if(!exprRaw){outputField.value="[Empty Expression]";return}const expr=exprRaw.toUpperCase();try{let currentValue;if(expr==="T"){currentValue=T}else if(expr==="D"){currentValue=D}else if(expr==="DEBUGLOGS"){currentValue=debuglogs}else if(expr==="TESTED"){currentValue=tested}else{const match=exprRaw.match(/^([TD]|DEBUGLOGS|TESTED)(\[.+\])$/i);if(!match){outputField.value="[Invalid Format: Use T, D, debuglogs, tested, or Var[...]]";return}const baseVarName=match[1];const indicesStr=match[2];const indexMatches=indicesStr.match(/\[([\w.]+)\]/g);if(!indexMatches){outputField.value="[Invalid Format: Cannot parse indices]";return}const indices=indexMatches.map(idxStr=>{const content=idxStr.substring(1,idxStr.length-1);const num=Number(content);return isNaN(num)?content:num});switch(baseVarName.toUpperCase()){case"T":currentValue=T;break;case"D":currentValue=D;break;case"DEBUGLOGS":currentValue=debuglogs;break;case"TESTED":currentValue=tested;break;default:throw new Error(`Unknown base variable ${baseVarName}`)}for(const index of indices){if(currentValue===undefined||currentValue===null){throw new Error(`Cannot read index [${index}] from undefined/null`)}if(typeof index==="number"&&index<0){throw new Error(`Negative index [${index}] not allowed`)}if(currentValue[index]===undefined){throw new Error(`Index [${index}] is out of bounds or key does not exist.`)}currentValue=currentValue[index]}}
+if(typeof currentValue==="object"&&currentValue!==null){outputField.value=JSON.stringify(currentValue,null,2)}else if(currentValue===undefined){outputField.value="[undefined]"}else if(currentValue===null){outputField.value="[null]"}else{outputField.value=String(currentValue)}resizeTextareaIfUnlocked(outputField)}catch(error){outputField.value=`[Error: ${error.message||error}]`;console.error("Read Expression Error:",error);log(104,1)}};
+log(1,15);
+/* BLOCK_4: ending of state import/export functions */
+
+
+
+
+
+/* BLOCK_5: beginning of initialization and entity creation */
+log(1,16);
+function RRIF(){if(T[0][0][87]||T[0][0][88])requestAnimationFrame(renderFrame)};log(1,17);
+
+function initT(nR,isG=!1){let cE=[];const requiredLength=140;if(isG){cE[0]=Array(requiredLength).fill(0);Object.assign(cE[0],{0:0,1:0,2:0,3:0,4:"#888",5:10,6:10,7:5,9:100,10:30,11:1,12:0,13:"#00ffff",14:0,15:1,16:1,17:null,18:0,19:1,20:0,21:null,22:null,23:1,24:null,25:null,26:1,41:"roadGen",42:"intersect",43:"castRays",44:"renderFrame",45:"move",46:"aiDriverCompute",47:"input",48:0,49:2,50:3,51:4,60:100,61:"xO",62:"yO",63:"d",64:0,65:1,66:2,82:1,83:1,84:1,85:0,86:0,87:0,88:0,89:0,90:0,91:0,92:0,96:0,97:0,98:0,99:0,100:"20,10,10,2",101:0,102:0,103:0,104:500,105:0,106:0,107:0,110:3,113:1,114:0,115:10,116:0,117:0,118:0,119:0,129:0,130:0});cE[0][8]=nR}else{cE[0]=[0,0,0,1,"#fff",...Array(requiredLength-5).fill(null)];while(cE[0].length<requiredLength)cE[0].push(0)}const dRC=T[0]?.[0]?.[13]??"#00ffff",pClr=isG?"#f008":"#f00";for(let r=1;r<=nR;r++){cE[r]=[null,null,Infinity,0,r===1?pClr:dRC]}return cE};log(1,18);
+
+T.push(initT(10,!0));
+T.push(initT(T[0][0][8],!1));
+tested=[[]];
+tested[0][0]=Array((T[0]?.[0]?.[115]||10)+1).fill(0);
+T[0][0][114]=1;
+T[0][0][59]=P.now();
+for(let i=0;i<7;i++)T[0][0][52+i]=T[0][0][27+i];
+T[0][0][84]=P.now();
+T[0][0][85]=P.now();
+T[0][0][86]=0;log(1,19);
+
+function createCar(srcIdx=0){if(!T[srcIdx])return null;const nCD=JSON.parse(JSON.stringify(T[srcIdx]));const nR=T[srcIdx].length-1;const dRC=T[0][0][13];Object.assign(nCD[0],{0:0,1:0,2:0,3:1,4:'#fff',22:null,91:0,92:0});for(let r=1;r<=nR;r++){if(!nCD[r])nCD[r]=[];Object.assign(nCD[r],{0:null,1:null,2:Infinity,3:0,4:r===1?'#f00':(T[0][r]?.['4']||dRC)})}nCD.length=1+nR;T.push(nCD);T[0][0][88]=1;T[0][0][89]=1;return T.length-1};
+log(1,20);
+/* BLOCK_5: ending of initialization and entity creation */
+
+
+
+
+/* BLOCK_6: beginning of physics and raycasting */
+log(1,21);
+function generateAndCacheRoad(){const t0=P.now(),N=T[0][0][5],a=T[0][0][6],w=T[0][0][7];const pointCount=2*N+10,segs=new Array(pointCount-1),xC=new Array(pointCount),yC=new Array(pointCount);let i=0;for(let j=0;j<=N+1;j++){let bx,by;if(j===0)bx=0,by=0;else if(j===N+1)bx=2*N*a,by=0;else bx=(2*(j-1)+1)*a,by=a*(-1)**(j-1);xC[i]=bx;yC[i++]=by+w}xC[i]=2*N*a+w;yC[i++]=w;xC[i]=2*N*a+w;yC[i++]=-w;xC[i]=2*N*a;yC[i++]=-w;for(let j=N+1;j>=0;j--){let bx,by;if(j===0)bx=0,by=0;else if(j===N+1)bx=2*N*a,by=0;else bx=(2*(j-1)+1)*a,by=a*(-1)**(j-1);xC[i]=bx;yC[i++]=by-w}xC[i]=-w;yC[i++]=-w;xC[i]=-w;yC[i++]=w;xC[i]=0;yC[i++]=w;for(let j=0;j<pointCount-1;j++)segs[j]=[xC[j],yC[j],xC[j+1],yC[j+1]];LARGE_NUM_FOR_INFINITY=4*((N+1)*a+w);cachedRoadGeometry={segments:segs,x:xC,y:yC};cachedRoadTrace=null;if(castRays.ls)castRays.ls={};T[0][0][87]=1;T[0][0][27]++;T[0][0][34]+=P.now()-t0};log(1,22);
+
+function intersect(l,m){T[0][0][28]++;const p=castRays.ip;p.x1=l[0];p.y1=l[1];p.x2=l[2];p.y2=l[3];p.x3=m[0];p.y3=m[1];p.x4=m[2];p.y4=m[3];p.d=(p.x1-p.x2)*(p.y3-p.y4)-(p.y1-p.y2)*(p.x3-p.x4);if(ABS(p.d)<1e-6)return null;p.t=((p.x1-p.x3)*(p.y3-p.y4)-(p.y1-p.y3)*(p.x3-p.x4))/p.d;p.u=-((p.x1-p.x2)*(p.y1-p.y3)-(p.y1-p.y2)*(p.x1-p.x3))/p.d;if(p.t>0&&p.t<=1&&p.u>=0&&p.u<=1)return[p.x1+p.t*(p.x2-p.x1),p.y1+p.t*(p.y2-p.y1)];return null};log(1,23);
+
+function findClosestHit(rL,s,cx,cy){let mD=Infinity,h=null;if(!s)return{hit:null,distSq:Infinity};const t0=P.now();for(const seg of s){const hit=intersect(rL,seg);if(hit){const dx=hit[0]-cx,dy=hit[1]-cy,dS=dx*dx+dy*dy;if(dS<mD){mD=dS;h=hit}}}T[0][0][35]+=P.now()-t0;return{hit:h,distSq:mD}};log(1,24);
+
+function castRays(){const a=T[0][0][6],w=T[0][0][7];if(!castRays.ip){castRays.ip={x1:0,y1:0,x2:0,y2:0,x3:0,y3:0,x4:0,y4:0,d:0,t:0,u:0};castRays.rp={cx:0,cy:0,ca:0};castRays.ls={};castRays.q={p:(a+w)/1000||.01,a:1/1000}}if(T[0]?.[0]?.[96])return;const t0=P.now();if(!cachedRoadGeometry)generateAndCacheRoad();if(!cachedRoadGeometry)return;const s=cachedRoadGeometry.segments,sD=T[0][0][16];const ml=MAX(1,2*(T[0][0][5]*a+w));let rCh=!1;const{rp,ls,q}=castRays;for(let c=1;c<T.length;c++){const C=T[c];if(!C||(C[0][3]!==1&&!sD))continue;[rp.cx,rp.cy,rp.ca]=C[0];const qx=FLOOR(rp.cx/q.p),qy=FLOOR(rp.cy/q.p),qa=FLOOR(rp.ca/q.a);if(ls[c]&&ls[c].qx===qx&&ls[c].qy===qy&&ls[c].qa===qa)continue;const nR=C.length-1;if(nR<=0)continue;const aS=360/nR;for(let r=1;r<=nR;r++){const R=C[r];const rA=(r-1)*aS;let aA=(rp.ca+rA)%360;aA<0&&(aA+=360);const aR=aA*RAD;rp.dx=ml*COS(aR);rp.dy=ml*SIN(aR);const rL=[rp.cx,rp.cy,rp.cx+rp.dx,rp.cy+rp.dy];const{hit:h,distSq:dS}=findClosestHit(rL,s,rp.cx,rp.cy);let nX=null,nY=null,nD=Infinity;if(h){nD=SQRT(dS);[nX,nY]=h}R[0]=nX;R[1]=nY;R[2]=nD;R[3]=aA}ls[c]={qx:qx,qy:qy,qa:qa};rCh=!0}rCh&&(T[0][0][88]=1);log(105,1);T[0][0][29]++;T[0][0][36]+=P.now()-t0};
+log(1,25);
+/* BLOCK_6: ending of physics and raycasting */
+
+
+
+
+/* BLOCK_7: beginning of AI core logic */
+log(1,26);
+const mm=(...a)=>a[1]?a.slice(1).reduce(mm.classic,a[0]):!a[0]?.map?(...b)=>b.slice(1).reduce([,,mm.bias,mm.pass][a[0]]||mm.classic,b[0]):a[0];
+mm.classic=(A,B,u=!A.map,v=!B[0]?.map??!B.map)=>{u?A=[[A]]:!A[0]?.map&&(A=[A]);v&&(B=B.map?B.map(z=>[z]):[B]);let I=A.length,J=B[0]?.length||0,K=A[0].length,r=new Array(I);for(let i=0;i<I;i++){r[i]=new Array(J);for(let j=0;j<J;j++){let s=0;for(let k=0;k<K;k++)s+=A[i][k]*B[k][j];r[i][j]=s}}return u&v?r[0][0]:v?r.flat():r};
+mm.bias=(A,B)=>{let I=A.length,K=A[0].length,r=new Array(I);for(let i=0;i<I;i++){let s=A[i][0]||0;for(let k=1;k<K;k++)s+=A[i][k]*(B[k-1]||0);r[i]=s}return r};
+mm.pass=(A,B)=>{let I=A.length,K=A[0].length,r=new Array(I+1);r[0]=B[0];for(let i=0;i<I;i++){let s=0;for(let k=0;k<K;k++)s+=A[i][k]*(B[k]||0);r[i+1]=s}return r};log(1,27);
+
+function aa(vov,nS){const fn=activations[nS]||activations.identity;if(Array.isArray(vov)){if(!vov[0]?.[0]){for(let i=T[0]?.[0]?.[110]===3,e=vov.length;i<e;i++)vov[i]=fn(vov[i]);return vov}return vov.map(r=>r.map(fn))}return fn(vov)};log(1,28);
+
+function ff(inputVector,arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||0;ff.t=ff.t||[];var t0=ff.t;t0[0]=P.now();if(T[0]?.[0]?.[98]){log(106,1);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
+T[0][0][32]++;if(!D||!D[0]?.[0]?.numLayers||!inputVector){log(106,2);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
+const config=D[0][0];const numLayers=config.numLayers;if(config.inputSize!==inputVector.length){log(106,3);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
+let currentVector=inputVector;try{for(let layerIdx=1;layerIdx<=numLayers;layerIdx++){const weights=D[layerIdx];const activationFuncName=D[0]?.[layerIdx];if(!weights||!activationFuncName||!activations[activationFuncName]){log(106,4);throw new Error(`AI Driver definition incomplete for layer ${layerIdx}.`)}
+currentVector=mm(T[0]?.[0]?.[110] || 0)(weights,currentVector);currentVector=aa(currentVector,activationFuncName)}}catch(error){log(106,5);console.error("AI Compute (ff) Error:",error);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
+t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];
+const output=currentVector.slice(i=T[0][0][110]===3,i+2).map(v=>v||0);if(T[cI]?.[0]){T[cI][0][11]=output[0];T[cI][0][12]=output[1]}
+log(106,6)};log(1,29);
+
+function buildAIInputVector(arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||T[0][0][21]||1;const C=T[cI];if(!C||!C[0])return null;const S=C[0],nr=C.length-1,pad=S[91]??0,pmd=S[92]??0,x=S[0],y=S[1],ar=S[2]*RAD,sa=SIN(ar),ca=COS(ar),abr=(S[2]-pad)*RAD,vx=pmd*COS(abr),vy=pmd*SIN(abr);const fi=[1,pad,pmd,x,y,sa,ca,vx,vy,0],ri=[];for(let r=1;r<=nr;r++){let d=C[r]?.[2];ri.push(d==null||!Number.isFinite(d)?LARGE_NUM_FOR_INFINITY:d)}
+const el=10+nr;if(fi.length+ri.length!==el)return Array(el).fill(0);return[...fi,...ri]};
+log(1,30);
+/* BLOCK_7: ending of AI core logic */
+
+
+
+
+/* BLOCK_8: beginning of UI update and display logic */
+log(1,31);
+function move(arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||T[0][0][21]||1;if(!T[cI])return;const t0=P.now(),cState=T[cI][0];let stateChanged=0;const angleDelta=T[cI][0][11]??0,moveDelta=T[cI][0][12]??0;if(angleDelta){cState[2]=(cState[2]+angleDelta+360)%360;stateChanged=1}if(cState[3]&&moveDelta){if(!cachedRoadGeometry)generateAndCacheRoad();const dx=moveDelta*COS(cState[2]*RAD),dy=moveDelta*SIN(cState[2]*RAD);const{hit,distSq:actualDistToCollisionSq}=findClosestHit([cState[0],cState[1],cState[0]+dx,cState[1]+dy],cachedRoadGeometry.segments,cState[0],cState[1]);if(hit){cState[3]=0;cState[22]=P.now();stateChanged=1;log(107,1)}else{cState[0]+=dx;cState[1]+=dy;stateChanged=1;log(107,2)}}if(stateChanged){T[0][0][88]=1;updateUIInputs();if(!cState[3])updateCarSelect()}T[0][0][31]++;T[0][0][38]+=P.now()-t0};log(1,32);
+
+function prepareRoadTraceData(){if(!cachedRoadGeometry)generateAndCacheRoad();return cachedRoadTrace??(cachedRoadGeometry?cachedRoadTrace={...traceCfgs.road,x:cachedRoadGeometry.x,y:cachedRoadGeometry.y}:null)};log(1,33);
+
+function prepareCarsAndRaysTraceData(){const t=[],s=T[0][0][16],d=T[0][0][13],n=P.now();for(let c=1;c<T.length;c++){const C=T[c];if(!C)continue;const[x,y,,ia,clr]=C[0];let cc=clr;if(!ia&&C[0][22]){const e=n-C[0][22],p=e%1e3;cc=p<333?"#f00":p<667?"#0f0":"#00f";T[0][0][88]=1}t.push({...traceCfgs.car,x:[x],y:[y],marker:{...traceCfgs.car.marker,color:cc},name:`Car ${c}${ia?"":"(D)"}`,legendgroup:`car${c}`});if(ia||s){const nr=C.length-1;for(let r=1;r<=nr;r++){const R=C[r];if(R&&R[0]!==null)t.push({...traceCfgs.ray,x:[x,R[0]],y:[y,R[1]],line:{color:R[4]??d,width:1},name:`C${c}R${r}`,legendgroup:`car${c}`})}}}return t};log(1,34);
+
+function renderFrame(){if(T[0]?.[0]?.[99]){return}const t0=P.now();if(!T[0][0][87]&&!T[0][0][88])return;const plotDiv=$("plot");if(!plotDiv)return;let traces=[];const roadTrace=prepareRoadTraceData();if(roadTrace)traces.push(roadTrace);traces.push(...prepareCarsAndRaysTraceData());const ax={color:"#eee",gridcolor:"#555",zerolinecolor:"#777"},fnt={color:"#aaa"},layout={paper_bgcolor:"#222",plot_bgcolor:"#333",xaxis:{...ax,scaleanchor:"y",scaleratio:1,title:{text:"X",font:fnt}},yaxis:{...ax,title:{text:"Y",font:fnt}},title:{text:"",font:{color:"#eee"}},showlegend:!0,legend:{font:{color:"#eee"}},hovermode:"closest",margin:{l:35,r:10,b:30,t:10,pad:4}};if(T[0][0][23]&&T[0][0][24]&&T[0][0][25]){layout.xaxis.range=T[0][0][24];layout.yaxis.range=T[0][0][25]}else{if(plotDiv.layout&&!T[0][0][23]){T[0][0][24]=plotDiv.layout.xaxis.range;T[0][0][25]=plotDiv.layout.yaxis.range}};try{Plotly.react(plotDiv,traces,layout).then(()=>{T[0][0][87]=0;T[0][0][88]=0})}catch(e){!debuglogs[108][2]&&alert('Plotly still not downloaded as source, reload the page in few seconds unless road is generated. Error: '+e);log(108,2)};log(108,1);T[0][0][30]++;T[0][0][37]+=P.now()-t0};log(1,35);
+
+const fmt=n=>Number.isFinite(n)?Number.isInteger(n)?n:n.toFixed(3).replace(/\.?0+$/,""):"---";log(1,36);
+
+function buildTableStructure(id,nc){const H=["Ray","Dist","Angle","Color","X Start","X End","Y Start","Y End"];$(id).innerHTML=Array.from({length:nc},(_,c_idx)=>{const c=c_idx+1,C=T[c],nr=C?C.length-1:0;return`<div id="car-${c}-info"><h3>Car ${c}</h3><table id="car-${c}-table"><thead><tr>${H.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${Array.from({length:nr},(_,r_idx)=>{const r=r_idx+1;return`<tr id="row-${c}-${r}" data-car="${c}" data-ray="${r}"><td data-col="0">${r}</td><td data-col="1"></td><td data-col="2"></td><td data-col="3"><input type="text" class="ci" data-car="${c}" data-ray="${r}"></td><td data-col="4"></td><td data-col="5"></td><td data-col="6"></td><td data-col="7"></td></tr>`}).join('')}</tbody></table></div>`}).join('');document.querySelectorAll(".ci").forEach(i=>{i.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();i.blur()}};i.onblur=()=>handleColorInputBlur(i)});T[0][0][89]=0};log(1,37);
+
+function updateInfoDisplay(force=!1){const n=P.now(),iv=T[0][0][60];if(!force&&n-T[0][0][86]<iv){if(!T[0][0][90]){T[0][0][90]=1;setTimeout(()=>{T[0][0][90]=0;updateInfoDisplay(!0)},iv-(n-T[0][0][86]))}}else{T[0][0][86]=n;T[0][0][90]=0;const l=$("leaderboard-table-container");if(l){if(T[0][0][113]){if(T[0][0][114]||force||!$("leaderboard-display-table")){if(!tested[0])tested[0]=[];if(!tested[0][0])tested[0][0]=[0];while(tested[0][0].length<=(T[0][0][115]||10))tested[0][0].push(0);const th=s=>`<th style="border:1px solid #555;padding:3px 5px;text-align:center;background:#333;">${s}</th>`,td=s=>`<td style="border:1px solid #555;padding:3px 5px;text-align:right;">${s}</td>`,h=`<tr>${th("Slot:")}${Array.from({length:T[0][0][115]||10},(_,i)=>th(i+1)).join("")}</tr>`,sc=`<tr><td style="border:1px solid #555;padding:3px 5px;text-align:center;background:#333;">Score:</td>${Array.from({length:T[0][0][115]||10},(_,i)=>td(fmt(tested[0][0][i+1]))).join("")}</tr>`;l.innerHTML=`<h3>Leaderboard</h3><table id="leaderboard-display-table" style="width:auto;margin:auto;border-collapse:collapse;"><thead>${h}</thead><tbody>${sc}</tbody></table>`;if(T[0][0][114])T[0][0][114]=0}}else{if(l.innerHTML)l.innerHTML=""}}
+const dr=T[0][0][13],nc=T.length-1;if(T[0][0][89]||!$("car-1-info")||nc!==document.querySelectorAll("[id^=car-][id$=-info]").length)buildTableStructure("r",nc);for(let c=1;c<=nc;c++){const C=T[c];if(!C)continue;const S=C[0],ia=S[3]===1,ci=$(`car-${c}-info`);if(ci)ci.querySelector("h3").textContent=`Car ${c} ${ia?"":"(D)"}`;const tb=$(`car-${c}-table`)?.tBodies[0];if(!tb)continue;const nr=C.length-1;if(tb.rows.length!==nr){buildTableStructure("r",nc);continue}
+for(let r=1;r<=nr;r++){const R=C[r],rw=tb.rows[r-1];if(!rw||!R)continue;const ce=rw.cells,nh=R[0]===null,rc=R[4]??dr;ce[1].textContent=nh?"---":fmt(R[2]);ce[2].textContent=fmt(R[3]);const ip=ce[3].querySelector("input");if(ip){ip.value=rc.substring(1);ip.disabled=!1}
+ce[4].textContent=nh?"---":fmt(S[0]);ce[5].textContent=nh?"---":fmt(R[0]);ce[6].textContent=nh?"---":fmt(S[1]);ce[7].textContent=nh?"---":fmt(R[1]);rw.style.color=nh?"#777":ia?rc:"#ccc"}}
+const st=$("fc");if(st){st.innerHTML=`<h3>Stats: (Load: ${(T[0][0][138]>0?(T[0][0][137]||0)/T[0][0][138]*1e3:0).toFixed(2)} ms/s | AI Resets: ${T[0][0][118]||0} | AI Resets/s: ${(T[0][0][139]||0).toFixed(2)})</h3><table id="stats-table"><thead><tr><th>Function</th><th>Count</th><th>Rate (/s)</th><th>Avg (µs)</th><th>Load (ms/s)</th></tr></thead><tbody>${[0,1,2,3,4,5,6].map(i=>{const nm=T[0][0][41+i],ct=T[0][0][27+i],rt=T[0][0][67+i],am=T[0][0][74+i],dt=T[0][0][130+i]||0,fl=T[0][0][138]>0?dt/(T[0][0][138]/1e3):0;return`<tr><td>${nm}</td><td>${ct}</td><td>${rt.toFixed(1)}</td><td>${(am*1e3).toFixed(3)}</td><td>${fl.toFixed(3)}</td></tr>`}).join("")}</tbody></table>`}}
+};log(1,38);
+
+function attachRelayoutListeners(){const plotDiv=$("plot");if(plotDiv&&!plotDiv._relayoutAttached){plotDiv._relayoutAttached=1;plotDiv.on("plotly_relayout",e=>{if(e["xaxis.range[0]"])T[0][0][24]=[e["xaxis.range[0]"],e["xaxis.range[1]"]];if(e["yaxis.range[0]"])T[0][0][25]=[e["yaxis.range[0]"],e["yaxis.range[1]"]]});plotDiv.on("plotly_doubleclick",()=>{T[0][0][24]=null;T[0][0][25]=null;T[0][0][23]=0;updateButtonStates();T[0][0][87]=1;T[0][0][88]=1;RRIF();return!1})}};
+log(1,39);
+/* BLOCK_8: ending of UI update and display logic */
+
+
+
+
+/* BLOCK_9: beginning of UI interactivity helpers */
+log(1,40);
+function updateCarSelect(){const sel=$("cI"),curV=sel.value;sel.innerHTML=T.slice(1).map((cD,i)=>{const c=i+1,isA=cD?.[0]?.[3]===1;return`<option value="${c}">Car ${c} ${isA?"":"(D)"}</option>`}).join("");let selectedIndexIsValid=!1;for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===curV){selectedIndexIsValid=!0;break}}
+if(selectedIndexIsValid){sel.value=curV;T[0][0][21]=+curV}else{const firstCar=T.length>1?1:0;T[0][0][21]=firstCar;sel.value=firstCar||""}
+if(!T[0][0][21]){sel.innerHTML='<option value="0" disabled>No Cars</option>'}else{const activeCar=T[T[0][0][21]];if(activeCar){const rayCount=activeCar.length-1;const currentNNParamStr=T[0][0][100]||"";const parts=currentNNParamStr.split(',');const currentInputSize=parseInt(parts[0],10);const expectedInputSize=rayCount+10;if(isNaN(currentInputSize)||currentInputSize!==expectedInputSize){parts[0]=expectedInputSize.toString();const newNNParamStr=parts.join(',');T[0][0][100]=newNNParamStr;$("nnParams").value=newNNParamStr;setupNNFromParams(newNNParamStr)}}}
+updateUIInputs();updateButtonStates()};log(1,41);
+
+function updateButtonStates(){const cIdx=T[0][0][21],cData=T[cIdx],isAlive=cIdx>0&&cData?.[0]?.[3]===1;const baseTexts=[["Max FPS: OFF","Max FPS: ON"],["Show Dead Rays: OFF","Show Dead Rays: ON"],["AI Driver: OFF","AI Driver: ON"],["Static View: OFF","Static View: ON"],["Accuracy: Per Frame","Accuracy: Per Move"],["Freeze Sizes: OFF","Freeze Sizes: ON"],["Leaderboard: OFF","Leaderboard: ON"]],indices=[15,16,20,23,19,102,113],ids=["toggleMaxFpsBtn","deathRayBtn","toggleAutoDriveBtn","staticViewBtn","accuracyModeBtn","toggleFreezeSizesBtn","toggleLeaderboardBtn"];ids.forEach((id,i)=>{const idx=indices[i];let text=baseTexts[i][T[0][0][idx]];if(id==="toggleAutoDriveBtn"&&T[0][0][20]&&!isAlive)text+=" (X)";const btn=$(id);if(btn)btn.textContent=text});const warnEl=$("targetFpsWarn");if(warnEl)warnEl.textContent=T[0][0][15]&&!T[0][0][26]?" (X)":"";const tb=$("toggleTesterBtn");if(tb){const iTO=T[0][0][103],iLO=T[0][0][14];let t=iTO?"Tester: ON":"Tester: OFF";if(iTO&&!iLO)t+=" (Paused)";tb.textContent=t}};log(1,42);
+
+const updateUIInputs=()=>{const cIdx=T[0][0][21],cData=T[cIdx],xO=$("xO"),yO=$("yO"),d=$("d"),rayInput=$("T.0.0.8"),nnInput=$("nnParams"),dThetaInput=$("T.0.0.11"),dMoveInput=$("T.0.0.12");const isCarValid=cIdx>0&&cData?.[0],isAlive=isCarValid&&cData[0][3]===1;if(isCarValid){const cS=cData[0];xO.value=cS[0].toFixed(3);yO.value=cS[1].toFixed(3);d.value=cS[2].toFixed(2);dThetaInput.value=(cS[11]||0).toFixed(4);dMoveInput.value=(cS[12]||0).toFixed(4);const rayCount=cData.length-1;T[0][0][8]=rayCount;rayInput.value=rayCount;const expectedInputSize=rayCount+10;const currentNNParamStr=T[0][0][100]||"";const parts=currentNNParamStr.split(',');const currentInputSize=parseInt(parts[0],10);if(isNaN(currentInputSize)||currentInputSize!==expectedInputSize){parts[0]=expectedInputSize.toString();const newNNParamStr=parts.join(',');T[0][0][100]=newNNParamStr;nnInput.value=newNNParamStr}}else{[xO,yO,d,rayInput,nnInput].forEach(el=>el.value="")}[xO,yO,d].forEach(el=>el.disabled=!isCarValid);$("applyMovementOnceBtn").disabled=!isCarValid;$("toggleAutoDriveBtn").disabled=!isCarValid;const sel=$("cI"),opt=sel.options[sel.selectedIndex];if(opt&&opt.value==cIdx&&isCarValid){const txt=`Car ${cIdx} ${isAlive?"":"(D)"}`;if(opt.text!==txt)opt.text=txt}};log(1,43);
+
+const toggle=idx=>{T[0][0][idx]^=1;updateButtonStates();return T[0][0][idx]};
+log(1,44);
+/* BLOCK_9: ending of UI interactivity helpers */
+
+
+
+
+/* BLOCK_10: beginning of neural network setup and modification */
+log(1,45);
+function parseNNParams(P){if(!P||typeof P!=="string"){return{error:"Invalid input string"}}
+const parts=P.replace(/(\d+)\s*([a-zA-Z]+)/g,"$1,$2").split(",").map(p=>p.trim()).filter(p=>p!=="");if(parts.length===0)return{error:"Empty parameters"};const lS=[],aN=[];let lastPartWasNumber=!1;for(const part of parts){const num=parseInt(part,10);if(!isNaN(num)&&num>0&&String(num)===part){lS.push(num);lastPartWasNumber=!0}else if(validActivationNames.includes(part)){if(!lastPartWasNumber)return{error:`Activation '${part}' must follow a layer size.`};if(aN.length>=lS.length-1)return{error:`Duplicate or misplaced activation: '${part}'.`};while(aN.length<lS.length-2)aN.push(null);aN.push(part);lastPartWasNumber=!1}else{return{error:`Invalid part: '${part}'`}}}
+if(lS.length<2)return{error:"Requires at least Input and Output layer sizes."};if(lS[lS.length-1]!==2)return{error:`Output layer size must be 2, got ${lS[lS.length-1]}.`};while(aN.length<lS.length-1)aN.push(null);const defaultHiddenActivation="relu",defaultOutputActivation="tanh";for(let i=0;i<aN.length;i++)if(aN[i]===null)aN[i]=i===aN.length-1?defaultOutputActivation:defaultHiddenActivation;const pNR=lS[0]-10;if(pNR<=0)return{error:`Input layer size (${lS[0]}) must be > 10 to accommodate fixed inputs + rays.`};return{layerSizes:lS,activations:aN,numRays:pNR,error:null}};log(1,46);
+
+function initializeWeights(r,c){const matrix=[];const range=.5;for(let i=0;i<r;i++){matrix[i]=[];for(let j=0;j<c;j++){matrix[i][j]=(M.random()-.5)*range}}return matrix};log(1,47);
+
+function resizeWeightMatrixColumns(matrix,newCols){if(!matrix||matrix.length===0)return initializeWeights(0,newCols);const rows=matrix.length;const oldCols=matrix[0]?.length||0;const range=.5;if(oldCols===newCols)return matrix;const newMatrix=[];for(let i=0;i<rows;i++){newMatrix[i]=Array(newCols).fill(0);const colsToCopy=MIN(oldCols,newCols);const sourceRow=matrix[i]||[];for(let j=0;j<colsToCopy;j++){newMatrix[i][j]=sourceRow[j]||0}if(newCols>oldCols){for(let j=oldCols;j<newCols;j++){newMatrix[i][j]=(M.random()-.5)*range}}}return newMatrix};log(1,48);
+
+function resizeCarRayData(R){T[0][0][8]=R;for(let c=0;c<T.length;c++){if(T[c]){if(T[c].length!==1+R){while(T[c].length<1+R){T[c].push([null,null,Infinity,0,T[c].length===1?"#f00":(T[0]?.[0]?.[13]??"#00ffff")])}
+T[c].length=1+R}}}};log(1,49);
+
+function setupNNFromParams(P,A){const cI=+A>=0?+A:T[0][0][130]&&T[0][0][129]||T[0][0][21]||1;const prs=parseNNParams(P);if(prs.error){console.error("NN Initialization failed:",prs.error);log(109,1);$("nnParams").style.border="2px solid red";return!1}const{layerSizes:lS,activations:aN,numRays:pNR}=prs;let aNR=T[cI]?T[cI].length-1:pNR;if(pNR!==aNR){lS[0]=aNR+10;log(109,2)}
+if(T[0][0][8]!==aNR){resizeCarRayData(aNR)};
+D=[];D[0]=[];D[0][0]={numLayers:lS.length-1,layerSizes:[...lS],inputSize:lS[0],outputSize:lS[lS.length-1]};for(let i=0;i<lS.length-1;i++){D[0][i+1]=aN[i]}for(let i=0;i<lS.length-1;i++){const r=lS[i+1];
+const c=lS[i]+(i>0&&T[0][0][110]===3);
+D[i+1]=initializeWeights(r,c)}$("nnParams").style.border="";T[0][0][100]=P;log(109,3);T[0][0][87]=1;T[0][0][88]=1;T[0][0][89]=1;RRIF();return!0};log(1,50);
+
+function updateNNForRayChange(R){if(isNaN(R)||R<=0){console.error("Invalid number of rays for update:",R);$("T.0.0.8").style.border="2px solid red";return!1}$("T.0.0.8").style.border="";resizeCarRayData(R);
+let cNPS=$("nnParams").value||`${R+10},10,10,2`,p=cNPS.split(","),fNI=p.findIndex(s=>/^\d+$/.test(s.trim()));if(fNI!==-1){p[fNI]=String(R+10);$("nnParams").value=p.join(",")}else{$("nnParams").value=`${R+10},${cNPS}`}
+T[0][0][100]=$("nnParams").value;
+if(!D||!D[0]||!D[0][0]){log(110,1);return setupNNFromParams($("nnParams").value)}else{D[0][0].inputSize=R+10;D[0][0].layerSizes[0]=R+10;if(D[1]){D[1]=resizeWeightMatrixColumns(D[1],R+10)}else{D[1]=initializeWeights(D[0][0].layerSizes[1],R+10)}log(110,2);T[0][0][87]=1;T[0][0][88]=1;T[0][0][89]=1;RRIF();return!0}};log(1,51);
+
+function tester(arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||T[0][0][21]||1;T[0][0][107]++;if(cI&&T[cI]?.[0]&&T[cI]?.[0]?.[3]!==1||T[0][0][107]>=(MAX(0,T[cI][0][0])*100+(T[cI][0][0]<1?100:500)+(T[cI][0][0]>T[0][0][116]?1e4:0)+(T[cI][0][0]>T[0][0][117]?1e5:0))){if(!cI||!T[cI]?.[0]){log(112,1);T[0][0][103]&&(T[0][0][103]=0,updateButtonStates())}else{if(T[cI][0][0]!==undefined&&(T[0]?.[0]?.[115]||10)>0){if(!tested[0])tested[0]=[];if(!tested[0][0])tested[0][0]=[0];const leaderboardSize=T[0]?.[0]?.[115]||10;while(tested[0][0].length<=leaderboardSize)tested[0][0].push(0);if(T[cI][0][0]>T[0][0][116]){let slotToReplace=-1;for(let i=1;i<=leaderboardSize;i++)if(Number(tested[0][0][i])===T[0][0][116]){slotToReplace=i;break}if(slotToReplace!==-1){log(112,2);tested[0][0][slotToReplace]=T[cI][0][0];if(!tested[0][slotToReplace])tested[0][slotToReplace]={};tested[0][slotToReplace]=JSON.parse(JSON.stringify(D));T[0][0][114]=1;(()=>{const s=tested[0][0].slice(1,leaderboardSize+1).map(n=>Number(n)).filter(n=>!isNaN(n));s.length>0?(T[0][0][116]=Math.min(...s),T[0][0][117]=Math.max(...s)):(T[0][0][116]=0,T[0][0][117]=0)})()}}}T[cI][0].splice(0,5,0,0,0,1,"#fff");if(T[cI][0].length>92){T[cI][0][22]=null;T[cI][0][91]=0;T[cI][0][92]=0}setupNNFromParams(T[0][0][100],cI);castRays();T[0][0][88]=1;RRIF()}T[0][0][118]++;T[0][0][106]=0;T[0][0][107]=0}};log(1,52);
+
+function evolver(...args){};
+
+function magic(...args){if(magicdata[-2]){magicdata=magicdata||[];magicdata[1]='placeholder ';magic.inject='placeholder';magicdata[-2]=1}magic.t=magic.t||[]};
+
+/* BLOCK_10: ending of neural network setup and modification */
+
+
+
+
+/* BLOCK_11: beginning of event handlers and main simulation loop */
+log(1,53);
+function handleInput(e){handleInput.t=handleInput.t||[];var t0=handleInput.t;t0[0]=P.now();const t=e.target,id=t.id,v=t.type==="checkbox"?+t.checked:t.type==="color"?t.value:t.value===""?0:t.value;T[0][0][33]++;log(111,1);let requiresRedraw=!1,requiresRayUpdate=!1,requiresTableRebuild=!1,requiresUIUpdate=!1;if(id==="nnParams"){T[0][0][100]=String(v);setupNNFromParams(String(v));t0[1]=P.now();T[0][0][40]+=t0[1]-t0[0];return}
+if(id.startsWith("T.0.0.")){const idx=parseInt(id.split(".")[3],10);if(isNaN(idx)){t0[1]=P.now();T[0][0][40]+=t0[1]-t0[0];return}
+let nV;switch(idx){case 5:case 6:case 7:nV=MAX(1,+v);if(T[0][0][idx]!==nV){requiresRayUpdate=1;cachedRoadGeometry=null}break;case 8:nV=MAX(1,+v);if(T[0][0][idx]!==nV){updateNNForRayChange(nV);requiresRedraw=!0;requiresTableRebuild=!0}
+T[0][0][idx]=nV;t0[1]=P.now();T[0][0][40]+=t0[1]-t0[0];return;case 9:nV=MAX(1,+v);if(T[0][0][idx]!==nV)T[0][0][18]=0;break;case 14:nV=+v;if(T[0][0][idx]!==nV)T[0][0][18]=0;updateButtonStates();break;case 10:case 11:case 12:const cI=T[0][0][21];if(T[cI]?.[0]){T[cI][0][idx]=+v}nV=+v;break;case 13:nV=v;if(T[0][0][idx]!==nV)requiresRedraw=1;break;case 26:nV=+v;break;default:nV=+v;break}
+if(T[0][0][idx]!==nV){T[0][0][idx]=nV}}else{let carPropMapIndex=-1;for(let k=61;k<=63;k++){if(T[0][0][k]===id){carPropMapIndex=k-61;break}}
+if(carPropMapIndex!==-1){const validator=CARPROP_VALIDATORS[id];const nVal=validator(v);if(T[0][0][130]){for(let c=1;c<T.length;c++){if(T[c]?.[0]){const propIdx=T[0][0][64+carPropMapIndex];T[c][0][propIdx]=nVal}}T[0][0][88]=1}else{const cIdx=T[0][0][21];if(cIdx>0&&T[cIdx]?.[0]){const propIdx=T[0][0][64+carPropMapIndex];if(T[cIdx][0][propIdx]!==nVal){T[cIdx][0][propIdx]=nVal;T[0][0][88]=1}}}}}
+T[0][0][87]|=requiresRayUpdate;T[0][0][88]|=requiresRedraw;T[0][0][89]|=requiresTableRebuild;updateButtonStates();if(requiresUIUpdate)updateUIInputs();if(requiresRayUpdate||requiresRedraw)RRIF();t0[1]=P.now();T[0][0][40]+=t0[1]-t0[0]};log(1,54);
+
+function handleColorInputBlur(inp){const v=inp.value.trim(),cIdx=+inp.dataset.car,rIdx=+inp.dataset.ray,rData=T[cIdx]?.[rIdx];if(rData){let nClr=/^[0-9a-fA-F]{3,6}$/i.test(v)?"#"+v:v===""?(rIdx===1?"#f00":T[0][0][13]):null;if(nClr&&rData[4]!==nClr){if(T[0][0][130]){for(let c=1;c<T.length;c++){if(T[c]?.[rIdx])T[c][rIdx][4]=nClr}}else{rData[4]=nClr}
+if(rIdx>1){const ghostRayData=T[0]?.[rIdx];if(ghostRayData)ghostRayData[4]=nClr}T[0][0][88]=1;RRIF()}else if(!nClr){const currentValidColor=rData[4]||(rIdx===1?"#f00":T[0][0][13]);inp.value=currentValidColor.substring(1)}}};log(1,55);
+
+const evts={addCarBtn:()=>{const nCI=createCar();if(nCI!==null){T[0][0][21]=nCI;updateCarSelect();RRIF()}},resetBtn:()=>{for(val of[27,34,52,67,74,120,130])for(j=0;j<7;j++)T[0][0][val+j]=0;for(val of[18,86,105,106,107,116,117,118,119,137,138])T[0][0][val]=0;T[0][0][59]=P.now();debuglogs=[[]];tested=[[]];for(let c=1;c<T.length;c++){if(T[c]?.[0]){T[c][0].splice(0,5,0,0,0,1,"#fff");T[c][0][22]=null;if(T[c][0].length>92){T[c][0][91]=0;T[c][0][92]=0}}}
+T[0][0][88]=1;T[0][0][89]=1;T[0][0][114]=1;castRays();updateInfoDisplay(!0);updateCarSelect();RRIF();log(113,1)},stopCycleBtn:()=>{let revived=0;for(let c=1;c<T.length;c++)if(T[c]?.[0]?.[3]===0){T[c][0][3]=1;T[c][0][4]="#fff";T[c][0][22]=null;revived=1;log(114,1)}if(revived){updateCarSelect();T[0][0][88]=1;RRIF()}},staticViewBtn:()=>{toggle(23);if(T[0][0][23]&&(!T[0][0][24]||!T[0][0][25])){if($("plot")?.layout){T[0][0][24]=$("plot").layout.xaxis.range;T[0][0][25]=$("plot").layout.yaxis.range}else{T[0][0][23]=0;updateButtonStates();return}}T[0][0][87]=1;T[0][0][88]=1;RRIF()},toggleMaxFpsBtn:()=>{toggle(15);T[0][0][85]=0},deathRayBtn:()=>{toggle(16);T[0][0][88]=1;RRIF()},toggleAutoDriveBtn:()=>{toggle(20)},accuracyModeBtn:()=>{toggle(19)},applyMovementOnceBtn:()=>{const cIdx=T[0][0][21];if(!cIdx||!T[cIdx])return;const cState=T[cIdx][0];if(!cState||!cState[3])return;const accMode=T[0][0][19];const isAIActive=T[0][0][20];const castIfNeeded=()=>{if(!T[0]?.[0]?.[96])castRays()};if(isAIActive){if(accMode)castIfNeeded();const inputVec=buildAIInputVector(cIdx);if(inputVec){ff(inputVec,cIdx);$('T.0.0.11').value=cState[11].toFixed(4);$('T.0.0.12').value=cState[12].toFixed(4)}else{cState[11]=0;cState[12]=0}}
+if(accMode&&!isAIActive)castIfNeeded();move(cIdx);if(T[cIdx]?.[0]){T[cIdx][0][91]=cState[11]??0;T[cIdx][0][92]=cState[12]??0}
+updateUIInputs();if(!accMode)castIfNeeded();T[0][0][88]=1;RRIF()},toggleFreezeSizesBtn:()=>{toggle(102)},toggleTesterBtn:()=>{toggle(103);if(!T[0][0][103]){T[0][0][107]=0;T[0][0][106]=0}},toggleLeaderboardBtn:()=>{toggle(113);updateInfoDisplay(!0)}};log(1,56);
+
+for(const id in evts)$(id).onclick=evts[id];log(1,57);
+
+function parallelCars(){if(T[0][0][130]&&T.length>1){T[0][0][129]++;if(T[0][0][129]>=T.length)T[0][0][129]=1;const pdi=T[0][0][129],isAIActive=T[0][0][20];const currentCar=T[pdi],carIsAlive=currentCar?.[0]?.[3]===1;if(isAIActive&&carIsAlive){const inputVec=buildAIInputVector(pdi);if(inputVec)ff(inputVec,pdi)}move(pdi);if(T[0][0][103])tester(pdi)}};log(1,58);
+
+function gameLoop(ts){if(T[0]?.[0]?.[101]){return}if(!T[0][0][84])T[0][0][84]=ts;if(!T[0][0][85])T[0][0][85]=ts;const deltaT=ts-T[0][0][84],renderDeltaT=ts-T[0][0][85];T[0][0][84]=ts;let budgetMs=T[0][0][18]??0;let stepsTaken=0;let timePerStep=0;const loopActive=T[0][0][14];const loopFreq=T[0][0][9];const isAIActive=T[0][0][20];const selectedCarIndex=T[0][0][21];const accuracyMode=T[0][0][19];let canRunLoop=loopActive&&loopFreq>0;if(canRunLoop){budgetMs+=deltaT;timePerStep=1e3/loopFreq;if(timePerStep>0){const maxSteps=MAX(50,loopFreq*2);steps=FLOOR(budgetMs/timePerStep);steps=MIN(steps,maxSteps);if(steps>0){stepsTaken=steps;T[0][0][18]=steps===maxSteps?0:budgetMs%timePerStep}}else{T[0][0][18]=budgetMs}}else{T[0][0][18]=0}
+let carMoved=!1;if(stepsTaken>0){if(!T[0][0][130]){const accuracyMode=T[0][0][19];if(accuracyMode===0)castRays();for(let i=0;i<stepsTaken;i++){const selectedCarIndex=T[0][0][21];const currentSelectedCar=T[selectedCarIndex];const carIsAlive=currentSelectedCar?.[0]?.[3]===1,isAIActive=T[0][0][20];if(isAIActive&&carIsAlive){if(accuracyMode===1)castRays();const inputVec=buildAIInputVector(selectedCarIndex);if(inputVec)ff(inputVec,selectedCarIndex)}else{if(accuracyMode===1&&carIsAlive)castRays()}
+move(selectedCarIndex);carMoved=!0;if(currentSelectedCar){currentSelectedCar[0][91]=currentSelectedCar[0][11]||0;currentSelectedCar[0][92]=currentSelectedCar[0][12]||0}T[0][0][105]++;T[0][0][106]++;if(T[0][0][103])tester();if(T[selectedCarIndex]?.[0]?.[3]!==1){log(115,1);break}if(!T[0][0][14])break}}
+parallelCars();}
+const isMaxFps=T[0][0][15];const isMoveFps=T[0][0][26];const targetFps=T[0][0][10];let shouldRender=!1;if(!isMaxFps){shouldRender=renderDeltaT>=1e3/targetFps}else{shouldRender=isMoveFps?carMoved||T[0][0][87]||T[0][0][88]:!0}
+if(shouldRender&&(T[0][0][87]||T[0][0][88]||carMoved)){if(accuracyMode===0&&stepsTaken===0)castRays();let somethingToDisplay=T[0][0][16];if(!somethingToDisplay){for(let c=1;c<T.length;c++)if(T[c]?.[0]?.[3]===1)somethingToDisplay=!0}if(somethingToDisplay){renderFrame();updateInfoDisplay();T[0][0][85]=ts}else{updateInfoDisplay(!0)}}else if(shouldRender){updateInfoDisplay();T[0][0][85]=ts}
+const now=P.now(),statDeltaT=now-T[0][0][59];if(statDeltaT>=100){T[0][0][137]=0;const aiResetsThisInterval=T[0][0][118]-(T[0][0][119]||0);T[0][0][139]=aiResetsThisInterval*1e3/statDeltaT;T[0][0][119]=T[0][0][118];for(let i=0;i<7;i++){if(T[0][0][120+i]===undefined)T[0][0][120+i]=0;T[0][0][130+i]=(T[0][0][34+i]||0)-T[0][0][120+i];T[0][0][120+i]=T[0][0][34+i]||0;T[0][0][137]+=T[0][0][130+i];T[0][0][67+i]=((T[0][0][27+i]||0)-(T[0][0][52+i]||0))*1e3/statDeltaT;let isTimedForAvg=!1;for(let k=48;k<=51;k++){if(T[0][0][k]===i){isTimedForAvg=!0;break}}
+T[0][0][74+i]=isTimedForAvg?(T[0][0][34+i]||0)/(T[0][0][27+i]||1):0;T[0][0][52+i]=T[0][0][27+i]||0}
+T[0][0][138]=statDeltaT;T[0][0][59]=now}
+if(!T[0]?.[0]?.[101]){requestAnimationFrame(gameLoop)}else{log(115,2)}};log(1,59);
+
+function startSimulation(){if(!T[0]?.[0]?.[101]){log(116,1);T[0][0][84]=P.now();T[0][0][85]=P.now();requestAnimationFrame(gameLoop)}else{log(116,2)}};log(1,60);
+
+document.querySelectorAll("input[type=number],input[type=color],input[type=checkbox]").forEach(el=>el.addEventListener("input",handleInput));
+$("nnParams").addEventListener("change",handleInput);
+$("cI").addEventListener("change",e=>{T[0][0][21]=+e.target.value;updateUIInputs()});
+$("importBtn").onclick=importState;
+$("exportAllClipboardBtn").onclick=exportAllToClipboard;
+$("exportTTextareaBtn").onclick=()=>exportToTextarea("T");
+$("exportDTextareaBtn").onclick=()=>exportToTextarea("D");
+$("exportLogsTextareaBtn").onclick=()=>exportToTextarea("debuglogs");
+$("readExprBtn").onclick=readExpression;
+$("readExprInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();readExpression()}});
+$("copyReadOutputBtn").onclick=()=>{const c=$("readExprOutput").value;navigator.clipboard.writeText(c).then(()=>alert("Copied to clipboard!")).catch(e=>console.error("Copy failed",e))};
+$("downloadReadOutputBtn").onclick=()=>{const c=$("readExprOutput").value,f="state_export.txt",b=new Blob([c],{type:"text/plain;charset=utf-8"}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download=f;document.body.appendChild(l);l.click();document.body.removeChild(l);URL.revokeObjectURL(l.href)};
+$("sendToImportAreaBtn").onclick=()=>{const c=$("readExprOutput").value,iTA=$("importData");iTA.value=c;resizeTextareaIfUnlocked(iTA);iTA.focus()};
+$("loadFromFileBtn").onclick=()=>$("fileImporter").click();
+$("fileImporter").addEventListener("change",e=>{const f=e.target.files[0];if(f){const r=new FileReader;r.onload=ev=>{const iTA=$("importData");iTA.value=ev.target.result;resizeTextareaIfUnlocked(iTA)};r.onerror=er=>alert("Error reading file: "+er);r.readAsText(f)}e.target.value=null});
+[5,6,7,8,9,10,11,12,13,14,26].forEach(idx=>{const el=$(`T.0.0.${idx}`);if(el&&T[0][0][idx]!==undefined&&T[0][0][idx]!==null)el.type==="checkbox"?el.checked=!!T[0][0][idx]:el.value=T[0][0][idx]});
+$("nnParams").value=T[0][0][100]??"20,10,10,2";log(1,61);
+
+setupNNFromParams($("nnParams").value);
+updateButtonStates();
+generateAndCacheRoad();
+updateCarSelect();
+T[0][0][88]=1;
+castRays();
+renderFrame();
+updateInfoDisplay(!0);
+attachRelayoutListeners();
+startSimulation();
+log(1,62);
+/* BLOCK_11: ending of event handlers and main simulation loop */
+log(1,63);
+</script><script>
+/* BLOCK_12: beginning of AI note */
+window.notetoai={rules:["1) no style changes unless necessary like syntax crash","2) explicit orders shall be taken directly","3) diff format is bla bla/*🟢*/new surgical code piece/*🟡old surgical code piece🔴*/bla bla"],notes:["1) readability doesn't matter","2) short code length is preferred","3) inlines are preferred","4) full code is not preferred unless high probability of that request","5) surgical code changes are preferred unless explicit demand against that","6) preserve blocks and spacings of inter/within blocks (2 newline within and 6 newline inter blocks, thus adding 1 and 5 empty lines), those are for easier modification and surgical update performance and also easier location within code","7) when updating code and showing diff use format of bla bla/*🟢*/new code/*🟡old code🔴*/bla bla ; which is like let's say original is 5*(2+2)/4 and final is 5*(2*3)/4 then diff is 5*(2/*🟢*/*3/*🟡+2🔴*/)/4 exactly replacing the changed part and not touches rest, so diffs are surgical like that and coloured"]};
+/* BLOCK_12: ending of AI note */
+</script></body></html>
