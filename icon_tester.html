@@ -1,1 +1,70 @@
-<link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Favicon Editor</title>
+    <style>
+        body { 
+            font-family: Consolas, monaco, monospace; 
+            margin: 0; 
+            background-color: #1e1e1e; 
+            color: #d4d4d4;
+        }
+        .container { 
+            padding: 2em; 
+        }
+        h1 { 
+            color: #569cd6; 
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            box-sizing: border-box; /* Important for padding */
+            background-color: #252526;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            font-size: 16px;
+            padding: 10px;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: scroll;
+        }
+        /* This is where the icon code will be rendered. It's hidden from view. */
+        #outputContainer {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Live Favicon Editor</h1>
+        <p>Type a full <code>&lt;link&gt;</code> tag below. The browser icon will update in real-time.</p>
+        
+        <textarea id="htmlInput" oninput="updateIcon()" spellcheck="false" autofocus>
+<link rel=icon href=data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=>
+</textarea>
+    </div>
+
+    <!-- This hidden div is where your HTML will be injected -->
+    <div id="outputContainer"></div>
+
+    <script>
+        function updateIcon() {
+            const inputElement = document.getElementById('htmlInput');
+            const outputElement = document.getElementById('outputContainer');
+            
+            // Get the raw HTML code from the textarea
+            const htmlCode = inputElement.value;
+            
+            // Inject it directly into the output container. 
+            // The browser will parse and execute it instantly.
+            outputElement.innerHTML = htmlCode;
+        }
+
+        // Run the function once on page load to set the initial icon
+        updateIcon();
+    </script>
+
+</body>
+</html>
