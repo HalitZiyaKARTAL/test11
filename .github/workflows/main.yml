@@ -1,0 +1,40 @@
+name: Subtree Merge with History
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: 'Branch to merge FROM (e.g., revert-1-backup)'
+        required: true
+      destination_branch:
+        description: 'Branch to merge INTO (e.g., test-1)'
+        required: true
+      destination_folder:
+        description: 'The subfolder to merge into (e.g., test-1.1)'
+        required: true
+jobs:
+  subtree-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout destination branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.destination_branch }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add source branch as remote
+        run: git remote add source_repo ${{ github.server_url }}/${{ github.repository }}.git
+
+      - name: Fetch source branch
+        run: git fetch source_repo ${{ github.event.inputs.source_branch }}
+
+      - name: Perform subtree add
+        run: |
+          git subtree add --prefix=${{ github.event.inputs.destination_folder }} source_repo/${{ github.event.inputs.source_branch }} --squash
+
+      - name: Push changes
+        run: git push origin ${{ github.event.inputs.destination_branch }}
