@@ -1,40 +1,156 @@
-name: Subtree Merge with History
+name: url to url data transfer
 on:
   workflow_dispatch:
     inputs:
-      source_branch:
-        description: 'Branch to merge FROM (e.g., revert-1-backup)'
+      source_urls:
+        description: 'One or more source URLs, one per line.'
         required: true
-      destination_branch:
-        description: 'Branch to merge INTO (e.g., test-1)'
+        type: string
+      source_keys:
+        description: 'OPTIONAL: Your "keychain" of PATs, one per line.'
+        required: false
+        type: string
+      filter_mode:
+        description: 'Set the filter mode.'
         required: true
-      destination_folder:
-        description: 'The subfolder to merge into (e.g., test-1.1)'
+        type: choice
+        options:
+          - Whitelist
+          - Blacklist
+        default: 'Whitelist'
+      filter_list:
+        description: 'OPTIONAL: List of files/folders for the filter.'
+        required: false
+        type: string
+      destination_url:
+        description: 'A SINGLE URL for the destination folder.'
         required: true
+      destination_key:
+        description: 'OPTIONAL: PAT for an external destination repo.'
+        required: false
 jobs:
-  subtree-merge:
+  deka-checked-copy:
     runs-on: ubuntu-latest
+    outputs:
+      files_copied: ${{ steps.commit_and_push.outputs.files_copied }}
+      processed_sources: ${{ steps.process_sources.outputs.processed_sources }}
     steps:
-      - name: Checkout destination branch
+      - name: Validate Input URLs
+        run: |
+          echo "${{ github.event.inputs.source_urls }}" | while read -r URL; do
+            if [ -z "$URL" ]; then continue; fi
+            if [[ ! "$URL" =~ /tree/ ]]; then
+              echo "::error::Invalid URL found: $URL. All source URLs must be a .../tree/... link to a folder."
+              exit 1
+            fi
+          done
+          echo "All source URLs are valid."
+
+      - name: Parse Destination URL & Set Up
+        id: dest_paths
+        run: |
+          DEST_URL="${{ github.event.inputs.destination_url }}"
+          CLEAN_URL=$(echo "$DEST_URL" | sed 's|https://||; s|http://||')
+          DEST_REPO=$(echo "$CLEAN_URL" | cut -d'/' -f2,3)
+          DEST_FULL_PATH=$(echo "$CLEAN_URL" | sed 's|[^/]*\/[^/]*\/[^/]*\/tree\/||')
+          DEST_BRANCH=$(echo "$DEST_FULL_PATH" | cut -d'/' -f1)
+          DEST_FOLDER=$(echo "$DEST_FULL_PATH" | sed -e "s|^$DEST_BRANCH/||" -e "s|^$DEST_BRANCH$||")
+          echo "DEST_REPO_NAME=$DEST_REPO" >> $GITHUB_ENV
+          echo "DEST_BRANCH=$DEST_BRANCH" >> $GITHUB_ENV
+          echo "DEST_FOLDER=$DEST_FOLDER" >> $GITHUB_ENV
+
+      - name: Determine Destination Token
+        id: dest_token_logic
+        run: |
+          if [[ -n "${{ github.event.inputs.destination_key }}" ]]; then
+            echo "token=${{ github.event.inputs.destination_key }}" >> $GITHUB_OUTPUT
+          else
+            echo "token=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout Destination Repo
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.destination_branch }}
-          fetch-depth: 0
+          repository: ${{ env.DEST_REPO_NAME }}
+          ref: ${{ env.DEST_BRANCH }}
+          token: ${{ steps.dest_token_logic.outputs.token }}
 
-      - name: Configure Git
+      - name: Process All Sources
+        id: process_sources
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "processed_sources=''" > $GITHUB_OUTPUT
+          if [[ -n "${{ env.DEST_FOLDER }}" ]]; then mkdir -p "${{ env.DEST_FOLDER }}"; fi
+          COUNT=0
+          PROCESSED_LIST=""
+          
+          
+          API_KEY=$(echo "${{ github.event.inputs.source_keys }}" | head -n 1)
+          
+          echo "${{ github.event.inputs.source_urls }}" | while read -r SOURCE_URL; do
+            if [ -z "$SOURCE_URL" ]; then continue; fi
+            COUNT=$((COUNT + 1))
+            DOWNLOADED=false
+            echo "--- Processing Source #$COUNT: $SOURCE_URL ---"
+            
+            
+            CLEAN_URL=$(echo "$SOURCE_URL" | sed 's|https://||; s|http://||')
+            SOURCE_REPO=$(echo "$CLEAN_URL" | cut -d'/' -f2,3)
+            SOURCE_FULL_PATH=$(echo "$CLEAN_URL" | sed 's|[^/]*\/[^/]*\/[^/]*\/tree\/||')
+            SOURCE_BRANCH=$(echo "$SOURCE_FULL_PATH" | cut -d'/' -f1)
+            SOURCE_FOLDER=$(echo "$SOURCE_FULL_PATH" | sed -e "s|^$SOURCE_BRANCH/||" -e "s|^$SOURCE_BRANCH$||")
+            API_URL="https://api.github.com/repos/$SOURCE_REPO/tarball/$SOURCE_BRANCH"
+            TEMP_DIR="source-temp-$COUNT"
+            
+            
+            AUTH_HEADER=""
+            if [ -n "$API_KEY" ]; then AUTH_HEADER="-H \"Authorization: Bearer $API_KEY\""; fi
+            STATUS_CODE=$(curl -s -o "$TEMP_DIR.tar.gz" -L -w "%{http_code}" $AUTH_HEADER "$API_URL")
 
-      - name: Add source branch as remote
-        run: git remote add source_repo ${{ github.server_url }}/${{ github.repository }}.git
+            if [ "$STATUS_CODE" -eq 200 ]; then DOWNLOADED=true; echo "Download successful (Status: $STATUS_CODE)."; fi
 
-      - name: Fetch source branch
-        run: git fetch source_repo ${{ github.event.inputs.source_branch }}
+            if ! $DOWNLOADED; then
+              echo "ERROR: Failed to download from '$SOURCE_REPO' (Ref: $SOURCE_BRANCH). Final Status: $STATUS_CODE. Skipping."
+              continue
+            fi
+            
+            mkdir -p "$TEMP_DIR" && tar -xzf "$TEMP_DIR.tar.gz" -C "$TEMP_DIR" --strip-components=1
+            SOURCE_CONTENT_PATH="$TEMP_DIR/$SOURCE_FOLDER"
+            
+            cd "$SOURCE_CONTENT_PATH"
+            if [[ -z "${{ github.event.inputs.filter_list }}" ]]; then
+              rsync -a ./* "${{ github.workspace }}/${{ env.DEST_FOLDER }}/"
+            elif [[ "${{ github.event.inputs.filter_mode }}" == "Whitelist" ]]; then
+              echo "${{ github.event.inputs.filter_list }}" > include-list.txt
+              rsync -a --files-from=include-list.txt . "${{ github.workspace }}/${{ env.DEST_FOLDER }}/"
+            elif [[ "${{ github.event.inputs.filter_mode }}" == "Blacklist" ]]; then
+              echo "${{ github.event.inputs.filter_list }}" > exclude-list.txt
+              rsync -a --exclude-from=exclude-list.txt ./* "${{ github.workspace }}/${{ env.DEST_FOLDER }}/"
+            fi
+            cd "${{ github.workspace }}"
+            PROCESSED_LIST="$PROCESSED_LIST $SOURCE_REPO"
+          done
+          
+          echo "processed_sources=$PROCESSED_LIST" >> $GITHUB_OUTPUT
 
-      - name: Perform subtree add
+      - name: Commit and Push Changes
+        id: commit_and_push
         run: |
-          git subtree add --prefix=${{ github.event.inputs.destination_folder }} source_repo/${{ github.event.inputs.source_branch }} --squash
+          echo "files_copied=false" > $GITHUB_OUTPUT
+          if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -gt 0 ]; then
+             echo "files_copied=true" >> $GITHUB_OUTPUT
+             git config user.name "github-actions[bot]"
+             git config user.email "github-actions[bot]@users.noreply.github.com"
+             echo "Synchronizing with remote branch before push..."
+             git pull --rebase
+             git add .
+             git commit -m "Data transfer from sources:${{ steps.process_sources.outputs.processed_sources }}"
+             git push
+          else
+            echo "No changes detected to commit."
+          fi
 
-      - name: Push changes
-        run: git push origin ${{ github.event.inputs.destination_branch }}
+      - name: Cleanup Temporary Files
+        if: always()
+        run: |
+          echo "Cleaning up temporary files..."
+          rm -rf source-temp-* *.tar.gz include-list.txt exclude-list.txt
