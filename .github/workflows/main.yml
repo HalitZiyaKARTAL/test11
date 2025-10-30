@@ -1,4 +1,4 @@
-check  name: url to url data transfer
+name: url to url data transfer
 permissions:
   contents: write
   checks: write
