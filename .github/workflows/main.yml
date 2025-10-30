@@ -69,24 +69,12 @@ jobs:
           DEST_FOLDER="$(printf "%s" "$DEST_FULL_PATH" | sed -e "s|^$DEST_BRANCH/||" -e "s|^$DEST_BRANCH$||")"
           { echo "DEST_REPO_NAME=$DEST_REPO"; echo "DEST_BRANCH=$DEST_BRANCH"; echo "DEST_FOLDER=$DEST_FOLDER"; } >> "$GITHUB_ENV"
 
-      - name: Determine Destination Token
+      - name: Determine Destination Token & Guard
         id: dest_token_logic
         run: |
           set -euo pipefail
-          if [[ -n "${{ github.event.inputs.destination_key }}" ]]; then
-            echo "token=${{ github.event.inputs.destination_key }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "token=${{ secrets.GITHUB_TOKEN }}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Guard: Validate Token Permissions for Destination
-        run: |
-          set -euo pipefail
-          if [[ "${{ steps.dest_token_logic.outputs.token }}" == "${{ secrets.GITHUB_TOKEN }}" && "${{ env.DEST_REPO_NAME }}" != "${{ github.repository }}" ]]; then
-            echo "::error::A destination_key is required for cross-repository writes. The default GITHUB_TOKEN can only write to '${{ github.repository }}'."
-            exit 1
-          fi
-          echo "Token permissions are valid for the destination."
+          if [[ -n "${{ github.event.inputs.destination_key }}" ]]; then echo "token=${{ github.event.inputs.destination_key }}" >> "$GITHUB_OUTPUT"; else echo "token=${{ secrets.GITHUB_TOKEN }}" >> "$GITHUB_OUTPUT"; fi
+          if [[ "${{ steps.dest_token_logic.outputs.token }}" == "${{ secrets.GITHUB_TOKEN }}" && "${{ env.DEST_REPO_NAME }}" != "${{ github.repository }}" ]]; then echo "::error::destination_key is required for cross-repository writes."; exit 1; fi
 
       - name: Checkout Destination Repo (robust)
         run: |
@@ -111,10 +99,10 @@ jobs:
               local cand_branch="${PARTS[0]}"; for ((k=1; k<i; k++)); do cand_branch="$cand_branch/${PARTS[$k]}"; done
               local cand_path=""; if (( i < n )); then cand_path="${PARTS[$i]}"; for ((k=i+1; k<n; k++)); do cand_path="$cand_path/${PARTS[$k]}"; done; fi
               local test_url="https://api.github.com/repos/$repo/tarball/$cand_branch"; local code
-              code="$(curl -sIL -o /dev/null -w "%{http_code}" "$test_url")"; if [[ "$code" == "200" ]]; then SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0; fi
+              code="$(curl -sIL -o /dev/null -w "%{http_code}" "$test_url" || echo 000)"; if [[ "$code" == "200" ]]; then SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0; fi
               for KEY in "${KEYCHAIN_ARR[@]}"; do
                 KEY="$(printf "%s" "$KEY" | xargs)"; [[ -z "$KEY" ]] && continue
-                code="$(curl -sIL -o /dev/null -w "%{http_code}" -H "Authorization: token $KEY" "$test_url")"; if [[ "$code" == "200" ]]; then SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0; fi
+                code="$(curl -sIL -o /dev/null -w "%{http_code}" -H "Authorization: token $KEY" "$test_url" || echo 000)"; if [[ "$code" == "200" ]]; then SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0; fi
               done
             done; return 1
           }
@@ -161,7 +149,9 @@ jobs:
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"; git config user.email "github-actions[bot]@users.noreply.github.com"
-          echo "Synchronizing with remote branch before push…"; git pull --rebase origin "${{ env.DEST_BRANCH }}" || true
+          git fetch origin "${{ env.DEST_BRANCH }}" || true
+          git checkout -B "${{ env.DEST_BRANCH }}" "origin/${{ env.DEST_BRANCH }}" || git checkout -B "${{ env.DEST_BRANCH }}"
+          echo "Rebasing before push…"; git pull --rebase origin "${{ env.DEST_BRANCH }}" || echo "No remote branch yet; continuing."
           git add -A; git commit -m "Data transfer from sources:${{ steps.process_sources.outputs.processed_sources }}" || { echo "No changes to commit."; exit 0; }
           git push origin "${{ env.DEST_BRANCH }}"
 
@@ -184,10 +174,12 @@ jobs:
             const skipped = parseInt(process.env.SKIPPED_COUNT || '0', 10);
             const nomatch = parseInt(process.env.NO_MATCH_COUNT || '0', 10);
             const filesCopied = (process.env.FILES_COPIED || 'false') === 'true';
-            const summary = `Copied: ${success} | Skipped: ${skipped} | Whitelist no-match: ${nomatch} | Files changed: ${filesCopied}`;
+            let summary = `Copied: ${success} | Skipped: ${skipped} | Whitelist no-match: ${nomatch} | Files changed: ${filesCopied}`;
             let conclusion = 'success';
+            if (success === 0 || skipped > 0 || nomatch > 0 || !filesCopied) {
+              conclusion = 'action_required';
+            }
             if (skipped > 0 && success === 0) { conclusion = 'failure'; }
-            else if (skipped > 0 || nomatch > 0 || !filesCopied) { conclusion = 'action_required'; }
             const [owner, repo] = (process.env.DEST_REPO || '').split('/');
             if (!owner || !repo) { throw new Error(`Could not parse DEST_REPO env var: ${process.env.DEST_REPO}`); }
             await github.rest.checks.create({ owner, repo, name: 'Import status', head_sha: process.env.HEAD_SHA, status: 'completed', conclusion, output: { title: `Import status → ${process.env.DEST_BRANCH}`, summary } });
