@@ -1,9 +1,10 @@
-name: url to url data transfer
-
+check  name: url to url data transfer
 permissions:
   contents: write
   checks: write
-
+concurrency:
+  group: copy-${{ github.workflow }}-${{ replace(github.event.inputs.destination_url, '/', '_' ) }}
+  cancel-in-progress: false
 on:
   workflow_dispatch:
     inputs:
@@ -30,12 +31,11 @@ on:
         required: true
         type: string
       destination_key:
-        description: 'OPTIONAL: PAT with push access to the destination repo/branch. Falls back to GITHUB_TOKEN.'
+        description: 'OPTIONAL: PAT with push access to the destination repo/branch. Falls back to GITHUB_TOKEN (same-repo only).'
         required: false
         type: string
-
 jobs:
-  deka-checked-copy:
+  url-transfer:
     runs-on: ubuntu-latest
     outputs:
       files_copied: ${{ steps.process_sources.outputs.files_copied }}
@@ -43,50 +43,31 @@ jobs:
       success_count: ${{ steps.process_sources.outputs.success_count }}
       skipped_count: ${{ steps.process_sources.outputs.skipped_count }}
       no_match_count: ${{ steps.process_sources.outputs.no_match_count }}
-
     steps:
-      - name: Validate Input URLs (sources + destination)
+      - name: Validate Input URLs
         run: |
           set -euo pipefail
           DEST_URL_RAW="${{ github.event.inputs.destination_url }}"
           DEST_URL="$(printf "%s" "$DEST_URL_RAW" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-          if [[ "$DEST_URL" != *"/tree/"* ]]; then
-            echo "::error::destination_url must be a GitHub /tree/<branch>/<path> folder URL."
-            exit 1
-          fi
-          SRC_INPUTS_RAW="${{ github.event.inputs.source_urls }}"
-          SRC_INPUTS="$(printf "%s" "$SRC_INPUTS_RAW" | tr -d '\r')"
+          if [[ "$DEST_URL" != *"/tree/"* ]]; then echo "::error::destination_url must be a GitHub /tree/<branch>/<path> folder URL."; exit 1; fi
+          SRC_INPUTS_RAW="${{ github.event.inputs.source_urls }}"; SRC_INPUTS="$(printf "%s" "$SRC_INPUTS_RAW" | tr -d '\r')"
           INVALID=false
           while IFS= read -r URL; do
-            URL="$(printf "%s" "$URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-            [[ -z "$URL" ]] && continue
-            if [[ "$URL" != *"/tree/"* && "$URL" != *"/blob/"* ]]; then
-              echo "::error::Invalid source URL: $URL (must contain /tree/ or /blob/)"
-              INVALID=true
-            fi
+            URL="$(printf "%s" "$URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"; [[ -z "$URL" ]] && continue
+            if [[ "$URL" != *"/tree/"* && "$URL" != *"/blob/"* ]]; then echo "::error::Invalid source URL: $URL (must contain /tree/ or /blob/)"; INVALID=true; fi
           done <<< "$SRC_INPUTS"
-          if $INVALID; then
-            echo "❌ Source URL validation failed."
-            exit 1
-          fi
-          echo "✅ URL validation passed."
+          if $INVALID; then echo "ERROR: Source URL validation failed."; exit 1; fi
+          echo "URL validation passed."
 
       - name: Parse Destination URL & Set Up
         id: dest_paths
         run: |
           set -euo pipefail
-          DEST_URL_RAW="${{ github.event.inputs.destination_url }}"
-          DEST_URL="$(printf "%s" "$DEST_URL_RAW" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-          CLEAN_URL="$(printf "%s" "$DEST_URL" | sed -e 's|^https://||' -e 's|^http://||')"
-          DEST_REPO="$(printf "%s" "$CLEAN_URL" | cut -d'/' -f2,3)"
-          DEST_FULL_PATH="$(printf "%s" "$CLEAN_URL" | sed -E 's|[^/]*/[^/]*/[^/]*/tree/||')"
-          DEST_BRANCH="$(printf "%s" "$DEST_FULL_PATH" | cut -d'/' -f1)"
+          DEST_URL_RAW="${{ github.event.inputs.destination_url }}"; DEST_URL="$(printf "%s" "$DEST_URL_RAW" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          CLEAN_URL="$(printf "%s" "$DEST_URL" | sed -e 's|^https://||' -e 's|^http://||')"; DEST_REPO="$(printf "%s" "$CLEAN_URL" | cut -d'/' -f2,3)"
+          DEST_FULL_PATH="$(printf "%s" "$CLEAN_URL" | sed -E 's|[^/]*/[^/]*/[^/]*/tree/||')"; DEST_BRANCH="$(printf "%s" "$DEST_FULL_PATH" | cut -d'/' -f1)"
           DEST_FOLDER="$(printf "%s" "$DEST_FULL_PATH" | sed -e "s|^$DEST_BRANCH/||" -e "s|^$DEST_BRANCH$||")"
-          {
-            echo "DEST_REPO_NAME=$DEST_REPO"
-            echo "DEST_BRANCH=$DEST_BRANCH"
-            echo "DEST_FOLDER=$DEST_FOLDER"
-          } >> "$GITHUB_ENV"
+          { echo "DEST_REPO_NAME=$DEST_REPO"; echo "DEST_BRANCH=$DEST_BRANCH"; echo "DEST_FOLDER=$DEST_FOLDER"; } >> "$GITHUB_ENV"
 
       - name: Determine Destination Token
         id: dest_token_logic
@@ -98,195 +79,90 @@ jobs:
             echo "token=${{ secrets.GITHUB_TOKEN }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Checkout Destination Repo
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ env.DEST_REPO_NAME }}
-          ref: ${{ env.DEST_BRANCH }}
-          token: ${{ steps.dest_token_logic.outputs.token }}
-          fetch-depth: 0
+      - name: Guard: Validate Token Permissions for Destination
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.dest_token_logic.outputs.token }}" == "${{ secrets.GITHUB_TOKEN }}" && "${{ env.DEST_REPO_NAME }}" != "${{ github.repository }}" ]]; then
+            echo "::error::A destination_key is required for cross-repository writes. The default GITHUB_TOKEN can only write to '${{ github.repository }}'."
+            exit 1
+          fi
+          echo "Token permissions are valid for the destination."
+
+      - name: Checkout Destination Repo (robust)
+        run: |
+          set -euo pipefail
+          REPO="${{ env.DEST_REPO_NAME }}"; BR="${{ env.DEST_BRANCH }}"; TOK="${{ steps.dest_token_logic.outputs.token }}"
+          git -c http.extraHeader="Authorization: token $TOK" clone --depth 0 "https://github.com/$REPO.git" .
+          git config http.https://github.com/.extraheader "Authorization: token $TOK"
+          if git ls-remote --exit-code --heads origin "$BR" >/dev/null 2>&1; then git checkout -B "$BR" "origin/$BR"; else git checkout -B "$BR"; fi
 
       - name: Process All Sources
         id: process_sources
         run: |
           set -euo pipefail
-
-          FILES_COPIED=false
-          PROCESSED_LIST=""
-
-          SRC_INPUTS_RAW="${{ github.event.inputs.source_urls }}"
-          SRC_INPUTS="$(printf "%s" "$SRC_INPUTS_RAW" | tr -d '\r')"
-          FILTER_INPUTS_RAW="${{ github.event.inputs.filter_list }}"
-          FILTER_INPUTS="$(printf "%s" "$FILTER_INPUTS_RAW" | tr -d '\r')"
-
-          DEST_PATH="${{ github.workspace }}"
-          if [[ -n "${{ env.DEST_FOLDER }}" ]]; then
-            DEST_PATH="${{ github.workspace }}/${{ env.DEST_FOLDER }}"
-            mkdir -p "$DEST_PATH"
-          fi
-
-          KEYCHAIN_RAW="${{ github.event.inputs.source_keys }}"
-          KEYCHAIN="$(printf "%s" "$KEYCHAIN_RAW" | tr -d '\r')"
-          mapfile -t KEYCHAIN_ARR <<< "$KEYCHAIN"
-          FIRST_KEY="$(printf "%s\n" "$KEYCHAIN" | head -n 1)"
-
+          FILES_COPIED=false; PROCESSED_LIST=""; SUCCESS_COUNT=0; SKIPPED_COUNT=0; NO_MATCH_COUNT=0
+          SRC_INPUTS_RAW="${{ github.event.inputs.source_urls }}"; SRC_INPUTS="$(printf "%s" "$SRC_INPUTS_RAW" | tr -d '\r')"
+          FILTER_INPUTS_RAW="${{ github.event.inputs.filter_list }}"; FILTER_INPUTS="$(printf "%s" "$FILTER_INPUTS_RAW" | tr -d '\r')"
+          DEST_PATH="${{ github.workspace }}"; if [[ -n "${{ env.DEST_FOLDER }}" ]]; then DEST_PATH="${{ github.workspace }}/${{ env.DEST_FOLDER }}"; mkdir -p "$DEST_PATH"; fi
+          KEYCHAIN_RAW="${{ github.event.inputs.source_keys }}"; KEYCHAIN="$(printf "%s" "$KEYCHAIN_RAW" | tr -d '\r')"; mapfile -t KEYCHAIN_ARR <<< "$KEYCHAIN"
           resolve_branch_and_relpath() {
-            local repo="$1"
-            local full="$2"
-            IFS='/' read -r -a PARTS <<< "$full"
-            local n=${#PARTS[@]}
+            local repo="$1"; local full="$2"; IFS='/' read -r -a PARTS <<< "$full"; local n=${#PARTS[@]}
             for ((i=n; i>=1; i--)); do
-              local cand_branch="${PARTS[0]}"
-              for ((k=1; k<i; k++)); do cand_branch="$cand_branch/${PARTS[$k]}"; done
-              local cand_path=""
-              if (( i < n )); then
-                cand_path="${PARTS[$i]}"
-                for ((k=i+1; k<n; k++)); do cand_path="$cand_path/${PARTS[$k]}"; done
-              fi
-              local test_url="https://api.github.com/repos/$repo/tarball/$cand_branch"
-              local code
-              code="$(curl -sI -o /dev/null -w "%{http_code}" "$test_url")"
-              if [[ "$code" == "200" || "$code" == "302" ]]; then
-                SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0
-              fi
-              if [[ -n "$FIRST_KEY" ]]; then
-                code="$(curl -sI -o /dev/null -w "%{http_code}" -H "Authorization: token $FIRST_KEY" "$test_url")"
-                if [[ "$code" == "200" || "$code" == "302" ]]; then
-                  SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0
-                fi
-              fi
-            done
-            return 1
+              local cand_branch="${PARTS[0]}"; for ((k=1; k<i; k++)); do cand_branch="$cand_branch/${PARTS[$k]}"; done
+              local cand_path=""; if (( i < n )); then cand_path="${PARTS[$i]}"; for ((k=i+1; k<n; k++)); do cand_path="$cand_path/${PARTS[$k]}"; done; fi
+              local test_url="https://api.github.com/repos/$repo/tarball/$cand_branch"; local code
+              code="$(curl -sIL -o /dev/null -w "%{http_code}" "$test_url")"; if [[ "$code" == "200" ]]; then SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0; fi
+              for KEY in "${KEYCHAIN_ARR[@]}"; do
+                KEY="$(printf "%s" "$KEY" | xargs)"; [[ -z "$KEY" ]] && continue
+                code="$(curl -sIL -o /dev/null -w "%{http_code}" -H "Authorization: token $KEY" "$test_url")"; if [[ "$code" == "200" ]]; then SOURCE_BRANCH="$cand_branch"; REL_PATH="$cand_path"; return 0; fi
+              done
+            done; return 1
           }
-
-          SUCCESS_COUNT=0
-          SKIPPED_COUNT=0
-          NO_MATCH_COUNT=0
-          COUNT=0
-
           while IFS= read -r SOURCE_URL; do
-            SOURCE_URL="$(printf "%s" "$SOURCE_URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-            [[ -z "$SOURCE_URL" ]] && continue
-            COUNT=$((COUNT + 1))
-            echo "--- Processing Source #$COUNT: $SOURCE_URL ---"
-
-            CLEAN_SRC="$(printf "%s" "$SOURCE_URL" | sed -e 's|^https://||' -e 's|^http://||')"
-            SOURCE_REPO="$(printf "%s" "$CLEAN_SRC" | cut -d'/' -f2,3)"
-            SOURCE_FULL_PATH="$(printf "%s" "$CLEAN_SRC" | sed -E 's|[^/]*/[^/]*/[^/]*/(tree|blob)/||')"
-            MODE="tree"
-            [[ "$SOURCE_URL" == *"/blob/"* ]] && MODE="blob"
-
-            if ! resolve_branch_and_relpath "$SOURCE_REPO" "$SOURCE_FULL_PATH"; then
-              echo "WARNING: Could not resolve branch for $SOURCE_URL. Skipping."
-              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-              continue
-            fi
-
-            API_URL="https://api.github.com/repos/$SOURCE_REPO/tarball/$SOURCE_BRANCH"
-            TEMP_DIR="source-temp-$COUNT"
-            TAR_FILE="$TEMP_DIR.tar.gz"
-
-            STATUS_CODE="$(curl -sSL -o "$TAR_FILE" -w "%{http_code}" "$API_URL")"
+            SOURCE_URL="$(printf "%s" "$SOURCE_URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"; [[ -z "$SOURCE_URL" ]] && continue
+            echo "--- Processing Source: $SOURCE_URL ---"
+            CLEAN_SRC="$(printf "%s" "$SOURCE_URL" | sed -e 's|^https://||' -e 's|^http://||')"; SOURCE_REPO="$(printf "%s" "$CLEAN_SRC" | cut -d'/' -f2,3)"
+            SOURCE_FULL_PATH="$(printf "%s" "$CLEAN_SRC" | sed -E 's|[^/]*/[^/]*/[^/]*/(tree|blob)/||')"; MODE="tree"; [[ "$SOURCE_URL" == *"/blob/"* ]] && MODE="blob"
+            if ! resolve_branch_and_relpath "$SOURCE_REPO" "$SOURCE_FULL_PATH"; then echo "::warning::Could not resolve branch for $SOURCE_URL. Skipping."; SKIPPED_COUNT=$((SKIPPED_COUNT + 1)); continue; fi
+            API_URL="https://api.github.com/repos/$SOURCE_REPO/tarball/$SOURCE_BRANCH"; TEMP_DIR="source-temp-$$-$(date +%s%N)"; TAR_FILE="$TEMP_DIR.tar.gz"
+            STATUS_CODE="$(curl -sSL -o "$TAR_FILE" -w "%{http_code}" --fail-with-body "$API_URL" || true)"
             if [[ "$STATUS_CODE" != "200" ]]; then
               for KEY in "${KEYCHAIN_ARR[@]}"; do
-                [[ -z "$KEY" ]] && continue
-                STATUS_CODE="$(curl -sSL -o "$TAR_FILE" -w "%{http_code}" -H "Authorization: token $KEY" "$API_URL")"
-                [[ "$STATUS_CODE" == "200" ]] && break
+                KEY="$(printf "%s" "$KEY" | xargs)"; [[ -z "$KEY" ]] && continue
+                STATUS_CODE="$(curl -sSL -o "$TAR_FILE" -w "%{http_code}" --fail-with-body -H "Authorization: token $KEY" "$API_URL" || true)"; [[ "$STATUS_CODE" == "200" ]] && break
               done
             fi
-            if [[ "$STATUS_CODE" != "200" ]]; then
-              echo "WARNING: Download failed $SOURCE_REPO@$SOURCE_BRANCH (HTTP $STATUS_CODE). Skipping."
-              SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-              rm -f "$TAR_FILE"
-              continue
-            fi
-
-            mkdir -p "$TEMP_DIR"
-            tar -xzf "$TAR_FILE" -C "$TEMP_DIR" --strip-components=1
-
+            if [[ "$STATUS_CODE" != "200" ]]; then echo "::warning::Download failed for $SOURCE_REPO@$SOURCE_BRANCH (HTTP $STATUS_CODE). Skipping."; SKIPPED_COUNT=$((SKIPPED_COUNT + 1)); rm -f "$TAR_FILE"; continue; fi
+            mkdir -p "$TEMP_DIR"; tar -xzf "$TAR_FILE" -C "$TEMP_DIR" --strip-components=1 --no-same-owner --no-same-permissions; rm -f "$TAR_FILE"
             if [[ "$MODE" == "tree" ]]; then
-              SRC_PATH="$TEMP_DIR"
-              [[ -n "$REL_PATH" ]] && SRC_PATH="$TEMP_DIR/$REL_PATH"
-              if [[ ! -d "$SRC_PATH" ]]; then
-                echo "WARNING: folder '$REL_PATH' not found in $SOURCE_REPO@$SOURCE_BRANCH. Skipping."
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                rm -rf "$TEMP_DIR" "$TAR_FILE"
-                continue
-              fi
-
+              SRC_PATH="$TEMP_DIR"; [[ -n "$REL_PATH" ]] && SRC_PATH="$TEMP_DIR/$REL_PATH"; if [[ ! -d "$SRC_PATH" ]]; then echo "::warning::folder '$REL_PATH' not found in archive. Skipping."; SKIPPED_COUNT=$((SKIPPED_COUNT + 1)); rm -rf "$TEMP_DIR"; continue; fi
               cd "$SRC_PATH"
-              if [[ "${{ github.event.inputs.filter_mode }}" == "Whitelist" ]]; then
-                if [[ -z "$FILTER_INPUTS" ]]; then
-                  rsync -a . "$DEST_PATH"/
+              if [[ -z "$FILTER_INPUTS" ]]; then rsync -a . "$DEST_PATH"/; else
+                if [[ "${{ github.event.inputs.filter_mode }}" == "Whitelist" ]]; then
+                  printf "%s\n" "$FILTER_INPUTS" > include-list.txt; : > include-effective.txt
+                  while IFS= read -r P; do P="$(printf "%s" "$P" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"; [[ -z "$P" ]] && continue; if [[ -e "$P" ]]; then printf "%s\n" "$P" >> include-effective.txt; fi; done < include-list.txt
+                  if [[ -s include-effective.txt ]]; then rsync -a --files-from=include-effective.txt . "$DEST_PATH"/; else echo "::notice::Whitelist provided but no entries matched. Copying nothing for this source."; NO_MATCH_COUNT=$((NO_MATCH_COUNT + 1)); fi; rm -f include-list.txt include-effective.txt
                 else
-                  printf "%s\n" "$FILTER_INPUTS" > include-list.txt
-                  : > include-effective.txt
-                  while IFS= read -r P; do
-                    P="$(printf "%s" "$P" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-                    [[ -z "$P" ]] && continue
-                    if [[ -e "$P" ]]; then
-                      printf "%s\n" "$P" >> include-effective.txt
-                    fi
-                  done < include-list.txt
-                  if [[ -s include-effective.txt ]]; then
-                    rsync -a --files-from=include-effective.txt . "$DEST_PATH"/
-                  else
-                    echo "::notice::Whitelist provided but no entries matched in source. Copying nothing for this source."
-                    NO_MATCH_COUNT=$((NO_MATCH_COUNT + 1))
-                  fi
-                  rm -f include-list.txt include-effective.txt
+                  printf "%s\n" "$FILTER_INPUTS" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^$/d' > exclude-list.txt
+                  rsync -a --exclude-from=exclude-list.txt . "$DEST_PATH"/; rm -f exclude-list.txt
                 fi
-              else
-                if [[ -z "$FILTER_INPUTS" ]]; then
-                  rsync -a . "$DEST_PATH"/
-                else
-                  printf "%s\n" "$FILTER_INPUTS" > exclude-list.txt
-                  rsync -a --exclude-from=exclude-list.txt . "$DEST_PATH"/
-                  rm -f exclude-list.txt
-                fi
-              fi
-              cd "${{ github.workspace }}"
+              fi; cd "${{ github.workspace }}"
             else
-              cd "$TEMP_DIR"
-              if [[ -z "$REL_PATH" || ! -f "$REL_PATH" ]]; then
-                echo "WARNING: file '$REL_PATH' not found in $SOURCE_REPO@$SOURCE_BRANCH. Skipping."
-                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-                rm -rf "$TEMP_DIR" "$TAR_FILE"
-                continue
-              fi
-              rsync -a --relative "./$REL_PATH" "$DEST_PATH"/
-              cd "${{ github.workspace }}"
+              if [[ -z "$REL_PATH" || ! -f "$TEMP_DIR/$REL_PATH" ]]; then echo "::warning::file '$REL_PATH' not found in archive. Skipping."; SKIPPED_COUNT=$((SKIPPED_COUNT + 1)); rm -rf "$TEMP_DIR"; continue; fi
+              (cd "$TEMP_DIR" && rsync -a --relative "./$REL_PATH" "$DEST_PATH"/)
             fi
-
-            PROCESSED_LIST="$PROCESSED_LIST $SOURCE_REPO"
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-            rm -rf "$TEMP_DIR" "$TAR_FILE"
+            PROCESSED_LIST="$PROCESSED_LIST $SOURCE_REPO"; SUCCESS_COUNT=$((SUCCESS_COUNT + 1)); rm -rf "$TEMP_DIR"
           done <<< "$SRC_INPUTS"
-
-          if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -gt 0 ]; then
-            FILES_COPIED=true
-          fi
-
-          {
-            echo "files_copied=$FILES_COPIED"
-            echo "processed_sources=$PROCESSED_LIST"
-            echo "success_count=$SUCCESS_COUNT"
-            echo "skipped_count=$SKIPPED_COUNT"
-            echo "no_match_count=$NO_MATCH_COUNT"
-          } >> "$GITHUB_OUTPUT"
+          if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -gt 0 ]; then FILES_COPIED=true; fi
+          { echo "files_copied=$FILES_COPIED"; echo "processed_sources=$PROCESSED_LIST"; echo "success_count=$SUCCESS_COUNT"; echo "skipped_count=$SKIPPED_COUNT"; echo "no_match_count=$NO_MATCH_COUNT"; } >> "$GITHUB_OUTPUT"
 
       - name: Commit and Push Changes
         if: steps.process_sources.outputs.files_copied == 'true'
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin "${{ env.DEST_BRANCH }}"
-          git checkout -B "${{ env.DEST_BRANCH }}" "origin/${{ env.DEST_BRANCH }}" || git checkout -B "${{ env.DEST_BRANCH }}"
-          echo "Rebasing before push…"
-          git pull --rebase origin "${{ env.DEST_BRANCH }}"
-          git add -A
-          git commit -m "Data transfer from sources:${{ steps.process_sources.outputs.processed_sources }}" || { echo "No changes to commit."; exit 0; }
+          git config user.name "github-actions[bot]"; git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Synchronizing with remote branch before push…"; git pull --rebase origin "${{ env.DEST_BRANCH }}" || true
+          git add -A; git commit -m "Data transfer from sources:${{ steps.process_sources.outputs.processed_sources }}" || { echo "No changes to commit."; exit 0; }
           git push origin "${{ env.DEST_BRANCH }}"
 
       - name: Get HEAD SHA (for check-run)
@@ -296,17 +172,11 @@ jobs:
           set -euo pipefail
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Publish attention status (orange if partial)
+      - name: Publish attention status
         if: always()
         uses: actions/github-script@v7
         continue-on-error: true
-        env:
-          HEAD_SHA: ${{ steps.head.outputs.sha }}
-          DEST_REPO: ${{ env.DEST_REPO_NAME }}
-          SUCCESS_COUNT: ${{ steps.process_sources.outputs.success_count }}
-          SKIPPED_COUNT: ${{ steps.process_sources.outputs.skipped_count }}
-          NO_MATCH_COUNT: ${{ steps.process_sources.outputs.no_match_count }}
-          FILES_COPIED: ${{ steps.process_sources.outputs.files_copied }}
+        env: { HEAD_SHA: '${{ steps.head.outputs.sha }}', DEST_REPO: '${{ env.DEST_REPO_NAME }}', DEST_BRANCH: '${{ env.DEST_BRANCH }}', SUCCESS_COUNT: '${{ steps.process_sources.outputs.success_count }}', SKIPPED_COUNT: '${{ steps.process_sources.outputs.skipped_count }}', NO_MATCH_COUNT: '${{ steps.process_sources.outputs.no_match_count }}', FILES_COPIED: '${{ steps.process_sources.outputs.files_copied }}' }
         with:
           github-token: ${{ steps.dest_token_logic.outputs.token }}
           script: |
@@ -315,84 +185,16 @@ jobs:
             const nomatch = parseInt(process.env.NO_MATCH_COUNT || '0', 10);
             const filesCopied = (process.env.FILES_COPIED || 'false') === 'true';
             const summary = `Copied: ${success} | Skipped: ${skipped} | Whitelist no-match: ${nomatch} | Files changed: ${filesCopied}`;
-            
             let conclusion = 'success';
-            if (success === 0 || skipped > 0 || nomatch > 0 || !filesCopied) {
-              conclusion = 'action_required';
-            }
-
+            if (skipped > 0 && success === 0) { conclusion = 'failure'; }
+            else if (skipped > 0 || nomatch > 0 || !filesCopied) { conclusion = 'action_required'; }
             const [owner, repo] = (process.env.DEST_REPO || '').split('/');
-            if (!owner || !repo) {
-              throw new Error(`Could not parse DEST_REPO env var: ${process.env.DEST_REPO}`);
-            }
-
-            await github.rest.checks.create({
-              owner: owner,
-              repo: repo,
-              name: 'Import status',
-              head_sha: process.env.HEAD_SHA,
-              status: 'completed',
-              conclusion,
-              output: {
-                title: 'Import status',
-                summary
-              }
-            });
+            if (!owner || !repo) { throw new Error(`Could not parse DEST_REPO env var: ${process.env.DEST_REPO}`); }
+            await github.rest.checks.create({ owner, repo, name: 'Import status', head_sha: process.env.HEAD_SHA, status: 'completed', conclusion, output: { title: `Import status → ${process.env.DEST_BRANCH}`, summary } });
 
       - name: Cleanup Temporary Files
         if: always()
         run: |
-          rm -rf source-temp-* *.tar.gz include-list.txt exclude-list.txt || true
+          set -euo pipefail
+          rm -rf source-temp-* *.tar.gz include-list.txt include-effective.txt exclude-list.txt || true
           echo "Cleanup done."
-            AUTH_HEADER=""
-            if [ -n "$API_KEY" ]; then AUTH_HEADER="-H \"Authorization: Bearer $API_KEY\""; fi
-            STATUS_CODE=$(curl -s -o "$TEMP_DIR.tar.gz" -L -w "%{http_code}" $AUTH_HEADER "$API_URL")
-
-            if [ "$STATUS_CODE" -eq 200 ]; then DOWNLOADED=true; echo "Download successful (Status: $STATUS_CODE)."; fi
-
-            if ! $DOWNLOADED; then
-              echo "ERROR: Failed to download from '$SOURCE_REPO' (Ref: $SOURCE_BRANCH). Final Status: $STATUS_CODE. Skipping."
-              continue
-            fi
-            
-            mkdir -p "$TEMP_DIR" && tar -xzf "$TEMP_DIR.tar.gz" -C "$TEMP_DIR" --strip-components=1
-            SOURCE_CONTENT_PATH="$TEMP_DIR/$SOURCE_FOLDER"
-            
-            cd "$SOURCE_CONTENT_PATH"
-            if [[ -z "${{ github.event.inputs.filter_list }}" ]]; then
-              rsync -a ./* "${{ github.workspace }}/${{ env.DEST_FOLDER }}/"
-            elif [[ "${{ github.event.inputs.filter_mode }}" == "Whitelist" ]]; then
-              echo "${{ github.event.inputs.filter_list }}" > include-list.txt
-              rsync -a --files-from=include-list.txt . "${{ github.workspace }}/${{ env.DEST_FOLDER }}/"
-            elif [[ "${{ github.event.inputs.filter_mode }}" == "Blacklist" ]]; then
-              echo "${{ github.event.inputs.filter_list }}" > exclude-list.txt
-              rsync -a --exclude-from=exclude-list.txt ./* "${{ github.workspace }}/${{ env.DEST_FOLDER }}/"
-            fi
-            cd "${{ github.workspace }}"
-            PROCESSED_LIST="$PROCESSED_LIST $SOURCE_REPO"
-          done
-          
-          echo "processed_sources=$PROCESSED_LIST" >> $GITHUB_OUTPUT
-
-      - name: Commit and Push Changes
-        id: commit_and_push
-        run: |
-          echo "files_copied=false" > $GITHUB_OUTPUT
-          if [ "$(git status --porcelain=v1 2>/dev/null | wc -l)" -gt 0 ]; then
-             echo "files_copied=true" >> $GITHUB_OUTPUT
-             git config user.name "github-actions[bot]"
-             git config user.email "github-actions[bot]@users.noreply.github.com"
-             echo "Synchronizing with remote branch before push..."
-             git pull --rebase
-             git add .
-             git commit -m "Data transfer from sources:${{ steps.process_sources.outputs.processed_sources }}"
-             git push
-          else
-            echo "No changes detected to commit."
-          fi
-
-      - name: Cleanup Temporary Files
-        if: always()
-        run: |
-          echo "Cleaning up temporary files..."
-          rm -rf source-temp-* *.tar.gz include-list.txt exclude-list.txt
