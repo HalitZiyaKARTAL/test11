@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Line Relationship Analyzer</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e0e0e0;
+            --border: #333;
+            --accent: #2196f3;
+            --accent-dim: #1565c0;
+            --green: #4caf50;
+            --orange: #ff9800;
+        }
+
+        body {
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* Controls */
+        .controls {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: var(--accent-dim); }
+        input[type="file"] { color: #ccc; }
+
+        /* Matrix Table */
+        .section-title { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-top: 30px; color: var(--accent); }
+        
+        .matrix-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 10px;
+            text-align: center;
+        }
+        th { background: #252525; color: var(--accent); }
+        td.self { background: #222; color: #555; }
+        td.high-match { background: #1b3a20; color: #81c784; font-weight: bold; }
+        td.med-match { background: #3a321b; color: #ffb74d; }
+        
+        /* Frequency Buckets */
+        .buckets-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .bucket-btn {
+            background: #333;
+            border: 1px solid #555;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .bucket-btn:hover, .bucket-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .file-stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .file-stat-card h4 { margin: 0 0 10px 0; color: var(--text); word-break: break-all;}
+        .stat-line { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 2px;}
+        .val { font-family: monospace; color: var(--accent); font-weight: bold; }
+        .val-lines { color: var(--orange); }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Full Relationship Line Analyzer</h1>
+    <div class="controls">
+        <input type="file" id="fileInput" multiple>
+        <button onclick="analyze()">Analyze Files</button>
+        <label><input type="checkbox" id="trim" checked> Trim Spaces</label>
+        <label><input type="checkbox" id="empty" checked> Ignore Empty</label>
+    </div>
+
+    <!-- MATRIX -->
+    <div id="matrixSection" class="hidden">
+        <h2 class="section-title">Overlap Matrix (Who matches Who?)</h2>
+        <p style="color:#888; font-size: 0.9em;">Read this as: "Rows contain X% of Columns". e.g., If Row 1 / Col 2 says "100%", it means File 1 contains ALL lines from File 2.</p>
+        <div class="matrix-container">
+            <table id="matrixTable"></table>
+        </div>
+    </div>
+
+    <!-- BUCKETS -->
+    <div id="bucketSection" class="hidden">
+        <h2 class="section-title">Common Line "Buckets"</h2>
+        <p style="color:#888">Click a button to see line math for lines that appear in exactly that many files.</p>
+        
+        <div class="buckets-nav" id="bucketNav"></div>
+
+        <div id="bucketResults">
+            <!-- Dynamic cards go here -->
+        </div>
+        
+        <h3 style="margin-top:20px">Sample Lines (First 5 matches in this bucket)</h3>
+        <textarea id="previewText" style="width:100%; height:100px; background:#111; color:#aaa; border:1px solid #444;" readonly></textarea>
+    </div>
+</div>
+
+<script>
+    let FILES_DATA = []; // Stores {name, lines:[], originalLines:[]}
+    let GLOBAL_MAP = new Map(); // Stores string -> { count: int, fileIndices: Set }
+
+    async function analyze() {
+        const input = document.getElementById('fileInput');
+        const trim = document.getElementById('trim').checked;
+        const skipEmpty = document.getElementById('empty').checked;
+
+        if (input.files.length < 2) { alert("Select at least 2 files."); return; }
+
+        // Reset
+        FILES_DATA = [];
+        GLOBAL_MAP.clear();
+        document.getElementById('matrixSection').classList.add('hidden');
+        document.getElementById('bucketSection').classList.add('hidden');
+
+        // 1. Load Files
+        for (let i = 0; i < input.files.length; i++) {
+            const text = await readFile(input.files[i]);
+            const rawLines = text.split(/\r?\n/);
+            const processedSet = new Set();
+            
+            // We create a map for the file to know line numbers: "content" -> [line#1, line#10]
+            const lineLocs = new Map(); 
+
+            rawLines.forEach((line, idx) => {
+                let content = trim ? line.trim() : line;
+                if (skipEmpty && content === "") return;
+
+                processedSet.add(content);
+
+                if (!lineLocs.has(content)) lineLocs.set(content, []);
+                lineLocs.get(content).push(idx + 1); // 1-based line num
+            });
+
+            FILES_DATA.push({
+                id: i,
+                name: input.files[i].name,
+                totalLines: rawLines.length,
+                contentSet: processedSet,
+                lineLocations: lineLocs
+            });
+        }
+
+        // 2. Build Global Frequency Map
+        FILES_DATA.forEach(file => {
+            file.contentSet.forEach(lineContent => {
+                if (!GLOBAL_MAP.has(lineContent)) {
+                    GLOBAL_MAP.set(lineContent, { count: 0, files: new Set() });
+                }
+                let entry = GLOBAL_MAP.get(lineContent);
+                entry.count++;
+                entry.files.add(file.id);
+            });
+        });
+
+        renderMatrix();
+        renderBuckets();
+    }
+
+    // --- MATRIX LOGIC ---
+    function renderMatrix() {
+        const table = document.getElementById('matrixTable');
+        table.innerHTML = "";
+        
+        // Header Row
+        let thead = "<tr><th>Source \\ Target</th>";
+        FILES_DATA.forEach(f => thead += `<th>${f.name}<br><small>(${f.contentSet.size} unique lines)</small></th>`);
+        thead += "</tr>";
+        table.innerHTML += thead;
+
+        // Body Rows
+        FILES_DATA.forEach(source => {
+            let row = `<tr><td style="text-align:left; font-weight:bold; color:#eee">${source.name}</td>`;
+            
+            FILES_DATA.forEach(target => {
+                if (source.id === target.id) {
+                    row += `<td class="self">-</td>`;
+                } else {
+                    // Calculate Intersection
+                    let matchCount = 0;
+                    source.contentSet.forEach(line => {
+                        if (target.contentSet.has(line)) matchCount++;
+                    });
+
+                    // Percent of TARGET that is found in SOURCE
+                    // Example: Source is huge dump, Target is small subset.
+                    // Target should match 100% inside Source.
+                    
+                    // Let's show: How much of COLUMN exists in ROW?
+                    // Actually, standard is usually: Intersection / Source Size vs Intersection / Target Size.
+                    // Let's do: Intersection Count
+                    
+                    let pctOfTarget = ((matchCount / target.contentSet.size) * 100).toFixed(1);
+                    let cls = pctOfTarget > 90 ? 'high-match' : (pctOfTarget > 50 ? 'med-match' : '');
+
+                    row += `<td class="${cls}">
+                        ${matchCount.toLocaleString()}<br>
+                        <small>${pctOfTarget}% of Col</small>
+                    </td>`;
+                }
+            });
+            row += "</tr>";
+            table.innerHTML += row;
+        });
+        
+        document.getElementById('matrixSection').classList.remove('hidden');
+    }
+
+    // --- BUCKET LOGIC ---
+    function renderBuckets() {
+        const nav = document.getElementById('bucketNav');
+        nav.innerHTML = "";
+        
+        // Determine max overlap (number of files)
+        const maxFiles = FILES_DATA.length;
+
+        // Create buttons 5, 4, 3, 2
+        for (let i = maxFiles; i >= 2; i--) {
+            let countInBucket = 0;
+            for (let val of GLOBAL_MAP.values()) {
+                if (val.count === i) countInBucket++;
+            }
+
+            let btn = document.createElement('button');
+            btn.className = 'bucket-btn';
+            btn.innerHTML = `Matches in <strong>${i}</strong> Files <small>(${countInBucket})</small>`;
+            btn.onclick = () => showBucketDetails(i);
+            nav.appendChild(btn);
+        }
+
+        // Auto click the highest bucket that has data
+        document.getElementById('bucketSection').classList.remove('hidden');
+        
+        // Check if first button has counts, otherwise find first non-zero
+        // Default: show logic for N
+        showBucketDetails(maxFiles); 
+    }
+
+    function showBucketDetails(frequency) {
+        // Highlight button
+        document.querySelectorAll('.bucket-btn').forEach(b => b.classList.remove('active'));
+        // Simple way to find the button clicked (event target logic omitted for brevity, just styling)
+        
+        const container = document.getElementById('bucketResults');
+        container.innerHTML = "";
+        const previewArea = document.getElementById('previewText');
+
+        // 1. Filter lines that appear exactly 'frequency' times
+        let relevantLines = [];
+        for (let [line, data] of GLOBAL_MAP.entries()) {
+            if (data.count === frequency) {
+                relevantLines.push(line);
+            }
+        }
+
+        if (relevantLines.length === 0) {
+            container.innerHTML = `<p>No lines found that exist in exactly ${frequency} files.</p>`;
+            previewArea.value = "";
+            return;
+        }
+
+        previewArea.value = relevantLines.slice(0, 5).join('\n') + (relevantLines.length > 5 ? "\n..." : "");
+
+        // 2. Calculate Stats per file for THESE specific lines
+        // We need to look at which files are involved.
+        
+        // Since this is "Exactly N files", different lines might belong to different subsets of files.
+        // But the user wants stats "For this file, where do these lines appear?"
+        
+        let gridHtml = `<div class="stats-grid">`;
+
+        FILES_DATA.forEach(file => {
+            // Does this file have any of these lines?
+            let matches = 0;
+            let firstLine = Infinity;
+            let lastLine = -1;
+            
+            relevantLines.forEach(line => {
+                if (file.contentSet.has(line)) {
+                    matches++;
+                    // Get occurrences in this file
+                    let locs = file.lineLocations.get(line);
+                    if (locs) {
+                        let minL = Math.min(...locs);
+                        let maxL = Math.max(...locs);
+                        if (minL < firstLine) firstLine = minL;
+                        if (maxL > lastLine) lastLine = maxL;
+                    }
+                }
+            });
+
+            if (matches > 0) {
+                gridHtml += `
+                <div class="file-stat-card">
+                    <h4>${file.name}</h4>
+                    <div class="stat-line"><span>Matching Lines</span> <span class="val">${matches.toLocaleString()}</span></div>
+                    <div class="stat-line"><span>First Appearance</span> <span class="val val-lines">Line ${firstLine}</span></div>
+                    <div class="stat-line"><span>Last Appearance</span> <span class="val val-lines">Line ${lastLine}</span></div>
+                    <div class="stat-line"><span>Spread</span> <span class="val">${(lastLine - firstLine).toLocaleString()} lines</span></div>
+                </div>
+                `;
+            }
+        });
+        gridHtml += `</div>`;
+        container.innerHTML = `<h3>Stats for lines matching exactly ${frequency} files</h3>` + gridHtml;
+    }
+
+    function readFile(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.readAsText(file);
+        });
+    }
+</script>
+
+</body>
+</html>
