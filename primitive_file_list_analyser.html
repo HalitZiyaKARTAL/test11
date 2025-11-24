@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>File list analyser</title><style>
+:root{--b:#121212;--p:#1e1e1e;--h:#252525;--t:#ccc;--a:#00e5ff;--e:#ff4081;--g:#00e676;--w:#fff}
+*{box-sizing:border-box;scrollbar-width:thin;scrollbar-color:#555 var(--b)}
+/* 100dvh handles Dynamic Islands/Mobile Bars */
+body{margin:0;background:var(--b);color:var(--t);font:11px 'Consolas',monospace;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+input,button,select,textarea{background:#2a2a2a;border:1px solid #444;color:#fff;padding:2px 4px;border-radius:2px;outline:0;font-family:inherit}
+input:focus,textarea:focus{border-color:var(--a);background:#333}
+
+/* Smart Input Sizing */
+input, select { field-sizing: content; min-width: 30px; width: auto; max-width: 100%; }
+
+/* Layout Structure */
+.top{padding:4px;background:#181818;border-bottom:1px solid #333;display:flex;gap:8px;align-items:center;flex-shrink:0}
+.wr{display:flex;flex:1;overflow:hidden;position:relative;height:100%}
+
+/* SIDEBAR: Fit Content */
+.side { width: fit-content; min-width: min-content; max-width: 80vw; background:#151515; display:flex; flex-direction:column; border-right:1px solid #333; flex-shrink:0; transition:width 0s; z-index: 20; }
+.side.shut { width:0; border:0; overflow:hidden; } .side.shut * { display:none }
+
+/* ARROWS */
+.side-tgl{width:12px;background:#111;border-right:1px solid #333;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#777;font-size:8px;user-select:none;z-index:19;flex-shrink:0}
+.side-tgl:hover{background:#333;color:#fff}
+
+.s-head{padding:5px;background:#1a1a1a;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;cursor:pointer;white-space:nowrap;gap:10px}
+.s-head:hover{color:var(--w)}
+.s-body{padding:5px;overflow-y:auto;flex:1;display:flex;flex-direction:column}
+.builder{margin-bottom:6px} .builder.hide{display:none}
+
+/* TABS (Compact) */
+.t-row{display:flex;background:#222;border:1px solid #333;border-radius:3px;overflow:hidden;margin-bottom:5px;width:fit-content}
+.tab{padding:3px 6px;cursor:pointer;color:#888;border-right:1px solid #333;font-size:10px;white-space:nowrap}
+.tab:last-child{border:0} .tab:hover{color:#fff}
+.tab.act{background:var(--a);color:#000;font-weight:bold}
+.sub-t{padding:2px 5px;font-size:9px} .sub-t.act{background:#2a2a2a;color:var(--a);border-bottom:2px solid var(--a)}
+
+.panel{background:#1b1b1b;padding:5px;border:1px solid #333;margin-bottom:5px}
+.lbl{display:block;color:#666;font-size:9px;margin-bottom:2px}
+.row-in{display:flex;gap:4px;margin-bottom:4px;align-items:center}
+.btn-add{width:100%;padding:3px;background:#252525;border:1px solid #444;font-weight:bold;color:#ccc;font-size:9px;text-align:center}
+.btn-add:hover{border-color:var(--a);color:var(--a)}
+
+.chip{background:#222;border-left:2px solid #555;padding:2px 4px;margin-top:2px;display:flex;justify-content:space-between;align-items:center;font-size:10px;width:fit-content;gap:6px}
+.chip b{color:var(--w);white-space:nowrap}.chip span{color:#aaa;white-space:nowrap}
+.chip i{cursor:pointer;color:#f55;font-weight:bold}
+
+/* MAIN VIEW: SCROLLING & GRID */
+.main{flex:1;overflow:auto;position:relative;display:block;height:100%}
+/* Grid Definition: Content Sized Columns */
+.g-def { display:grid; grid-template-columns: min-content max-content max-content max-content max-content; gap: 4px; }
+
+/* Sticky Header */
+.gh { position:sticky; top:0; z-index:10; background:#202020; border-bottom:1px solid #444; padding:2px; width:max-content; min-width:100%; align-items:center; }
+.gh input { background:#111; border:1px solid #444; color:var(--a); font-weight:bold; font-size:11px; padding:0 2px; text-align:center; margin:0; height:18px; }
+.gh div { padding:2px 4px; color:#fff; font-weight:700; white-space:nowrap; }
+
+/* Content Rows */
+.rows { position:absolute; left:0; width:max-content; min-width:100%; }
+.r { display:contents; color:#888; }
+.r:hover .c { background:#2a2a2a; color:#fff; }
+.c { padding:1px 4px; border-bottom:1px solid #222; white-space:nowrap; }
+.c:first-child { text-align:right; color:#666; border-right:1px solid #222; padding-right:6px; }
+.c:nth-child(2) { color:var(--a); } .c:nth-child(3) { color:var(--e); }
+
+.hide{display:none!important}
+#pst{position:absolute;top:35px;left:10px;width:600px;height:300px;background:#1e1e1e;border:1px solid var(--a);z-index:99;display:none;box-shadow:0 10px 50px #000}
+</style></head><body>
+
+<div class="top">
+ <button onclick="I('fin').click()">📂 Load</button><input type="file" id="fin" hidden onchange="HF(this)">
+ <button onclick="T('pst')">📋 Paste</button> <button onclick="Exp()">💾 Export</button>
+ <div style="flex:1"></div><span id="st">Idle</span>
+</div>
+<textarea id="pst" placeholder="Paste logs..." oninput="HP(this)"></textarea>
+
+<div class="wr">
+ <!-- SIDEBAR -->
+ <div class="side" id="sb">
+  <div class="s-head" onclick="TglMenu()"><span>FILTERS</span><span id="ar_m" style="font-size:9px">▲</span></div>
+  <div class="s-body">
+   <div class="builder" id="bld">
+    <!-- Tabs -->
+    <div class="t-row">
+     <div class="tab act" onclick="SwM(event,'tm')">Time</div><div class="tab" onclick="SwM(event,'app')">App</div>
+     <div class="tab" onclick="SwM(event,'ext')">Ext</div><div class="tab" onclick="SwM(event,'rgx')">Regex</div>
+     <div class="tab" onclick="SwM(event,'slc')">Slice</div><div class="tab" onclick="SwM(event,'js')">JS</div>
+    </div>
+    
+    <!-- Time Menu -->
+    <div id="ui_tm">
+     <div class="t-row" style="margin-top:-5px;border-top:0">
+      <div class="tab sub-t act" onclick="SwS(0)">Exact</div><div class="tab sub-t" onclick="SwS(1)">Range</div>
+      <div class="tab sub-t" onclick="SwS(2)">Cmp</div><div class="tab sub-t" onclick="SwS(3)">Path</div><div class="tab sub-t" onclick="SwS(4)">Ep/JS</div>
+     </div>
+     <div id="st_0" class="panel"><span class="lbl">Exact Prefix</span><div class="row-in"><input id="tm_ex" placeholder="2025/01..."></div><button class="btn-add" onclick="Add('tm','ex')">+ ADD EXACT</button></div>
+     <div id="st_1" class="panel hide"><span class="lbl">Interval</span><div class="row-in"><input id="tm_r1" placeholder="Start"><span style="color:#666">-</span><input id="tm_r2" placeholder="End"></div><button class="btn-add" onclick="Add('tm','rng')">+ ADD RANGE</button></div>
+     <div id="st_2" class="panel hide">
+      <span class="lbl">Components (Range 2024-2025 ok)</span>
+      <div class="row-in"><input id="c_y" placeholder="Y"><input id="c_m" placeholder="M"><input id="c_d" placeholder="D"></div>
+      <div class="row-in"><input id="c_h" placeholder="H"><input id="c_mn" placeholder="m"><input id="c_s" placeholder="s"></div>
+      <button class="btn-add" onclick="Add('tm','cmp')">+ ADD LOGIC</button>
+     </div>
+     <div id="st_3" class="panel hide"><span class="lbl">Path String (+)</span><div class="row-in"><input id="tm_str" placeholder="2024/1-3 + 2025"></div><button class="btn-add" onclick="Add('tm','str')">+ ADD PATH</button></div>
+     <div id="st_4" class="panel hide"><span class="lbl">Epoch/JS</span><div class="row-in"><textarea id="tm_ep" style="width:100%;height:35px" placeholder="e > 1710000000"></textarea></div><button class="btn-add" onclick="Add('tm','ep')">+ ADD RULE</button></div>
+    </div>
+
+    <!-- Other Filters -->
+    <div id="ui_app" class="panel hide"><span class="lbl">App Name</span><div class="row-in"><input id="v_app"></div><button class="btn-add" onclick="Add('app')">+ ADD FILTER</button></div>
+    <div id="ui_ext" class="panel hide"><span class="lbl">Extension</span><div class="row-in"><input id="v_ext" placeholder="jpg"></div><button class="btn-add" onclick="Add('ext')">+ ADD FILTER</button></div>
+    <div id="ui_rgx" class="panel hide"><span class="lbl">Regex</span><div class="row-in"><input id="v_rgx"></div><button class="btn-add" onclick="Add('rgx')">+ ADD REGEX</button></div>
+    <div id="ui_slc" class="panel hide"><span class="lbl">Index Slice</span><div class="row-in"><input id="v_slc" placeholder="100-500"></div><button class="btn-add" onclick="Add('slc')">+ ADD SLICE</button></div>
+    <div id="ui_js" class="panel hide"><span class="lbl">Custom JS</span><div class="row-in"><textarea id="v_js" style="width:100%;height:35px" placeholder="r.id%2==0"></textarea></div><button class="btn-add" onclick="Add('js')">+ ADD JS</button></div>
+   </div>
+
+   <!-- Active List -->
+   <div style="border-top:1px solid #333;padding-top:6px;font-size:9px;font-weight:bold;color:#666">ACTIVE</div>
+   <div id="chips" style="display:flex;flex-direction:column;align-items:flex-start"></div>
+   
+   <div style="margin-top:auto;padding-top:8px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:10px"><span>V: <b id="vc" style="color:var(--a)">0</b></span><span>T: <span id="tc">0</span></span></div>
+    <button onclick="Reset()" style="width:100%;color:#f55;border-color:#522;padding:4px">RESET</button>
+   </div>
+  </div>
+ </div>
+ <div class="side-tgl" onclick="TglSide()" id="ar_s">◀</div>
+
+ <!-- MAIN SCROLL AREA -->
+ <div class="main" id="vs" onscroll="OnScr()">
+  <!-- Sticky Header -->
+  <div class="gh g-def">
+   <div><input id="h_slice" value="#(0-0)" onchange="USl(this.value)"></div>
+   <div>Time</div><div>App</div><div>File</div><div>Path</div>
+  </div>
+  <!-- Virtual Spacer -->
+  <div id="sp" style="width:1px"></div>
+  <!-- Content -->
+  <div class="rows g-def" id="rc"></div>
+ </div>
+</div>
+
+<script>
+const I=i=>document.getElementById(i), T=i=>{let e=I(i);e.style.display=e.style.display=='none'?'block':'none'}, CE=t=>document.createElement(t);
+let D=[], F=[], FLT={tm:[],app:[],ext:[],rgx:[],slc:[],js:[]}, RH=19, BUF=2;
+const RX_S=/Screenshot_(\d{4})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{2})[-_]?(\d{3})?_?([^\.]+)/i;
+const RX_I=/IMG_SEGMENT_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/;
+
+function Parse(txt){
+ D=[]; let l=txt.split(/\r?\n/);
+ l.forEach((x,i)=>{
+  if(!x.trim())return;
+  let o={id:i+1,raw:x,y:0,m:0,d:0,h:0,mn:0,s:0,ms:0,ts:0,ft:'',app:'System',f:x,ext:''};
+  let mS=x.match(RX_S), mI=x.match(RX_I);
+  if(mS){
+   o.y=+mS[1];o.m=+mS[2];o.d=+mS[3];o.h=+mS[4];o.mn=+mS[5];o.s=+mS[6];o.ms=+(mS[7]||0);
+   o.app=mS[8].replace(/_com\./,'.').replace(/\.jpg|\.png/,'');
+  } else if(mI){
+   o.y=+mI[1];o.m=+mI[2];o.d=+mI[3];o.h=+mI[4];o.mn=+mI[5];o.s=+mI[6];o.app='Cam';
+  } else { let gd=x.match(/(\d{4})[./-](\d{2})[./-](\d{2})/); if(gd){o.y=+gd[1];o.m=+gd[2];o.d=+gd[3];} }
+  o.ts=new Date(o.y,o.m-1,o.d,o.h,o.mn,o.s,o.ms).getTime();
+  o.ft=`${o.y}-${P(o.m)}-${P(o.d)} ${P(o.h)}:${P(o.mn)}:${P(o.s)}.${o.ms}`;
+  o.ext=x.split('.').pop(); D.push(o);
+ });
+ Apply();
+}
+const P=n=>(n<10?'0'+n:n);
+function HF(e){let f=e.files[0];if(f){let r=new FileReader();r.onload=x=>Parse(x.target.result);r.readAsText(f);}}
+function HP(e){Parse(e.value);I('pst').style.display='none';e.value=''}
+
+function TglSide(){let s=I('sb'),a=I('ar_s');if(s.classList.contains('shut')){s.classList.remove('shut');a.innerText='◀'}else{s.classList.add('shut');a.innerText='▶'}}
+function TglMenu(){let b=I('bld'),a=I('ar_m');if(b.classList.contains('hide')){b.classList.remove('hide');a.innerText='▲'}else{b.classList.add('hide');a.innerText='▼'}}
+function SwM(e,m){e.stopPropagation(); ['tm','app','ext','rgx','slc','js'].forEach(x=>I('ui_'+x).classList.add('hide')); I('ui_'+m).classList.remove('hide'); document.querySelectorAll('.t-row:first-child .tab').forEach(t=>t.classList.remove('act')); e.target.classList.add('act');}
+function SwS(n){for(let i=0;i<5;i++){I('st_'+i).classList.add('hide'); document.querySelectorAll('.sub-t')[i].classList.remove('act');} I('st_'+n).classList.remove('hide'); document.querySelectorAll('.sub-t')[n].classList.add('act');}
+
+function Add(c,s){
+ let r=null, d='';
+ if(c=='tm'){
+  if(s=='ex'){let v=I('tm_ex').value.trim();if(v){r={m:'str',v:v.replace(/[:.-]/g,'/')};d=v}}
+  if(s=='rng'){let a=I('tm_r1').value,b=I('tm_r2').value;if(a||b){r={m:'rng',s:Dp(a,0),e:Dp(b,1)};d=a+'~'+b}}
+  if(s=='cmp'){
+   let k=['y','m','d','h','mn','s'],o={m:'cmp'},p=[];
+   k.forEach(x=>{let v=I('c_'+x).value;if(v){o[x]=Dr(v);p.push(v)}});
+   if(p.length){r=o;d=p.join('/')}
+  }
+  if(s=='str'){let v=I('tm_str').value.trim();if(v){r={m:'str',v:v.replace(/[:.-]/g,'/')};d=v}}
+  if(s=='ep'){let v=I('tm_ep').value.trim();if(v){if(/^\d+-\d+$/.test(v)){let[x,y]=v.split('-');r={m:'rng',s:+x,e:+y};d=v}else{try{r={m:'js',f:new Function('e','y','m','d','h','return '+v)};d='JS'}catch(e){alert(e)}}}}
+  if(r) FLT.tm.push({r:r,d:d});
+ } else {
+  let v=I('v_'+c).value.trim(); if(v){r=v;d=v; if(c=='js')try{r=new Function('r',v);d='JS'}catch(e){alert(e);return;} I('v_'+c).value=''; FLT[c].push({r:r,d:d});}
+ }
+ if(r){RF();Apply()}
+}
+function Reset(){FLT={tm:[],app:[],ext:[],rgx:[],slc:[],js:[]};RF();Apply();}
+function RF(){
+ let c=I('chips'); c.innerHTML='';
+ let mk=(k,n,arr)=>arr.forEach((f,i)=>{
+  let d=CE('div'); d.className='chip'; d.style.borderColor=k=='tm'?'var(--a)':'#666';
+  d.innerHTML=`<span><b>${n}:</b> ${f.d}</span>`;
+  let x=CE('i'); x.innerHTML='×'; x.onclick=()=>{FLT[k].splice(i,1);RF();Apply()}; d.appendChild(x); c.appendChild(d);
+ });
+ mk('tm','Time',FLT.tm); mk('app','App',FLT.app); mk('ext','Ext',FLT.ext); mk('rgx','Rgx',FLT.rgx); mk('slc','Slice',FLT.slc); mk('js','JS',FLT.js);
+}
+
+function Apply(){
+ I('st').innerText='...';
+ setTimeout(()=>{
+  F=D.filter(r=>{
+   let okT=!FLT.tm.length||FLT.tm.some(f=>ChkT(r,f.r));
+   let okA=!FLT.app.length||FLT.app.some(f=>r.app.toLowerCase().includes(f.r.toLowerCase()));
+   let okE=!FLT.ext.length||FLT.ext.some(f=>r.ext.toLowerCase().includes(f.r.toLowerCase()));
+   let okR=!FLT.rgx.length||FLT.rgx.some(f=>new RegExp(f.r,'i').test(r.raw));
+   let okS=!FLT.slc.length||FLT.slc.some(f=>{if(f.r.includes('-')){let[a,b]=f.r.split('-').map(Number);return r.id>=a&&r.id<=b}return r.id==f.r});
+   let okJ=!FLT.js.length||FLT.js.some(f=>f.r(r));
+   return okT&&okA&&okE&&okR&&okS&&okJ;
+  });
+  I('vc').innerText=F.length; I('tc').innerText=D.length; I('st').innerText='OK';
+  I('sp').style.height=(F.length*RH)+'px'; OnScr();
+ },10);
+}
+function ChkT(r,q){
+ if(q.m=='rng')return r.ts>=q.s&&r.ts<=q.e;
+ if(q.m=='js')return q.f(r.ts,r.y,r.m,r.d,r.h);
+ if(q.m=='cmp'){
+  if(q.y&&!q.y.includes(r.y))return 0;if(q.m&&!q.m.includes(r.m))return 0;if(q.d&&!q.d.includes(r.d))return 0;
+  if(q.h&&!q.h.includes(r.h))return 0;if(q.mn&&!q.mn.includes(r.mn))return 0;return 1;
+ }
+ if(q.m=='str'){
+  return q.v.split('+').some(s=>{
+   let p=s.trim().split('/');
+   if(p[0]&&!Dr(p[0]).includes(r.y))return 0;if(p[1]&&!Dr(p[1]).includes(r.m))return 0;
+   if(p[2]&&!Dr(p[2]).includes(r.d))return 0;if(p[3]&&!Dr(p[3]).includes(r.h))return 0;
+   if(p[4]&&!Dr(p[4]).includes(r.mn))return 0;return 1;
+  });
+ } return 0;
+}
+function Dp(s,end){if(!s)return end?9e14:-9e14;let p=s.replace(/[:.-]/g,'/').split('/');return new Date(+p[0]||0,(+p[1]||1)-1,+p[2]||1,+p[3]||0,+p[4]||0,+p[5]||0).getTime()}
+function Dr(s){
+ let r=[]; s.split(',').forEach(x=>{
+  if(x.includes('-')){let[a,b]=x.split('-').map(Number); if(!isNaN(a)&&!isNaN(b)) for(let i=a;i<=b;i++)r.push(i)}
+  else {let n=+x; if(!isNaN(n)) r.push(n)}
+ }); return r;
+}
+
+function OnScr(){
+ let vs=I('vs'), st=vs.scrollTop, h=vs.clientHeight;
+ let s=Math.floor(st/RH)-(Math.floor(h/RH)*BUF); if(s<0)s=0;
+ let e=s+Math.ceil(h/RH)*(1+BUF*2); if(e>F.length)e=F.length;
+ 
+ // Sync Header Input Text
+ let curS = Math.floor(st/RH); let curE = curS + Math.ceil(h/RH);
+ if(I('h_slice')!==document.activeElement) I('h_slice').value=`#(${curS}-${curE})`;
+
+ let html='', top=s*RH;
+ for(let i=s;i<e;i++){
+  let d=F[i];
+  html+=`<div class="r"><div class="c">${d.id}</div><div class="c">${d.ft}</div><div class="c" title="${d.app}">${d.app}</div><div class="c" title="${d.f}">${d.f}</div><div class="c">${d.raw}</div></div>`
+ }
+ I('rc').innerHTML=html; I('rc').style.top=top+'px';
+}
+function USl(v){
+ let m=v.match(/\d+/g); if(!m||m.length<2)return;
+ let s=+m[0], e=+m[1], sz=e-s;
+ if(sz>20000){ if(!confirm('>20k lines. Continue?')) sz=1000; }
+ if(sz>0 && sz<F.length) { I('vs').scrollTop=s*RH; OnScr(); }
+}
+function Exp(){let b=new Blob([F.map(x=>x.raw).join('\n')],{type:'text/plain'});let a=CE('a');a.href=URL.createObjectURL(b);a.download='log.txt';a.click()}
+</script></body></html>
