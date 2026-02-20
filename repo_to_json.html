@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Repo to JSON/txt</title>
+<style>
+:root{--b:#121212;--s:#1e1e1e;--t:#e0e0e0;--t2:#a0a0a0;--bd:#444;--a:#3b82f6;--ah:#2563eb;--ok:#28a745;--err:#dc3545;--bt:#4a4a4a}
+*{box-sizing:border-box}
+html{font-size:clamp(15px,1.5vw + .5rem,18px)}
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;line-height:1.6;color:var(--t);background:var(--b);margin:0;padding:env(safe-area-inset-top,1.5rem) env(safe-area-inset-right,1.5rem) env(safe-area-inset-bottom,1.5rem) env(safe-area-inset-left,1.5rem)}
+main{background:var(--s);padding:1.5rem;border-radius:.5rem;box-shadow:0 .25rem .75rem #0008;max-width:900px;width:100%;margin:0 auto}
+h1{text-align:center;color:var(--a);margin:0}
+label{font-weight:700;margin-top:1.5rem;display:block;color:var(--t2)}
+.g{display:flex;gap:.5rem;margin-top:.25rem}
+.g input{flex:1}
+.g select{flex:0;width:auto}
+input,select,textarea{width:100%;padding:.75rem;border-radius:.5rem;border:1px solid var(--bd);font-size:.9rem;background:#2a2a2a;color:var(--t)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--a);outline-offset:-1px}
+textarea{min-height:15rem;font-family:monospace;resize:vertical}
+button{display:block;width:100%;padding:.8rem;margin:1.25rem 0 .75rem;font-size:1rem;font-weight:700;color:#fff;background:var(--a);border:none;border-radius:.5rem;cursor:pointer;transition:background .2s}
+button:hover:not(:disabled){background:var(--ah)}
+button:disabled{background:#555;color:#999;cursor:not-allowed}
+.b2{background:var(--bt);margin-top:.5rem;font-size:.8rem;padding:.6rem}
+.b2:hover:not(:disabled){background:#5a5a5a}
+#st{margin:.75rem 0;padding:.75rem;background:#333;border-radius:.5rem;text-align:center;font-weight:700;color:var(--t2);word-wrap:break-word}
+#sd{margin-top:1rem;text-align:center;font-size:.9rem;color:var(--t2)}
+@media(max-width:600px){body{padding:.5rem}main{padding:1rem}}
+
+/* Fused Button Wrappers (Zero distortion to original buttons) */
+.ib-w { display:flex; border-radius:.5rem; overflow:hidden; }
+.ib-w button { margin:0 !important; border-radius:0 !important; flex:1; }
+.ib-w label { margin:0; display:flex; align-items:center; gap:.35rem; padding:0 .75rem; color:#fff; font-size:.85rem; cursor:pointer; }
+.ib-w:has(button:disabled) label { opacity:0.6; pointer-events:none; }
+
+/* Content Sizing */
+.cs-in{field-sizing:content;width:auto;max-width:100%}
+@supports not (field-sizing:content){.cs-in{width:100%}}
+.wp{position:relative}.tb{position:absolute;top:0;right:0;z-index:9;display:flex;gap:1px;background:var(--bd);border-radius:0 .5rem 0 .5rem;overflow:hidden;border-left:1px solid var(--bd);border-bottom:1px solid var(--bd)}.tb span{cursor:pointer;padding:.3rem .6rem;background:#050505;color:#aaa;font-size:1rem;line-height:1;user-select:none;transition:.2s}.tb span:hover{background:#333;color:#fff}
+.au{field-sizing:content;height:auto!important}.fs{position:fixed;inset:5%;z-index:999;box-shadow:0 0 0 99in #0009;background:var(--s);display:flex;flex-direction:column}.fs textarea{height:100%!important;resize:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>Repo to JSON/txt</h1>
+  <p><strong>Instructions:</strong> Configure parameters or use URL.</p>
+  
+  <label>1. Repository Configuration</label>
+  <div class="g" style="flex-wrap:wrap">
+    <select id=ps><option value=github selected>GitHub</option><option value=gitlab>GitLab</option></select>
+    <input type=text id=un class=cs-in placeholder="Username" style="min-width:15ch;flex:1 1 auto">
+    <div style="display:flex;flex:1 1 auto;min-width:max-content">
+      <input type=text id=rn list=dl_r class=cs-in placeholder="Repository" style="min-width:10ch;border-radius:.5rem 0 0 .5rem;border-right:none;width:100%">
+      <button id=btn_r class=b2 style="margin:0;border-radius:0 .5rem .5rem 0;padding:0 .75rem;width:auto" title="Fetch Repos">▼</button>
+      <datalist id=dl_r></datalist>
+    </div>
+    <div style="display:flex;flex:1 1 auto;min-width:max-content">
+      <input type=text id=br list=dl_b class=cs-in placeholder="Branch" style="min-width:6ch;border-radius:.5rem 0 0 .5rem;border-right:none;width:100%">
+      <button id=btn_b class=b2 style="margin:0;border-radius:0 .5rem .5rem 0;padding:0 .75rem;width:auto" title="Fetch Branches">▼</button>
+      <datalist id=dl_b></datalist>
+    </div>
+  </div>
+  <input type=text id=ur value="https://github.com/HalitZiyaKARTAL/test11" placeholder="OR paste full URL here..." style="margin-top:.5rem">
+  
+  <button id=gt>2. Generate JSON File Tree</button>
+  <button id=cr class=b2>Check API Rate Limit</button>
+  
+  <label for=ji>3. JSON Tree</label>
+  <textarea id=ji placeholder="Click 'Generate' or paste JSON..."></textarea>
+  
+  <label>4. Filters & Limits</label>
+  <div class=g style="align-items:center;background:#2a2a2a;border-radius:.5rem;border:1px solid var(--bd);padding:0 .5rem;flex-wrap:wrap">
+    <label for=fd style="margin:0;font-weight:400;font-size:.9rem;color:var(--t2);white-space:nowrap" title="-1 means unlimited">Depth (-1=All):</label>
+    <input type=number id=fd value=-1 title="Max Depth (-1 = All)" style="border:none;background:0 0;padding:.75rem .25rem;flex:1 1 3rem">
+    <div style="width:1px;height:1.5rem;background:var(--bd);margin:0 .5rem"></div>
+    <label for=sl style="margin:0;font-weight:400;font-size:.9rem;color:var(--t2);white-space:nowrap">Max Size:</label>
+    <input type=number id=sl value=1 min=1 style="border:none;background:0 0;padding:.75rem .25rem;flex:1 1 3rem">
+    <select id=su style="border:none;background:0 0;padding:.75rem .25rem;flex:0"><option value=KB>KB</option><option value=MB>MB</option><option value=GB selected>GB</option></select>
+  </div>
+  <div class=g style="margin-top:.5rem;flex-wrap:wrap">
+    <input type=text id=fw placeholder="Whitelist (e.g. src/, file.txt)">
+    <input type=text id=fwr placeholder="Regex WL (e.g. \.js$)">
+    <label style="margin:0;padding:0 .5rem;background:#2a2a2a;border-radius:.5rem;border:1px solid var(--bd);flex:0 0 auto;display:flex;align-items:center;gap:.25rem;cursor:pointer;white-space:nowrap" title="Overrides size and depth limits">
+      <input type=checkbox id=fh style="margin:0;width:auto"> harder <span style="font-size:.7em;opacity:.7;font-weight:400">(overrides depth/size)</span>
+    </label>
+  </div>
+  <div class=g style="margin-top:.5rem;flex-wrap:wrap">
+    <input type=text id=fb placeholder="Blacklist (e.g. node_modules/, .md)">
+    <input type=text id=fbr placeholder="Regex BL (e.g. .*old\.html$)">
+    <label style="margin:0;padding:0 .5rem;background:#2a2a2a;border-radius:.5rem;border:1px solid var(--bd);flex:0 0 auto;display:flex;align-items:center;gap:.25rem;cursor:pointer;white-space:nowrap" title="Skip binary detection (use if buggy)">
+      <input type=checkbox id=fn style="margin:0;width:auto"> filter nothing
+    </label>
+  </div>
+  
+  <div class="ib-w" style="margin-top:.75rem;">
+    <button id=af class=b2>Apply Filters to Tree (Prune)</button>
+    <label style="background:#3a3a3a;" title="Keep folder structures & sizes intact; only remove the files inside them.">
+      <input type=checkbox id=fo style="margin:0;width:auto"> files only
+    </label>
+  </div>
+
+  <div class="ib-w" style="margin:1.25rem 0 .75rem;">
+    <button id=pb>5. Fetch Content</button>
+    <label style="background:var(--ah);" title="Batch limit to prevent rate limits or browser freezing">
+      <input type=checkbox id=fbc checked style="margin:0;width:auto"> batch limit:
+      <input type=number id=fbi value=100 min=1 style="margin:0;width:5ch;padding:.1rem;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:.25rem;font-size:.9rem;text-align:center;">
+    </label>
+  </div>
+
+  <div id=st>Status: Waiting...</div>
+  
+  <label for=jo>6. Final Output</label>
+  <textarea id=jo readonly placeholder="Result..."></textarea>
+  <div id=sd></div>
+  
+  <label for=fi>7. Filename</label>
+  <input type=text id=fi placeholder=untitled.txt>
+  <button id=db disabled>Download File</button>
+</main>
+
+<script>
+const D=document, J=JSON, E=id=>D.getElementById(id), 
+  el={p:E('ps'),u:E('un'),r:E('rn'),b:E('br'),ur:E('ur'),ji:E('ji'),jo:E('jo'),gt:E('gt'),cr:E('cr'),pb:E('pb'),af:E('af'),st:E('st'),sd:E('sd'),fi:E('fi'),db:E('db')},
+  S=(m,c='var(--t2)')=>{el.st.textContent=m;el.st.style.color=c},
+  GS=(v,u)=>{let n=parseFloat(v);return(isNaN(n)||n<=0)?Infinity:n*(({KB:1024,MB:1048576,GB:1073741824})[u]||Infinity)};
+
+/* Robust URL Parser & Smart Namer */
+const ymd = () => { let d=new Date(); return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0'); };
+const updateFN = () => {
+  let p=el.p.value, u=el.u.value.trim(), r=el.r.value.trim(), b=el.b.value.trim()||'main';
+  if(u && r) el.fi.placeholder = `${ymd()}_${p}_${u}_${r}_${b}_json.txt`;
+};
+[el.p, el.u, el.r, el.b].forEach(i => i.addEventListener('input', updateFN));
+
+const PU = (u) => {
+  if(!u) return null;
+  try{
+    let l=new URL(u.startsWith('http')?u:'https://'+u), h=l.hostname, p=l.pathname.split('/').filter(Boolean);
+    if(h.endsWith('.github.io')) return {p:'github', u:h.split('.')[0], r:p[0], b:'main'};
+    if(h==='github.com'||h==='gitlab.com'){
+      let b='main';
+      if(p[2]==='tree'||p[2]==='blob') b=p[3];
+      else if(p[2]==='-') b=p[4]||'main';
+      if(p[0]&&p[1]) return {p:h.split('.')[0], u:p[0], r:p[1].replace(/\.git$/,''), b};
+    }
+  }catch(e){}
+  return null;
+};
+
+/* Smart Timing URL Apply Logic */
+const applyPU = (force=false) => {
+  let m=PU(el.ur.value.trim()), empty = !el.u.value.trim() && !el.r.value.trim();
+  if(m && (force || empty)) {
+    el.p.value=m.p; el.u.value=m.u; el.r.value=m.r; el.b.value=m.b;
+    S('URL Parsed','var(--ok)'); updateFN();
+  }
+};
+let ur_t;
+el.ur.onpaste = () => { setTimeout(() => applyPU(true), 10); };
+el.ur.onchange = () => applyPU(true); 
+el.ur.oninput = () => { if(!el.u.value.trim() && !el.r.value.trim()) { clearTimeout(ur_t); ur_t = setTimeout(()=>applyPU(false), 300); } };
+
+const GU = () => {
+  let us=el.u.value.trim(),rp=el.r.value.trim(),br=el.b.value.trim()||'main',g=el.p.value=='github';
+  if(!us||!rp) throw new Error('Missing User or Repo');
+  return g ? {base:`https://raw.githubusercontent.com/${us}/${rp}/${br}/`,api:`https://api.github.com/repos/${us}/${rp}/git/trees/${br}?recursive=1`} 
+           : {base:`https://gitlab.com/${us}/${rp}/-/raw/${br}/`,api:null}
+};
+
+/* Targeted Arrow API Fetch Lists */
+const L = (u,d,k) => {
+  if(!u)return; let l=E(d); l.innerHTML=''; S('Fetching list...');
+  fetch(u).then(r=>r.json()).then(j=>{
+    if(Array.isArray(j)){ j.forEach(x=>{let o=D.createElement('option'); o.value=x[k]; l.appendChild(o)}); S('List populated.','var(--ok)'); } 
+    else S('No data.')
+  }).catch(e=>S(e.message,'var(--err)'))
+};
+E('btn_r').onclick = () => { if(el.u.value.trim()){ L(el.p.value=='github'?`https://api.github.com/users/${el.u.value}/repos?per_page=100`:`https://gitlab.com/api/v4/users/${el.u.value}/projects`,'dl_r','name'); el.r.focus(); } };
+E('btn_b').onclick = () => { if(el.u.value.trim() && el.r.value.trim()){ L(el.p.value=='github'?`https://api.github.com/repos/${el.u.value}/${el.r.value}/branches?per_page=100`:`https://gitlab.com/api/v4/projects/${el.u.value}%2F${el.r.value}/repository/branches`,'dl_b','name'); el.b.focus(); } };
+
+/* Core Logic */
+const CS = (n, kf=false) => {
+  let orig = parseInt((n.size||'0').toString().replace(/\D/g,''))||0;
+  let s = n.type=='file' ? n._s || orig : (n.children||[]).reduce((a,c)=>a+CS(c, kf),0);
+  if(kf && n.type=='folder' && orig > 0) s = orig; 
+  let{path,content,children}=n; delete n.path; delete n.content; delete n.children; delete n.size; delete n._s;
+  n.size = s.toLocaleString() + " bytes";
+  if(path) n.path=path; if(content) n.content=content; if(children) n.children=children; 
+  return s;
+};
+
+/* Smart Status code translation & Rate Limit calc */
+const ckLim = (r, eTxt) => {
+  if(r.status===403 || r.status===429) {
+    let t = r.headers.get('x-ratelimit-reset');
+    if(t) return `${eTxt} (Resets in ~${Math.max(0, Math.ceil((t*1000 - Date.now())/60000))}m)`;
+    return eTxt;
+  }
+  return r.status===404 ? 'Not Found (404)' : `${eTxt} (${r.status})`;
+};
+
+el.cr.onclick=async()=>{
+  if(el.p.value!='github')return S('GitHub only.'); S('Checking...');
+  try{
+    let r=await fetch('https://api.github.com/rate_limit');
+    if(!r.ok) throw new Error(ckLim(r, 'API Error'));
+    let d=await r.json(), c=d.resources.core;
+    let mins = Math.max(0, Math.ceil((c.reset*1000 - Date.now())/60000));
+    S(`${c.remaining}/${c.limit} left. Resets in ${mins}m.`,'var(--ok)')
+  }catch(e){S(e.message,'var(--err)')}
+};
+
+el.gt.onclick=async()=>{
+  if(!el.u.value.trim() || !el.r.value.trim()) applyPU(true); 
+  S('Generating...');el.gt.disabled=1;el.ji.value='';
+  try{
+    let{api}=GU();if(!api)throw new Error('GitLab Tree API not supported (Paste JSON).');
+    let r=await fetch(api);if(!r.ok)throw new Error(ckLim(r, 'Fetch Failed'));
+    let d=await r.json(),t=[];
+    d.tree.forEach(f=>{
+      f.path.split('/').reduce((a,p,i,z)=>{
+        let n=a.find(x=>x.name==p);
+        if(!n){
+          let k=(i==z.length-1&&f.type=='blob')?'file':'folder';
+          n={name:p,type:k,path:z.slice(0,i+1).join('/')};
+          if(k=='file')n._s=f.size||0;
+          if(k=='folder')n.children=[];
+          a.push(n)
+        }
+        return n.children||a
+      },t)
+    });
+    t.forEach(n => CS(n, false));
+    el.ji.value=J.stringify(t,null,2);
+    S(`Generated ${d.tree.length} items.`,'var(--ok)')
+  }catch(e){S(e.message,'var(--err)')}finally{el.gt.disabled=0}
+};
+
+/* Unified Filter Logic Engine */
+const applyFiltersLogic = (tr, doPrune, keepFolders) => {
+  let wl = E('fw').value.split(',').map(x=>x.trim()).filter(x=>x);
+  let bl = E('fb').value.split(',').map(x=>x.trim()).filter(x=>x);
+  let wlr = null, blr = null;
+  try { if(E('fwr').value) wlr = new RegExp(E('fwr').value); } catch(e) { throw new Error('Invalid Regex Whitelist'); }
+  try { if(E('fbr').value) blr = new RegExp(E('fbr').value); } catch(e) { throw new Error('Invalid Regex Blacklist'); }
+  
+  let harder = E('fh').checked;
+  let by = E('fn').checked;
+  let maxD = parseInt(E('fd').value); if(isNaN(maxD)) maxD = -1;
+  let mx = GS(E('sl').value, E('su').value);
+
+  const M = (p, arr) => arr.some(r => r.endsWith('/') ? p.startsWith(r) || p.includes('/'+r) : p===r || p.endsWith('/'+r));
+  let fsToFetch = [];
+
+  const sc = n => {
+    if(Array.isArray(n)) {
+      for(let i=n.length-1; i>=0; i--) {
+        let x = n[i];
+        if(x.type === 'file') {
+          let d = x.path.split('/').length;
+          let inW = (wl.length ? M(x.path, wl) : false) || (wlr && wlr.test(x.path));
+          let inB = (bl.length ? M(x.path, bl) : false) || (blr && blr.test(x.path));
+          let tooD = maxD !== -1 && d > maxD;
+          
+          let reject = false, reason = "";
+          if(!by) {
+            if(inB) { reject=true; reason="REDACTED"; }
+            else if(tooD) { reject=true; reason="Depth limit"; }
+            else if((wl.length||wlr) && !inW) { reject=true; reason="Not in Whitelist"; }
+            
+            if(harder && inW) { reject=false; reason=""; } 
+            
+            let sz = parseInt((x.size||x._s||'0').toString().replace(/\D/g,''));
+            if(!reject && sz > mx && !(harder && inW)) { reject=true; reason=`Size > ${mx}`; }
+          }
+
+          if(reject) {
+            if(doPrune) n.splice(i,1);
+            else x.content = reason === "REDACTED" ? "REDACTED" : `NOTE: Excluded (${reason})`;
+          } else {
+            fsToFetch.push({node: x, harder: (harder && inW)});
+          }
+        } else if(x.children) {
+          sc(x.children);
+          if(doPrune && !keepFolders && (!x.children || x.children.length === 0)) n.splice(i,1);
+        }
+      }
+    }
+  };
+  sc(tr);
+  return fsToFetch;
+};
+
+/* Explicit Tree Prune Button */
+el.af.onclick = () => {
+  if(!el.ji.value) return S('Tree is empty.','var(--err)');
+  try {
+    let tr = J.parse(el.ji.value), kf = E('fo').checked;
+    applyFiltersLogic(tr, true, kf); 
+    tr.forEach(n => CS(n, kf));
+    el.ji.value = J.stringify(tr, null, 2);
+    S('Tree filtered and explicitly pruned.', 'var(--ok)');
+  } catch(e) { S(e.message, 'var(--err)'); }
+};
+
+el.pb.onclick = async () => {
+  S('Starting...');el.pb.disabled=el.db.disabled=1;el.jo.value='';el.sd.innerHTML='';
+  try{
+    let {base}=GU(), by=E('fn').checked, tr=J.parse(el.ji.value);
+    let fs = applyFiltersLogic(tr, false, false); 
+
+    if(!fs.length && !by) throw new Error('No files left to fetch.');
+    S(`Found ${fs.length} files to fetch...`);
+
+    let batchSize = E('fbc').checked ? (parseInt(E('fbi').value)||100) : fs.length;
+    if(batchSize < 1) batchSize = 1;
+
+    for(let i=0; i<fs.length; i+=batchSize) {
+      await Promise.all(fs.slice(i, i+batchSize).map(async(item, j)=>{
+        let idx = i+j, f=item.node, u=base+f.path, lg=m=>S(`[${idx+1}/${fs.length}] ${m}: ${f.path}`);
+        try{
+          lg('DL');let r=await fetch(u);if(!r.ok)throw new Error(ckLim(r,'Rate Limit/Auth'));
+          let b=await r.arrayBuffer();f._s=b.byteLength;
+          let isBinary = (!by && new Uint8Array(b,0,Math.min(b.byteLength,8e3)).some(x=>x===0));
+          f.content = isBinary ? "NOTE: Excluded (Binary file)" : new TextDecoder('utf-8').decode(b);
+          lg('Done');
+        }catch(e){f.content=`ERR: ${e.message}`;lg('Fail')}
+      }));
+    }
+
+    tr.forEach(n => CS(n, false));
+    S(`Done! Fetched ${fs.length} files.`,'var(--ok)');
+    let o=J.stringify(tr,null,2);
+    el.jo.value=o;el.sd.innerHTML=`<strong>Size:</strong> ${o.length.toLocaleString()} chars`;
+    el.db.disabled=0;
+    if(!el.fi.placeholder || el.fi.placeholder==='untitled.txt') updateFN();
+  }catch(e){S(e.message,'var(--err)')}finally{el.pb.disabled=0}
+};
+
+el.db.onclick=()=>{if(!el.jo.value)return;let a=D.createElement("a");a.href=URL.createObjectURL(new Blob([el.jo.value],{type:'text/plain;charset=utf-8'}));a.download=el.fi.value.trim()||el.fi.placeholder||'untitled.txt';D.body.append(a);a.click();a.remove()};
+
+/* Tools */
+['ji','jo'].forEach(i=>{let t=E(i),w=D.createElement('div'),b=D.createElement('div');t.replaceWith(w);w.className='wp';w.append(t,b);b.className='tb';b.innerHTML='<span title=Lock>🔒</span><span title=Full>⛶</span><span title=Copy>📋</span>';let[l,f,c]=b.children;l.onclick=()=>l.innerText=t.classList.toggle('au')?'🔓':'🔒';f.onclick=e=>{e.stopPropagation();w.classList.toggle('fs')};c.onclick=()=>{navigator.clipboard.writeText(t.value);c.innerText='✅';setTimeout(()=>c.innerText='📋',600)}});D.onclick=e=>!e.target.closest('.fs')&&D.querySelector('.fs')?.classList.remove('fs');
+updateFN();
+</script>
+</body>
+</html>
