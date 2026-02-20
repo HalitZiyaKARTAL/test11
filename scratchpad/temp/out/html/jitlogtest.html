@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JIT Benchmarker</title>
+    <style>
+        :root{--c-bg:#1a1f2c;--c-surface:#242936;--c-border:#363b49;--c-text-primary:#e1e1e6;--c-text-secondary:#989fb1;--c-heading:#fff;--c-green:#4ade80;--c-red:#f87171;--c-discarded:#666;--c-info-bg:#2d3343;--c-active:#4a5568}*{box-sizing:border-box}body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background-color:var(--c-bg);color:var(--c-text-primary);line-height:1.6;padding:20px;max-width:900px;margin:auto}h1,h2,h3{color:var(--c-heading);border-bottom:1px solid var(--c-border);padding-bottom:8px}code{background-color:var(--c-surface);padding:3px 6px;border-radius:4px}button,label.button{font-size:1em;padding:10px 15px;border-radius:5px;border:1px solid var(--c-border);background-color:var(--c-surface);color:var(--c-text-primary);cursor:pointer;display:inline-block}button:hover,label.button:hover{background-color:var(--c-active)}button:disabled{opacity:.5}.config-section{margin-bottom:20px}.config-section fieldset{border:1px solid var(--c-border);padding:10px 15px;border-radius:5px}.config-section legend{padding:0 10px}.category-group{margin-bottom:10px}.category-group:last-child{margin-bottom:0}.category-group strong{display:block;margin-bottom:5px;color:var(--c-text-secondary)}.category-group label{margin-right:20px;display:inline-block}.info-box{background-color:var(--c-info-bg);border-left:4px solid var(--c-green);padding:15px;margin:20px 0;border-radius:4px}.delete-btn{color:var(--c-red);font-weight:700;cursor:pointer;margin-left:8px}#progressContainer{display:none;margin:15px 0;padding:10px;border:1px solid var(--c-border);border-radius:5px;background-color:#10121a}.progress-item:not(:last-child){margin-bottom:8px}.progress-bar{height:1.5em;background-color:var(--c-surface);border-radius:3px}.progress-bar-fill{background-color:var(--c-green);height:100%;width:0;transition:width .3s ease-out}#historyContainer{display:none;border:1px solid var(--c-border);padding:15px;margin-top:20px;border-radius:5px}#historyList{list-style-type:none;padding:0;margin:0}#historyList li a{display:block;padding:8px;border-radius:4px;text-decoration:none;color:var(--c-text-primary)}#historyList li a:hover{background-color:var(--c-surface)}#historyList li.active a{background-color:var(--c-active);font-weight:700}#resultsContainer{border:1px solid var(--c-border);padding:15px;margin-top:20px;border-radius:5px}.summary-line{margin-bottom:10px;font-size:1.2em}.fast{color:var(--c-green);font-weight:700}.slow{color:var(--c-red);font-weight:700}#rawStatsContainer{display:block;margin-top:20px;padding-top:20px;border-top:1px solid var(--c-border)}.details-columns{display:flex;justify-content:space-around;flex-wrap:wrap}.details-list{padding:0 15px;list-style-type:none;font-size:.75em}.details-list li{white-space:nowrap}.details-list .discarded{color:var(--c-discarded);text-decoration:line-through}.dynamic-eval-group{display:flex;align-items:center;gap:10px}.dynamic-eval-group input[type=text]{flex-grow:1;background-color:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text-primary);padding:8px;border-radius:4px;font-family:monospace}
+    </style>
+</head>
+<body>
+    <h1>JIT Benchmarker</h1>
+    <p>Select versions to test, or use the execution box to add/modify contestants.</p>
+    <div class="config-section">
+        <fieldset id="subject-selector">
+            <legend>Versions to Test</legend>
+            <div id="subject-list"></div>
+        </fieldset>
+    </div>
+    <div class="config-section">
+        <fieldset id="dynamicContestantContainer">
+            <legend>Dynamic Code Execution (Pure Eval)</legend>
+            <div class="dynamic-eval-group">
+                <input type="text" id="evalCodeInput" placeholder="Enter JavaScript to execute globally...">
+                <button id="executeCodeBtn">Execute</button>
+                <label for="evalCodeFile" class="button">Load from File</label>
+                <input type="file" id="evalCodeFile" accept=".js" style="display: none;">
+            </div>
+        </fieldset>
+    </div>
+    <div class="config-section">
+        <fieldset>
+            <legend>Test Scenario</legend>
+            <div class="category-group">
+                <strong>Predictable Patterns:</strong>
+                <label><input type="radio" name="scenario" value="repeated"> Repeated</label>
+                <label><input type="radio" name="scenario" value="sequential"> Sequential</label>
+            </div>
+            <div class="category-group">
+                <strong>Randomized Patterns:</strong>
+                <label><input type="radio" name="scenario" value="predictable_random"> Predictable Random</label>
+                <label><input type="radio" name="scenario" value="pure_random" checked> Pure Random</label>
+            </div>
+        </fieldset>
+    </div>
+    <div class="config-section">
+        <fieldset>
+            <legend>Reset Strategy</legend>
+            <div class="category-group">
+                <label title="Initialization happens only once. Subsequent measurements test the pure hot path.">
+                    <input type="radio" name="resetStrategy" value="perRun" checked> Reset once per run (Default)
+                </label>
+                <label title="Measures 'cold start' performance. Reset before every single measurement sample.">
+                    <input type="radio" name="resetStrategy" value="perSample"> Reset before each measurement sample
+                </label>
+            </div>
+        </fieldset>
+    </div>
+    <div class="info-box" id="scenario-info"></div>
+    <div class="controls">
+        <button id="runBenchmarkBtn">Run Benchmark</button>
+        <label><input type="checkbox" id="statsToggle" checked> Show Raw Data</label>
+    </div>
+    <div id="progressContainer"></div>
+    <div id="historyContainer">
+        <h2>History</h2>
+        <ul id="historyList"></ul>
+    </div>
+    <div id="resultsContainer"><p>Ready.</p></div>
+
+<script>
+    var debuglogs1; function log1(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs1||!debuglogs1[-1])&&(s=2,debuglogs1=Array(1997).fill().map(()=>[]),debuglogs1[-1]=[2],debuglogs1[-2]=[],debuglogs1[0]=[0],debuglogs1[999] = [0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs1[0][0]+=v,debuglogs1[i+1]=[v,...Array(v).fill(0)],debuglogs1[1001+i]=[0],debuglogs1[999].push(0),s+=v,debuglogs1[-1].push(s)}),debuglogs1[998]=[0,1,...Array(debuglogs1[0][0]).fill(1)],debuglogs1[998][0]=debuglogs1[998].filter(x=>!x).length-1,debuglogs1[1000]=[0],log1(1,1));if(debuglogs1[998][1]&&(s=debuglogs1[-1][f-1]+c-1,debuglogs1[998][0]==0||debuglogs1[998][s])){debuglogs1[-2][s]||(debuglogs1[-2][s]=f+'.'+c,debuglogs1[0].push(s),(debuglogs1[0].length>debuglogs1[0][0]+3||debuglogs1[1000].length>1003||debuglogs1[1000+f].length>103));debuglogs1[f][c]++;debuglogs1[999][f]=++debuglogs1[1000+f][0];debuglogs1[1000][0]=++debuglogs1[999][0];debuglogs1[1000][(debuglogs1[1000][0]&1023)+1]=debuglogs1[-2][s];debuglogs1[1000+f][(debuglogs1[1000+f][0]&127)+1]=c}};
+    var debuglogs2; function log2(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs2||!debuglogs2[-1])&&(s=2,debuglogs2=Array(1997).fill().map(()=>[]),debuglogs2[-1]=[2],debuglogs2[-2]=[],debuglogs2[0]=[0],debuglogs2[999]=[0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs2[0][0]+=v,debuglogs2[i+1]=[v,...Array(v).fill(0)],debuglogs2[1001+i]=[0],debuglogs2[999].push(0),s+=v,debuglogs2[-1].push(s)}),debuglogs2[998]=[0,1,...Array(debuglogs2[0][0]).fill(1)],debuglogs2[998][0]=debuglogs2[998].filter(x=>!x).length-1,debuglogs2[1000]=[0],log2(1,1));if(debuglogs2[998][1]&&(s=debuglogs2[-1][f-1]+c-1,debuglogs2[998][0]==0||debuglogs2[998][s])){debuglogs2[-2][s]||(debuglogs2[-2][s]=f+'.'+c,debuglogs2[0].push(s),(debuglogs2[0].length>debuglogs2[0][0]+3||debuglogs2[1000].length>1003||debuglogs2[1000+f].length>103));debuglogs2[f][c]++;debuglogs2[999][f]=++debuglogs2[1000+f][0];debuglogs2[1000][0]=++debuglogs2[999][0];debuglogs2[1000][(debuglogs2[1000][0]%1000)+1]=debuglogs2[-2][s];debuglogs2[1000+f][(debuglogs2[1000+f][0]%100)+1]=c}};
+    var debuglogs3; function log3(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs3||!debuglogs3[-1])&&(s=2,debuglogs3=Array(1997).fill().map(()=>[]),debuglogs3[-1]=[2],debuglogs3[-2]=[],debuglogs3[0]=[0],debuglogs3[999]=[0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs3[0][0]+=v,debuglogs3[i+1]=[v,...Array(v).fill(0)],debuglogs3[1001+i]=[0],debuglogs3[999].push(0),s+=v,debuglogs3[-1].push(s)}),debuglogs3[998]=[0,1,...Array(debuglogs3[0][0]).fill(1)],debuglogs3[998][0]=debuglogs3[998].filter(x=>!x).length-1,debuglogs3[1000]=[0],log3(1,1));if(debuglogs3[998][1]&&(s=debuglogs3[-1][f-1]+c-1,debuglogs3[998][0]==0||debuglogs3[998][s])){debuglogs3[-2][s]||(debuglogs3[-2][s]=f+'.'+c,debuglogs3[0].push(s),(debuglogs3[0].length>debuglogs3[0][0]+3||debuglogs3[1000].length>1003||debuglogs3[1000+f].length>103));debuglogs3[f][c]++;debuglogs3[999][f]=++debuglogs3[1000+f][0];debuglogs3[1000][0]=++debuglogs3[999][0];debuglogs3[1000][(debuglogs3[1000][0]%1000)+1]=f+'.'+c;debuglogs3[1000+f][(debuglogs3[1000+f][0]%100)+1]=c}};
+    var debuglogs4; function log4(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs4||!debuglogs4[-1])&&(s=2,debuglogs4=Array(1997).fill().map(()=>[]),debuglogs4[-1]=[2],debuglogs4[-2]=[],debuglogs4[0]=[0],debuglogs4[999]=[0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs4[0][0]+=v,debuglogs4[i+1]=[v,...Array(v).fill(0)],debuglogs4[1001+i]=[0],debuglogs4[999].push(0),s+=v,debuglogs4[-1].push(s)}),debuglogs4[998]=[0,1,...Array(debuglogs4[0][0]).fill(1)],debuglogs4[998][0]=debuglogs4[998].filter(x=>!x).length-1,debuglogs4[1000]=[0],log4(1,1));if(debuglogs4[998][1]&&(s=debuglogs4[-1][f-1]+c-1,debuglogs4[998][0]==0||debuglogs4[998][s])){debuglogs4[-2][s]||(debuglogs4[-2][s]=f+'.'+c,debuglogs4[0].push(s),(debuglogs4[0].length>debuglogs4[0][0]+3||debuglogs4[1000].length>1003||debuglogs4[1000+f].length>103));debuglogs4[f][c]++;debuglogs4[999][f]=++debuglogs4[1000+f][0];debuglogs4[1000][0]=++debuglogs4[999][0];debuglogs4[1000][(debuglogs4[1000][0]%1000)+1]=s;debuglogs4[1000+f][(debuglogs4[1000+f][0]%100)+1]=c}};
+    var debuglogs5; function log5(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs5||!debuglogs5[-1])&&(s=2,debuglogs5=Array(1997).fill().map(()=>[]),debuglogs5[-1]=[2],debuglogs5[-2]=[],debuglogs5[0]=[0],debuglogs5[999]=[0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs5[0][0]+=v,debuglogs5[i+1]=[v,...Array(v).fill(0)],debuglogs5[1001+i]=new Int32Array(100),debuglogs5[999].push(0),s+=v,debuglogs5[-1].push(s)}),debuglogs5[998]=[0,1,...Array(debuglogs5[0][0]).fill(1)],debuglogs5[998][0]=debuglogs5[998].filter(x=>!x).length-1,debuglogs5[1000]=new Int32Array(1000),log5(1,1));if(debuglogs5[998][1]&&(s=debuglogs5[-1][f-1]+c-1,debuglogs5[998][0]==0||debuglogs5[998][s])){debuglogs5[-2][s]||(debuglogs5[-2][s]=f+'.'+c,debuglogs5[0].push(s),(debuglogs5[0].length>debuglogs5[0][0]+3));debuglogs5[f][c]++;let f_count=++debuglogs5[1000+f][0];let g_count=++debuglogs5[999][0];debuglogs5[1000][g_count%1000]=s;debuglogs5[1000+f][f_count%100]=c}};
+    var debuglogs6; function log6(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs6||!debuglogs6[-1])&&(s=2,debuglogs6=Array(1997).fill().map(()=>[]),debuglogs6[-1]=[2],debuglogs6[-2]=[],debuglogs6[0]=[0],debuglogs6[999]=[0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs6[0][0]+=v,debuglogs6[i+1]=[v,...Array(v).fill(0)],debuglogs6[1001+i]=[0],debuglogs6[999].push(0),s+=v,debuglogs6[-1].push(s)}),debuglogs6[998]=[0,1,...Array(debuglogs6[0][0]).fill(1)],debuglogs6[998][0]=debuglogs6[998].filter(x=>!x).length-1,debuglogs6[1000]=[0],(() => { for(let f_idx=1; f_idx<=119; ++f_idx){ if(!debuglogs6[f_idx] || debuglogs6[f_idx][0]===0) continue; for(let c_idx=1; c_idx<=debuglogs6[f_idx][0]; ++c_idx){ let s_val = debuglogs6[-1][f_idx-1]+c_idx-1; debuglogs6[-2][s_val] = f_idx+'.'+c_idx; debuglogs6[0].push(s_val); }} })(),log6(1,1));if(debuglogs6[998][1]&&(s=debuglogs6[-1][f-1]+c-1,debuglogs6[998][0]==0||debuglogs6[998][s])){debuglogs6[f][c]++;debuglogs6[999][f]=++debuglogs6[1000+f][0];debuglogs6[1000][0]=++debuglogs6[999][0];debuglogs6[1000][(debuglogs6[1000][0]%1000)+1]=s;debuglogs6[1000+f][(debuglogs6[1000+f][0]%100)+1]=c}};
+    var debuglogs7; function log7(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs7||!debuglogs7[-1])&&(s=2,debuglogs7=Array(1997).fill().map(()=>[]),debuglogs7[-1]=[2],debuglogs7[-2]=[],debuglogs7[0]=[0],debuglogs7[999]=[0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs7[0][0]+=v,debuglogs7[i+1]=[v,...Array(v).fill(0)],debuglogs7[1001+i]=new Int32Array(100),debuglogs7[999].push(0),s+=v,debuglogs7[-1].push(s)}),debuglogs7[998]=[0,1,...Array(debuglogs7[0][0]).fill(1)],debuglogs7[998][0]=debuglogs7[998].filter(x=>!x).length-1,debuglogs7[1000]=new Int32Array(1000),(()=>{for(let f_idx=1;f_idx<=119;++f_idx){if(!debuglogs7[f_idx]||debuglogs7[f_idx][0]===0)continue;for(let c_idx=1;c_idx<=debuglogs7[f_idx][0];++c_idx){let s_val=debuglogs7[-1][f_idx-1]+c_idx-1;debuglogs7[-2][s_val]=f_idx+'.'+c_idx;debuglogs7[0].push(s_val)}}})(),log7(1,1));if(debuglogs7[998][1]&&(s=debuglogs7[-1][f-1]+c-1,debuglogs7[998][0]==0||debuglogs7[998][s])){debuglogs7[f][c]++;let f_count=++debuglogs7[1000+f][0];let g_count=++debuglogs7[999][0];debuglogs7[1000][g_count%1000]=s;debuglogs7[1000+f][f_count%100]=c}};
+    var debuglogs8; function log8(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs8||!debuglogs8["-1"])&&(s=2,debuglogs8=Array(1997).fill().map(()=>[]),debuglogs8["-1"]=[2],debuglogs8["-2"]=[],debuglogs8[0]=[0],debuglogs8[999]=[0],[63,...Array(99).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs8[0][0]+=v,debuglogs8[i+1]=[v,...Array(v).fill(0)],debuglogs8[1001+i]=[0],debuglogs8[999].push(0),s+=v,debuglogs8["-1"].push(s)}),debuglogs8[998]=[0,1,...Array(debuglogs8[0][0]).fill(1)],debuglogs8[998][0]=debuglogs8[998].filter(x=>!x).length-1,debuglogs8[1000]=[0],log8(1,1));if(debuglogs8[998][1]&&(s=debuglogs8["-1"][f-1]+c-1,debuglogs8[998][0]==0||debuglogs8[998][s])){debuglogs8["-2"][s]||(debuglogs8["-2"][s]=f+'.'+c,debuglogs8[0].push(s),(debuglogs8[0].length>debuglogs8[0][0]+3||debuglogs8[1000].length>1003||debuglogs8[1000+f].length>103));debuglogs8[f][c]++;debuglogs8[999][f]=++debuglogs8[1000+f][0];debuglogs8[1000][0]=++debuglogs8[999][0];debuglogs8[1000][(debuglogs8[1000][0]%1000)+1]=debuglogs8["-2"][s];debuglogs8[1000+f][(debuglogs8[1000+f][0]%100)+1]=c}};
+
+    document.addEventListener('DOMContentLoaded', () => {
+        class BenchmarkApp {
+            constructor() {
+                this.config = {
+                    runsPerType: 70, iterationsPerRun: 1000000, runsToDiscard: 10,
+                    descriptiveNames: {
+                        'log1':'log1 (&, Read Str)','log2':'log2 (%, Read Str)','log3':'log3 (%, Alloc Str)',
+                        'log4':'log4 (%, Write Num)','log5':'log5 (%, TypedArray)','log6':'log6 (%, Branchless)',
+                        'log7':'log7 (%, Branchless TypedArray)','log8':'log8 (%, Read str,["-1"])'
+                    },
+                    scenarioDescriptions: {
+                        repeated: "<b>Repeated (Hot Cache):</b> Calls <code>log(1, 8)</code> repeatedly.",
+                        sequential: "<b>Sequential (Warm Cache):</b> Calls <code>log(1, k)</code>, with <code>k</code> cycling from 1 to 63.",
+                        predictable_random: "<b>Predictable Random:</b> Pre-generated, shuffled calls.",
+                        pure_random: "<b>Pure Random:</b> Completely random calls."
+                    }
+                };
+                this._state = { subjects: [], history: [], callData: null };
+                this._ui = {};
+                
+                this._cacheUiElements();
+                this._bindEventListeners();
+                this._discoverStaticContestants();
+                this.renderFullSubjectList();
+                this.updateScenarioInfo();
+            }
+
+            _cacheUiElements() {
+                const ids = ['subject-list','evalCodeInput','runBenchmarkBtn','progressContainer','historyContainer','historyList','resultsContainer','scenario-info','statsToggle'];
+                ids.forEach(id => {
+                    const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+                    this._ui[camelCaseId] = document.getElementById(id);
+                });
+            }
+
+            _bindEventListeners() {
+                this._ui.runBenchmarkBtn.addEventListener('click', () => this.run());
+                this._ui.statsToggle.addEventListener('change', () => this.toggleDetailsVisibility());
+                document.getElementById('executeCodeBtn').addEventListener('click', () => this.executeDynamicCode());
+                document.getElementById('evalCodeFile').addEventListener('change', (e) => this._handleFileLoad(e));
+                document.querySelectorAll('input[name="scenario"]').forEach(radio => radio.addEventListener('change', () => this.updateScenarioInfo()));
+                this._ui.subjectList.addEventListener('change', (e) => this._handleSubjectListChange(e));
+                this._ui.subjectList.addEventListener('click', (e) => this._handleSubjectListClick(e));
+                this._ui.historyList.addEventListener('click', (e) => this._handleHistoryClick(e));
+            }
+
+            _discoverStaticContestants() {
+                this._state.subjects = [];
+                for (let i = 1; window['log' + i]; i++) {
+                    const funcName = 'log' + i;
+                    this._state.subjects.push({
+                        id: funcName, name: this.config.descriptiveNames[funcName] || `${funcName} (Discovered)`,
+                        func: window[funcName], reset: () => { window['debug' + funcName] = null; }, isDynamic: false
+                    });
+                }
+            }
+            
+            _getContestantNamesFromCode(code) {
+                return Array.from(new Set(Array.from(code.matchAll(/(?:function\s+(log\d+))|(?:var\s+(debuglogs\d+))/g), m => 'log' + (m[1] || m[2]).replace(/\D/g, ''))));
+            }
+
+            executeDynamicCode() {
+                const code = this._ui.evalCodeInput.value.trim();
+                if (!code) return alert("Code input is empty.");
+                const targetFuncNames = this._getContestantNamesFromCode(code);
+                if (targetFuncNames.some(name => this._state.subjects.find(s => s.id === name) && !confirm(`This code defines '${name}', which already exists. Overwrite?`))) return;
+                try {
+                    eval.call(window, code);
+                    alert("Code executed successfully.");
+                    this._ui.evalCodeInput.value = '';
+                    targetFuncNames.forEach(name => this.updateOrAddContestant(name));
+                } catch (e) { alert(`Error executing code: ${e.message}`); }
+            }
+
+            updateOrAddContestant(funcName) {
+                if (!funcName || typeof window[funcName] !== 'function') return;
+                let subject = this._state.subjects.find(s => s.id === funcName);
+                if (subject) {
+                    subject.func = window[funcName];
+                    if (!subject.isDynamic) { subject.name = `${funcName} (Dynamic - Modified)`; subject.isDynamic = true; }
+                } else {
+                    this._state.subjects.push({
+                        id: funcName, name: `${funcName} (Dynamic)`, func: window[funcName],
+                        reset: () => { window['debug' + funcName] = null; }, isDynamic: true
+                    });
+                }
+                this.renderFullSubjectList();
+            }
+
+            removeDynamicContestant(subjectId) {
+                this._state.subjects = this._state.subjects.filter(s => s.id !== subjectId);
+                try { delete window[subjectId]; delete window['debug' + subjectId]; } catch(e) {}
+                this.renderFullSubjectList();
+            }
+
+            run() {
+                const subjects = this._state.subjects.filter(s => document.querySelector(`input[name="subject"][value="${s.id}"]`)?.checked);
+                if (subjects.length < 1) return alert("Please select at least one version to test.");
+                
+                this._ui.runBenchmarkBtn.disabled = true; this._ui.runBenchmarkBtn.textContent = 'Running...';
+                this._ui.resultsContainer.innerHTML = '';
+                this._ui.progressContainer.innerHTML = 'Generating call data...';
+                this._ui.progressContainer.style.display = 'block';
+
+                setTimeout(() => {
+                    if (!this._state.callData) this._generateCallData();
+                    this._ui.progressContainer.innerHTML = subjects.map((s, i) => `<div class="progress-item"><label>${s.name}</label><div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-${i}"></div></div></div>`).join('');
+                    setTimeout(() => {
+                        const allTimes = this._runSynchronousChunks(subjects);
+                        this._finishBenchmark(allTimes, subjects);
+                    }, 50);
+                }, 50);
+            }
+
+            _runSynchronousChunks(subjects) {
+                const allTimes = subjects.map(() => []);
+                const resetStrategy = document.querySelector('input[name="resetStrategy"]:checked').value;
+                const getCallParams = this._getCallParamsGenerator();
+                const { iterationsPerRun, runsPerType } = this.config;
+                
+                const innerLoop = (subject) => { for (let k = 0; k < iterationsPerRun; k++) { const call = getCallParams(k); subject.func(call[0], call[1]); }};
+                if (resetStrategy === 'perRun') this._state.subjects.forEach(s => s.reset());
+
+                // CORRECTED LOOP ORDER: 70 -> contestants -> 200k
+                for (let j = 0; j < runsPerType; j++) {
+                    subjects.forEach((subject, i) => {
+                        if (resetStrategy === 'perSample') subject.reset();
+                        const start = performance.now();
+                        try { 
+                            innerLoop(subject); 
+                            allTimes[i].push(performance.now() - start);
+                        } catch (e) { 
+                            allTimes[i].push(0); 
+                            console.error(`Benchmark for ${subject.name} failed:`, e); 
+                        }
+                    });
+                }
+                
+                subjects.forEach((_, i) => { document.getElementById(`progress-fill-${i}`).style.width = '100%'; });
+                return allTimes;
+            }
+
+            _getCallParamsGenerator() {
+                 const scenario = document.querySelector('input[name="scenario"]:checked').value;
+                 switch (scenario) {
+                    case 'repeated': return () => [1, 8];
+                    case 'sequential': return (k) => [1, (k % 63) + 1];
+                    case 'predictable_random': return (k) => this._state.callData.predictableRandom[k % this._state.callData.predictableRandom.length];
+                    case 'pure_random': return (k) => this._state.callData.pureRandom[k];
+                    default: return () => [1,1];
+                }
+            }
+
+            _finishBenchmark(allTimes, subjects) {
+                this._ui.progressContainer.style.display = 'none';
+                const { runsToDiscard } = this.config;
+                const processedResults = allTimes.map((times, index) => {
+                    const validTimes = times.slice(runsToDiscard, -runsToDiscard).filter(t => t > 0);
+                    const average = validTimes.length > 0 ? validTimes.reduce((a, b) => a + b, 0) / validTimes.length : 0;
+                    return { name: subjects[index].name, average, allRuns: times, validRunsCount: validTimes.length };
+                });
+                
+                const scenarioInput = document.querySelector('input[name="scenario"]:checked');
+                const resetInput = document.querySelector('input[name="resetStrategy"]:checked');
+                this._state.history.unshift({
+                    timestamp: new Date(),
+                    scenario: scenarioInput.labels[0].textContent.trim(),
+                    resetStrategy: resetInput.labels[0].textContent.trim(),
+                    resetStrategyRaw: resetInput.value,
+                    results: processedResults, allTimes, subjects
+                });
+
+                this.updateHistoryUI();
+                this.renderResults(0);
+                this._ui.runBenchmarkBtn.disabled = false;
+                this._ui.runBenchmarkBtn.textContent = 'Run Benchmark Again';
+            }
+
+            _generateCallData() {
+                const counts = [63, ...Array(99).fill(0), 2, 2, 13, 1, 1, 6, 2, 1, 3, 2, 1, 2, 1, 1, 2, 2];
+                const validPairs = counts.flatMap((count, funcIndex) => Array.from({ length: count }, (_, i) => [funcIndex + 1, i + 1]));
+                const predictableRandom = [...validPairs];
+                for (let i = predictableRandom.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [predictableRandom[i], predictableRandom[j]] = [predictableRandom[j], predictableRandom[i]]; }
+                const pureRandom = Array.from({ length: this.config.iterationsPerRun }, () => validPairs[Math.floor(Math.random() * validPairs.length)]);
+                this._state.callData = { predictableRandom, pureRandom };
+            }
+
+            renderFullSubjectList() {
+                const checkedState = Object.fromEntries(Array.from(this._ui.subjectList.querySelectorAll('input[name="subject"]')).map(cb => [cb.value, cb.checked]));
+                const subjectsHtml = this._state.subjects.map(subject => this._buildSubjectHtml(subject, checkedState[subject.id] ?? true)).join('');
+                this._ui.subjectList.innerHTML = `<label style="font-weight: bold; display: block; margin-bottom: 10px; border-bottom: 1px solid var(--c-border); padding-bottom: 8px;"><input type="checkbox" id="checkAllSubjects"> Select All / None</label>${subjectsHtml}`;
+                this.updateCheckboxState();
+            }
+
+            _buildSubjectHtml(subject, isChecked) {
+                const deleteBtn = subject.isDynamic ? `<span class="delete-btn" data-id="${subject.id}" title="Delete this contestant">[x]</span>` : '';
+                return `<label><input type="checkbox" name="subject" value="${subject.id}" ${isChecked ? 'checked' : ''}> ${subject.name} ${deleteBtn}</label>`;
+            }
+
+            updateCheckboxState() {
+                const subjectCheckboxes = this._ui.subjectList.querySelectorAll('input[name="subject"]');
+                const allChecked = subjectCheckboxes.length > 0 && Array.from(subjectCheckboxes).every(c => c.checked);
+                const checkAll = this._ui.subjectList.querySelector('#checkAllSubjects');
+                if (checkAll) checkAll.checked = allChecked;
+            }
+
+            updateHistoryUI() {
+                this._ui.historyContainer.style.display = 'block';
+                this._ui.historyList.innerHTML = this._state.history.map((entry, index) =>
+                    `<li><a href="#" data-history-index="${index}">Run #${this._state.history.length - index}: ${entry.scenario} (${entry.resetStrategy}) - ${entry.timestamp.toLocaleTimeString()}</a></li>`
+                ).join('');
+            }
+
+            renderResults(historyIndex) {
+                const { results, allTimes, subjects, resetStrategyRaw } = this._state.history[historyIndex];
+                this._ui.historyList.querySelectorAll('li').forEach(li => li.classList.remove('active'));
+                this._ui.historyList.querySelector(`a[data-history-index="${historyIndex}"]`)?.parentElement.classList.add('active');
+                
+                const enhancedResults = this._calculateResultMetrics(results);
+                this._ui.resultsContainer.innerHTML = `
+                    <h2>Summary</h2>
+                    ${this._buildNotesHtml(resetStrategyRaw)}
+                    ${this._buildSummaryHtml(enhancedResults)}
+                    <div id="rawStatsContainer">${this._buildDetailsHtml(subjects, allTimes, resetStrategyRaw)}</div>
+                `;
+                this.toggleDetailsVisibility();
+            }
+
+            _calculateResultMetrics(results) {
+                const validAverages = results.map(r => r.average).filter(avg => avg > 0);
+                const baselineTime = validAverages.length > 0 ? Math.min(...validAverages) : 1;
+                return results.map(r => ({ ...r,
+                    multiplier: r.average > 0 ? r.average / baselineTime : 0,
+                    colorClass: r.average > 0 ? (r.average === baselineTime ? 'fast' : 'slow') : 'discarded'
+                }));
+            }
+
+            _buildSummaryHtml(results) {
+                return results.map(r => `<p class="summary-line">${r.name} average: <span class="${r.colorClass}">${r.average.toFixed(3)} ms ${r.multiplier > 0 ? `(${r.multiplier.toFixed(3)}x)` : '(failed)'}</span></p>`).join('');
+            }
+            
+            _buildDetailsHtml(subjects, allTimes, resetStrategyRaw) {
+                const { runsPerType, runsToDiscard } = this.config;
+                const detailsColumns = subjects.map((subject, j) => {
+                    const listItems = Array.from({ length: runsPerType }, (_, i) => {
+                        const isDiscarded = (i < runsToDiscard || i >= runsPerType - runsToDiscard);
+                        const time = allTimes[j]?.[i];
+                        let cssClass = (isDiscarded || !time) ? 'discarded' : '';
+                        if (!cssClass) {
+                            const rowTimes = allTimes.map(sTimes => sTimes?.[i] || Infinity);
+                            cssClass = time === Math.min(...rowTimes) ? 'fast' : 'slow';
+                        }
+                        const isInit = (resetStrategyRaw === 'perSample' && i === 0) || (resetStrategyRaw === 'perRun' && i === 0 && j === 0);
+                        const label = isInit ? `${i + 1} (Init):` : `${i + 1}:`;
+                        return `<li class="${cssClass}">${label} ${time?.toFixed(3) ?? 'N/A'} ms</li>`;
+                    }).join('');
+                    return `<div><h3>${subject.name} Raw</h3><ul class="details-list">${listItems}</ul></div>`;
+                }).join('');
+                return `<div class="details-columns">${detailsColumns}</div>`;
+            }
+
+            _buildNotesHtml(resetStrategyRaw) {
+                const { runsPerType, runsToDiscard } = this.config;
+                const validRunCount = runsPerType - (2 * runsToDiscard);
+                let note = `Averaging the middle ${validRunCount} of ${runsPerType} runs (discards first and last ${runsToDiscard}).`;
+                if (resetStrategyRaw === 'perRun') note += `<br><b>Note:</b> With this strategy, only the first sample of the first contestant includes init cost.`
+                else if (resetStrategyRaw === 'perSample') note += `<br><b>Note:</b> With this strategy, every sample includes init cost.`
+                return `<p style="font-size: 0.9em; color: var(--c-text-secondary);">${note}</p>`;
+            }
+            
+            updateScenarioInfo() { this._ui.scenarioInfo.innerHTML = this.config.scenarioDescriptions[document.querySelector('input[name="scenario"]:checked').value]; }
+            toggleDetailsVisibility() { document.getElementById('rawStatsContainer').style.display = this._ui.statsToggle.checked ? 'block' : 'none'; }
+
+            _handleFileLoad(event) {
+                const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
+                reader.onload = (e) => { this._ui.evalCodeInput.value = e.target.result; };
+                reader.readAsText(file); event.target.value = '';
+            }
+            _handleSubjectListChange(e) {
+                if (e.target.id === 'checkAllSubjects') {
+                    this._ui.subjectList.querySelectorAll('input[name="subject"]').forEach(cb => { cb.checked = e.target.checked; });
+                }
+                this.updateCheckboxState();
+            }
+            _handleSubjectListClick(e) {
+                if (e.target.classList.contains('delete-btn')) {
+                    e.preventDefault(); e.stopPropagation(); this.removeDynamicContestant(e.target.dataset.id);
+                }
+            }
+            _handleHistoryClick(e) {
+                if (e.target.tagName === 'A' && e.target.dataset.historyIndex) {
+                     e.preventDefault(); this.renderResults(parseInt(e.target.dataset.historyIndex, 10));
+                }
+            }
+        }
+        window.app = new BenchmarkApp();
+    });
+</script>
+
+</body>
+</html>
