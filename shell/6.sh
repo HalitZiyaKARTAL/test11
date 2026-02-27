@@ -8,9 +8,13 @@ askai() {
     
     if [ -s "$PATH_FILE" ]; then 
         read -r SAVED_D < "$PATH_FILE"
-        if [ -d "$SAVED_D" ] && [ -w "$SAVED_D" ]; then D="$SAVED_D"
-        else echo -e "\033[1;33mWarning: Persistent path '$SAVED_D' inaccessible. Falling back to $D\033[0m" >&2; fi
+        if [ -d "$SAVED_D" ] && [ -w "$SAVED_D" ]; then 
+            D="$SAVED_D"
+        else 
+            echo -e "\033[1;33mWarning: Persistent path '$SAVED_D' inaccessible. Falling back to $D\033[0m" >&2
+        fi
     fi
+
     mkdir -p "$D" 2>/dev/null && chmod 700 "$D" || { echo "Error: Failed to secure $D" >&2; return 1; }
 
     if ! command -v jq >/dev/null || ! command -v curl >/dev/null; then 
@@ -27,41 +31,45 @@ askai() {
     trap 'rm -f "$PF" "$RO" "${ERR_TMP}" "$D"/slice.*.json 2>/dev/null; unset -f require_interaction handle_err _rollback_last _display_history _chat_submenu _ui_read 2>/dev/null' RETURN
 
     _ui_read() {
-        local is_sec=0; [ "$1" == "-s" ] && { is_sec=1; shift; }
+        local is_sec=0
+        [ "$1" == "-s" ] && { is_sec=1; shift; }
         local __v=$1 __p=$2 val=""
-        
         
         if [ ${#MACRO_Q[@]} -gt 0 ]; then
             val="${MACRO_Q[0]}"
             MACRO_Q=("${MACRO_Q[@]:1}") 
             [ "$is_sec" -eq 1 ] && echo -e "${__p}\033[1;35m***\033[0m (macro)" >&2 || echo -e "${__p}\033[1;35m${val}\033[0m (macro)" >&2
-            eval "$__v=\"\$val\""; return 0
+            printf -v "$__v" "%s" "$val"
+            return 0
         fi
-        
         
         if [ "$pipe_smart" -eq 1 ] && [ ! -t 0 ]; then
             if [ "$__p" == "Prompt > " ]; then
-            
                 val=$(cat)
                 if [ -n "$val" ]; then
                     echo -e "${__p}\033[1;35m(read from stream)\033[0m" >&2
-                    eval "$__v=\"\$val\""; return 0
+                    printf -v "$__v" "%s" "$val"
+                    return 0
                 fi
             else
-                
                 if IFS= read -r val; then
                     [ "$is_sec" -eq 1 ] && echo -e "${__p}\033[1;35m***\033[0m (smart)" >&2 || echo -e "${__p}\033[1;35m${val}\033[0m (smart)" >&2
-                    eval "$__v=\"\$val\""; return 0
+                    printf -v "$__v" "%s" "$val"
+                    return 0
                 fi
             fi
         fi
         
+        if [ "$interactive" -eq 0 ]; then 
+            echo -e "\n\033[1;31mError: Interaction required.\033[0m" >&2; return 1
+        fi
         
-        if [ "$interactive" -eq 0 ]; then echo -e "\n\033[1;31mError: Interaction required.\033[0m" >&2; return 1; fi
-        
-        if [ "$is_sec" -eq 1 ]; then read -s -p "$__p" val < /dev/tty; echo >&2
-        else read -p "$__p" val < /dev/tty; fi
-        eval "$__v=\"\$val\""
+        if [ "$is_sec" -eq 1 ]; then 
+            read -s -p "$__p" val < /dev/tty; echo >&2
+        else 
+            read -p "$__p" val < /dev/tty
+        fi
+        printf -v "$__v" "%s" "$val"
     }
 
     require_interaction() {
@@ -77,6 +85,7 @@ askai() {
         echo -e "\n\033[1;31m❌ API Error:\033[0m $1" >&2
         local hf_tmp
         hf_tmp=$(mktemp "$D/h.XXXXXX.json") && jq 'del(.[-1])' "$HF" > "$hf_tmp" && mv "$hf_tmp" "$HF"
+        
         if [[ "$1" == *"limit: 0"* ]]; then 
             echo -e "\033[1;33m⚠️  Quota Exceeded (Limit 0). Blocking '$M'.\033[0m" >&2
             local kh bf_tmp
@@ -89,11 +98,14 @@ askai() {
         local hf="$1" skip_tok="${2:-0}" label="$3"
         local head_n="${4:-}" tail_n="${5:-}" head_tok="${6:-}" tail_tok="${7:-}"
 
-        if [ ! -s "$hf" ] || [ "$(cat "$hf")" = "[]" ]; then echo -e "\033[1;33m(No history for '$label')\033[0m"; return 0; fi
+        if [ ! -s "$hf" ] || [ "$(cat "$hf")" = "[]" ]; then 
+            echo -e "\033[1;33m(No history for '$label')\033[0m"; return 0
+        fi
 
         local sliced_tmp; sliced_tmp=$(mktemp "$D/slice.XXXXXX.json") || return 1
 
-        if [ -n "$head_n" ]; then jq ".[0:${head_n}]" "$hf" > "$sliced_tmp"
+        if [ -n "$head_n" ]; then 
+            jq ".[0:${head_n}]" "$hf" > "$sliced_tmp"
         elif [ -n "$tail_n" ]; then
             if [ "$tail_n" -eq 0 ]; then echo "[]" > "$sliced_tmp"
             else jq ".[-${tail_n}:]" "$hf" > "$sliced_tmp"; fi
@@ -101,7 +113,9 @@ askai() {
             jq --argjson ht "$head_tok" '. as $m | reduce range(length) as $i ({r:[],t:0}; ($m[$i].parts[0].text//"" | length/4|floor) as $k | if .t+$k <= $ht then {r:(.r+[$m[$i]]),t:(.t+$k)} else . end) | .r' "$hf" > "$sliced_tmp"
         elif [ -n "$tail_tok" ]; then
             jq --argjson tt "$tail_tok" '. as $m | (length-1) as $l | reduce range($l;-1;-1) as $i ({r:[],t:0}; ($m[$i].parts[0].text//"" | length/4|floor) as $k | if .t+$k <= $tt then {r:[$m[$i]]+.r,t:(.t+$k)} else . end) | .r' "$hf" > "$sliced_tmp"
-        else cp "$hf" "$sliced_tmp"; fi
+        else 
+            cp "$hf" "$sliced_tmp"
+        fi
 
         local total shown shown_tok
         total=$(jq 'length' "$hf")
@@ -109,8 +123,11 @@ askai() {
         shown_tok=$(jq '[.[].parts[0].text//""|length]|add//0|./4|floor' "$sliced_tmp")
 
         echo -e "\033[1;34m─── History: $label ───\033[0m"
-        if [ -n "$head_n" ] || [ -n "$tail_n" ] || [ -n "$head_tok" ] || [ -n "$tail_tok" ]; then echo -e "\033[2mShowing $shown of $total messages | ~$shown_tok tokens\033[0m"
-        else echo -e "\033[2m$shown messages | ~$shown_tok tokens\033[0m"; fi
+        if [ -n "$head_n" ] || [ -n "$tail_n" ] || [ -n "$head_tok" ] || [ -n "$tail_tok" ]; then 
+            echo -e "\033[2mShowing $shown of $total messages | ~$shown_tok tokens\033[0m"
+        else 
+            echo -e "\033[2m$shown messages | ~$shown_tok tokens\033[0m"
+        fi
         echo ""
 
         jq -r --argjson skip "$skip_tok" '
@@ -142,6 +159,7 @@ askai() {
             echo -e "0) Abort" >&2
             
             _ui_read c_sel "Select > " || return 0
+            
             case "$c_sel" in
                 1) return 10 ;; 
                 2) return 11 ;; 
@@ -152,13 +170,18 @@ askai() {
                     _ui_read b_id "Enter New Branch ID: "
                     b_id=$(sed 's/[^a-zA-Z0-9_-]//g' <<< "$b_id")
                     if [ -z "$b_id" ]; then echo "Invalid ID." >&2; continue; fi
+                    
                     local dst_hf="$D/h_${b_id}.json" dst_sf="$D/s_${b_id}.txt" src_sf="$D/s_${tgt}.txt"
+                    
                     if [ -f "$dst_hf" ]; then
                         _ui_read c_sel "Session '$b_id' exists. Overwrite? (y/N): "
                         [[ ! "$c_sel" =~ ^[Yy] ]] && continue
                     fi
+                    
                     local sliced_tmp; sliced_tmp=$(mktemp "$D/slice.XXXXXX.json")
-                    if [ -n "$c_head" ]; then jq ".[0:${c_head}]" "$src_hf" > "$sliced_tmp"
+                    
+                    if [ -n "$c_head" ]; then 
+                        jq ".[0:${c_head}]" "$src_hf" > "$sliced_tmp"
                     elif [ -n "$c_tail" ]; then
                         if [ "$c_tail" -eq 0 ]; then echo "[]" > "$sliced_tmp"
                         else jq ".[-${c_tail}:]" "$src_hf" > "$sliced_tmp"; fi
@@ -166,10 +189,13 @@ askai() {
                         jq --argjson ht "$c_ht" '. as $m | reduce range(length) as $i ({r:[],t:0}; ($m[$i].parts[0].text//"" | length/4|floor) as $k | if .t+$k <= $ht then {r:(.r+[$m[$i]]),t:(.t+$k)} else . end) | .r' "$src_hf" > "$sliced_tmp"
                     elif [ -n "$c_tt" ]; then
                         jq --argjson tt "$c_tt" '. as $m | (length-1) as $l | reduce range($l;-1;-1) as $i ({r:[],t:0}; ($m[$i].parts[0].text//"" | length/4|floor) as $k | if .t+$k <= $tt then {r:[$m[$i]]+.r,t:(.t+$k)} else . end) | .r' "$src_hf" > "$sliced_tmp"
-                    else cp "$src_hf" "$sliced_tmp"; fi
+                    else 
+                        cp "$src_hf" "$sliced_tmp"
+                    fi
                     
                     mv "$sliced_tmp" "$dst_hf"
                     [ -s "$src_sf" ] && cp "$src_sf" "$dst_sf" || touch "$dst_sf"
+                    
                     echo -e "\033[1;32m✅ Branched to '$b_id'.\033[0m" >&2
                     chat_id="$b_id"; return 2 ;;
                 5) _ui_read c_head "Msg Head (empty for All): "; c_head=$(grep -o '^[0-9]*' <<< "$c_head"); c_tail=""; c_ht=""; c_tt="" ;;
@@ -184,6 +210,7 @@ askai() {
     }
 
     local BF="$D/b.json" STF="$D/stream.txt" IDF="$D/id.txt" KF="$D/k.txt" AF="$D/a.txt" MF="$D/m.txt" CF="$D/c.txt" WF="$D/w.json"
+    
     jq -e . "$BF" >/dev/null 2>&1 || echo "{}" > "$BF"
     jq -e . "$WF" >/dev/null 2>&1 || echo "{}" > "$WF"
     [[ "$(<"$STF" 2>/dev/null)" != "1" ]] && echo "0" > "$STF"
@@ -226,7 +253,7 @@ askai() {
         case "$arg" in
         -h|--help) askai; return 0;;
         --persistence) 
-            require_interaction "Persistence Wizard" || return 1
+            require_interaction "Persistence Menu" || return 1
             echo -e "\033[1;34m--- Persistence Settings ---\033[0m\nCurrent: $D" >&2
             local np; _ui_read np "New path (e.g. ~/Documents/askai or /sdcard/askai): " || return 1
             [ -z "$np" ] && { echo "Aborted." >&2; return 0; }
@@ -234,32 +261,50 @@ askai() {
             if mkdir -p "$CONF_DIR" "$np" 2>/dev/null && chmod 700 "$np" 2>/dev/null && touch "$np/.test" 2>/dev/null; then
                 rm -f "$np/.test"; echo "Copying data..." >&2; cp -r "$D/"* "$np/" 2>/dev/null
                 echo "$np" > "$PATH_FILE"; D="$np"; echo -e "\033[1;32mData migrated to $D\033[0m" >&2; return 0
-            else echo -e "\033[1;31mError: Path '$np' invalid or not writable.\033[0m" >&2; return 1; fi;;
-        -c|--continuous) if [[ "$#" -eq 1 && -z "$p" ]]; then
-             require_interaction "Continuous Settings" || return 1
-             echo -e "\033[1;34m--- Continuous Settings ---\033[0m\n1) Enable Always (Default)\n2) Enable Once (This session)\n3) Disable Default\n0) Abort" >&2
-             local c; _ui_read c "Choice > " || return 1
-             case "$c" in 1) echo "1" > "$CF"; return 0;; 2) continuous=1; return 0;; 3) echo "0" > "$CF"; return 0;; *) return 0;; esac
-        else continuous=1; shift; fi;;
-        --stream) if [[ "$#" -eq 1 && -z "$p" ]]; then 
-             require_interaction "Stream Settings" || return 1
-             echo -e "\033[1;34m--- Stream Settings ---\033[0m\n1) Enable Always\n2) Enable Once (Next msg)\n0) Abort" >&2
-             local c; _ui_read c "Choice > " || return 1
-             [ "$c" = "1" ] && echo "1" > "$STF"; [ "$c" = "2" ] && stream_mode=1; return 0
-        else stream_mode=1; shift; fi;;
-        -pipe) if [[ "$2" == "hard" ]]; then interactive=0; shift 2; 
-               elif [[ "$2" == "smart" ]]; then pipe_smart=1; interactive=1; shift 2;
-               else echo "Error: -pipe requires 'hard' or 'smart'" >&2; return 1; fi;;
-        -k|--key) if [[ -n "$2" && ! "$2" =~ ^- ]]; then arg_k="$2"; shift 2; else manage_key=1; shift; fi;;
+            else 
+                echo -e "\033[1;31mError: Path '$np' invalid or not writable.\033[0m" >&2; return 1
+            fi;;
+        -c|--continuous) 
+            if [[ "$#" -eq 1 && -z "$p" ]]; then
+                require_interaction "Continuous Settings" || return 1
+                echo -e "\033[1;34m--- Continuous Settings ---\033[0m\n1) Enable Always (Default)\n2) Enable Once (This session)\n3) Disable Default\n0) Abort" >&2
+                local c; _ui_read c "Choice > " || return 1
+                case "$c" in 1) echo "1" > "$CF"; return 0;; 2) continuous=1; return 0;; 3) echo "0" > "$CF"; return 0;; *) return 0;; esac
+            else 
+                continuous=1; shift
+            fi;;
+        --stream) 
+            if [[ "$#" -eq 1 && -z "$p" ]]; then 
+                require_interaction "Stream Settings" || return 1
+                echo -e "\033[1;34m--- Stream Settings ---\033[0m\n1) Enable Always\n2) Enable Once (Next msg)\n0) Abort" >&2
+                local c; _ui_read c "Choice > " || return 1
+                [ "$c" = "1" ] && echo "1" > "$STF"; [ "$c" = "2" ] && stream_mode=1; return 0
+            else 
+                stream_mode=1; shift
+            fi;;
+        -pipe) 
+            if [[ "$2" == "hard" ]]; then 
+                interactive=0; shift 2; 
+            elif [[ "$2" == "smart" ]]; then 
+                pipe_smart=1; interactive=1; shift 2;
+            else 
+                echo "Error: -pipe requires 'hard' or 'smart'" >&2; return 1
+            fi;;
+        -k|--key) 
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then arg_k="$2"; shift 2; else manage_key=1; shift; fi;;
         -id|--id) 
             if [[ -n "$2" && ! "$2" =~ ^- ]]; then 
                 if [[ "$2" == *"|"* ]]; then 
                     arg_id="${2%%|*}"
                     set -f; IFS='|' read -r -a new_macros <<< "${2#*|}"; set +f
                     MACRO_Q+=("${new_macros[@]}")
-                else arg_id="$2"; fi
+                else 
+                    arg_id="$2"
+                fi
                 shift 2
-            else select_id=1; shift; fi;;
+            else 
+                select_id=1; shift
+            fi;;
         -id\|*|--id\|*)
             local full_val="${arg#*|}"
             arg_id="${full_val%%|*}"
@@ -269,11 +314,14 @@ askai() {
                 MACRO_Q+=("${new_macros[@]}")
             fi
             shift;;
-        -n) n=1; shift;; -d|--delete) del_mode=1; shift;;
+        -n) n=1; shift;; 
+        -d|--delete) del_mode=1; shift;;
         -s) if [[ -n "$2" ]]; then s="$2"; shift 2; else echo "Error: -s missing arg" >&2; return 1; fi;;
         -m) mo=1; if [[ -n "$2" && ! "$2" =~ ^- ]]; then arg_m="$2"; shift 2; else shift; fi;;
-        -1) show_all=1; shift;; *) p="${p:+$p }$1"; shift;;
-    esac; done
+        -1) show_all=1; shift;; 
+        *) p="${p:+$p }$1"; shift;;
+        esac
+    done
 
     if [ "$manage_key" -eq 1 ]; then 
         require_interaction "Key Manager" || return 1
@@ -301,7 +349,7 @@ askai() {
     fi
 
     if [ "$n" -eq 1 ]; then 
-        require_interaction "New Chat Wizard" || return 1
+        require_interaction "New Chat Menu" || return 1
         while true; do 
             local nid; _ui_read nid "Enter Chat ID for New Session: " || return 1
             local clean_nid=$(sed 's/[^a-zA-Z0-9_-]//g' <<< "$nid")
@@ -315,7 +363,9 @@ askai() {
                     3) local old_name; _ui_read old_name "Rename old to: " || return 1; mv "$D/h_${clean_nid}.json" "$D/h_${old_name}.json"; chat_id="$clean_nid"; echo "$chat_id" > "$IDF"; break;; 
                     *) return 0;; 
                 esac
-            else chat_id="$clean_nid"; echo "$chat_id" > "$IDF"; break; fi
+            else 
+                chat_id="$clean_nid"; echo "$chat_id" > "$IDF"; break
+            fi
         done
     fi
 
@@ -328,13 +378,16 @@ askai() {
             [ $ret -eq 11 ] && chat_id="$arg_id"
             [ $ret -eq 12 ] && return 0
             [ $ret -eq 0 ] && return 0
-        else chat_id="$arg_id"; fi
+        else 
+            chat_id="$arg_id"
+        fi
     fi
 
     if [ "$select_id" -eq 1 ]; then 
         require_interaction "Session List" || return 1
         while true; do 
             echo -e "\n\033[1;34m--- Select a Chat to Use, View History, or Branch ---\033[0m" >&2
+            
             local fl=()
             while IFS= read -r f; do [ -n "$f" ] && fl+=("$f"); done < <(ls -t "$D"/h_*.json 2>/dev/null)
             
@@ -350,13 +403,16 @@ askai() {
                     printf "%2d) \033[1;36m%-18s\033[0m %8d chars | %6d tokens | %4d msgs %b\n" "$i" "$nm" "$chars_n" "$tok_n" "$msg_n" "$cur_mark" >&2
                     ((i++))
                 done
-            else echo "(No saved histories)" >&2; fi
+            else 
+                echo "(No saved histories)" >&2
+            fi
             
             echo -e "\n+) Create New Chat ID" >&2
             echo "0) Abort" >&2
             local sel; _ui_read sel "Select > " || return 1
             
-            if [[ "$sel" == "0" ]]; then return 0
+            if [[ "$sel" == "0" ]]; then 
+                return 0
             elif [[ "$sel" == "+" ]]; then 
                 local nn; _ui_read nn "Enter New Name: " || return 1
                 local pk=$(sed 's/[^a-zA-Z0-9_-]//g' <<< "$nn"); [ -z "$pk" ] && continue
@@ -382,27 +438,36 @@ askai() {
     local HF="$D/h_${chat_id}.json"; local SF="$D/s_${chat_id}.txt"
     [ -f "$HF" ] && jq -e . "$HF" >/dev/null 2>&1 || echo "[]" > "$HF"; [ ! -f "$SF" ] && touch "$SF"
 
-    if [ -n "$arg_k" ]; then if [ -z "$p" ] && [ "$has_pipe" -eq 0 ] && [ "$pipe_smart" -eq 0 ] && [ ${#MACRO_Q[@]} -eq 0 ]; then 
-        require_interaction "Key Confirm" || return 1
-        echo -e "\033[1;33mProperty: API Key = '...${arg_k: -4}'\033[0m\n1) Save as Default\n2) Use Temporarily\n0) Abort" >&2
-        local c; _ui_read c "Choice > " || return 1
-        case "$c" in 1) k="$arg_k"; echo "$k" > "$KF"; echo 1 > "$AF";; 2) k="$arg_k";; *) return 0;; esac
-    else k="$arg_k"; fi; fi
+    if [ -n "$arg_k" ]; then 
+        if [ -z "$p" ] && [ "$has_pipe" -eq 0 ] && [ "$pipe_smart" -eq 0 ] && [ ${#MACRO_Q[@]} -eq 0 ]; then 
+            require_interaction "Key Confirm" || return 1
+            echo -e "\033[1;33mProperty: API Key = '...${arg_k: -4}'\033[0m\n1) Save as Default\n2) Use Temporarily\n0) Abort" >&2
+            local c; _ui_read c "Choice > " || return 1
+            case "$c" in 1) k="$arg_k"; echo "$k" > "$KF"; echo 1 > "$AF";; 2) k="$arg_k";; *) return 0;; esac
+        else 
+            k="$arg_k"
+        fi 
+    fi
 
     if [ -z "$k" ]; then 
-        if [ -s "$KF" ] && [ "$(<"$AF" 2>/dev/null)" = "1" ]; then k=$(<"$KF"); 
+        if [ -s "$KF" ] && [ "$(<"$AF" 2>/dev/null)" = "1" ]; then 
+            k=$(<"$KF")
         else 
             require_interaction "API Key Setup" || return 1
-            _ui_read -s k "Enter Gemini API Key: " || return 1; echo "$k" > "$KF"; echo 1 > "$AF"; 
+            _ui_read -s k "Enter Gemini API Key: " || return 1; echo "$k" > "$KF"; echo 1 > "$AF"
         fi
     fi
 
-    if [ -n "$arg_m" ]; then if [ -z "$p" ] && [ "$has_pipe" -eq 0 ] && [ "$pipe_smart" -eq 0 ] && [ ${#MACRO_Q[@]} -eq 0 ]; then 
-        require_interaction "Model Confirm" || return 1
-        echo -e "\033[1;33mProperty: Model = '$arg_m'\033[0m\n1) Set as Default\n2) Use Temporarily\n0) Abort" >&2
-        local c; _ui_read c "Choice > " || return 1
-        case "$c" in 1) M="$arg_m"; echo "$M" > "$MF";; 2) M="$arg_m";; *) return 0;; esac
-    else M="$arg_m"; fi; fi
+    if [ -n "$arg_m" ]; then 
+        if [ -z "$p" ] && [ "$has_pipe" -eq 0 ] && [ "$pipe_smart" -eq 0 ] && [ ${#MACRO_Q[@]} -eq 0 ]; then 
+            require_interaction "Model Confirm" || return 1
+            echo -e "\033[1;33mProperty: Model = '$arg_m'\033[0m\n1) Set as Default\n2) Use Temporarily\n0) Abort" >&2
+            local c; _ui_read c "Choice > " || return 1
+            case "$c" in 1) M="$arg_m"; echo "$M" > "$MF";; 2) M="$arg_m";; *) return 0;; esac
+        else 
+            M="$arg_m"
+        fi 
+    fi
 
     if [ "$mo" -eq 1 ] && [ -z "$arg_m" ]; then 
         require_interaction "Model List" || return 1
@@ -416,14 +481,18 @@ askai() {
             local jq_sort='.models[]|select(.supportedGenerationMethods[]?|contains("generateContent"))|.name|=sub("^models/";"")|.score=0|if(.name|contains("-pro"))then .score+=1000 elif(.name|contains("-flash"))then .score+=800 elif(.name|contains("-lite"))then .score+=600 else . end|if(.name|test("gemini-[0-9]\\.[0-9]"))then .score+=((.name|capture("gemini-(?<v>[0-9]\\.[0-9])").v|tonumber)*100)else . end|if(.name|contains("-latest"))then .score+=10000 elif(.name|contains("-exp"))then .score+=-5000 elif(.name|contains("-preview"))then if(.name|test("preview-[0-9]{2}-[0-9]{2}"))then .score+=-2000 else .score+=500 end else .score+=5000 end|if(.name|test("gemma|learnlm|tts|image|robotics|computer-use|thinking"))then .score+=-50000 else . end|select($a=="1" or(.name as $n|($bk[$h]//[])|index($n)|not))|{name:.name,score:.score}'
             local ml=(); mapfile -t ml < <(jq -r --arg h "$kh" --arg a "$show_all" --argjson bk "$bk" "$jq_sort" <<< "$jm" | jq -rs 'sort_by(.score)|reverse|.[].name')
             local hc=$(jq -r --arg h "$kh" '.[$h]//[]|length' <<< "$bk"); local i=1
+            
             for md in "${ml[@]}"; do
                 if [ "$md" == "$M" ]; then echo -e "$i) \033[1;32m$md (*)\033[0m" >&2; else echo "$i) $md" >&2; fi; ((i++))
             done
+            
             echo "-1) list 0 limit models too, currently $hc" >&2
             local sl; _ui_read sl "Select Model (1-${#ml[@]}, 0 to Abort): " || return 1
             if [ "$sl" == "-1" ]; then show_all=$((1-show_all)); continue; fi; [ "$sl" = "0" ] && return 0
+            
             if [[ "$sl" =~ ^[0-9]+$ && "$sl" -le "${#ml[@]}" ]]; then 
-                local sel="${ml[$((sl-1))]}"; echo -e "\033[1;33mModel: $sel\033[0m\n1) Save as Default\n2) Use Once\n3) Cancel (Keep $M)\n4) Retry" >&2
+                local sel="${ml[$((sl-1))]}"
+                echo -e "\033[1;33mModel: $sel\033[0m\n1) Save as Default\n2) Use Once\n3) Cancel (Keep $M)\n4) Retry" >&2
                 local sc; _ui_read sc "Choice > " || return 1
                 case "$sc" in 1) M="$sel"; echo "$M" > "$MF"; break;; 2) M="$sel"; break;; 3) break;; 4) continue;; *) return 0;; esac
             fi
@@ -431,7 +500,10 @@ askai() {
     fi
 
     [ -n "$s" ] && echo "$s" > "$SF"
-    [ "$has_pipe" -eq 1 ] && [ -z "$p" ] && [ "$pipe_smart" -eq 0 ] && [ ${#MACRO_Q[@]} -eq 0 ] && p=$(</dev/stdin)
+    
+    if [ "$has_pipe" -eq 1 ] && [ -z "$p" ] && [ "$pipe_smart" -eq 0 ] && [ ${#MACRO_Q[@]} -eq 0 ]; then
+        p=$(</dev/stdin)
+    fi
 
     while true; do
         if [ -z "$p" ]; then 
@@ -483,6 +555,7 @@ askai() {
             echo "" >&2
             if [ -s "$ERR_TMP" ]; then handle_err "$(<"$ERR_TMP")"; rm -f "$ERR_TMP"; ERR_TMP=""; return 1; fi
             rm -f "$ERR_TMP"; ERR_TMP=""
+            
             ft=$(<"$RO")
             if [ -z "$ft" ]; then echo -e "\033[1;31m❌ Network Error: No response received (timeout or connection failure).\033[0m" >&2; _rollback_last; return 1; fi
         else
