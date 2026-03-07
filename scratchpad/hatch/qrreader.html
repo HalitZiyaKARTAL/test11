@@ -49,8 +49,8 @@
         /* --- Camera Mode Buttons --- */
         .mode-container { margin-top: 15px; }
         .mode-label { font-weight: bold; font-size: 0.9em; color: var(--text-muted); display: block; margin-bottom: 8px; }
-        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .mode-btn { background: var(--input-bg); border: 2px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s; font-size: 13px; line-height: 1.3; }
+        .mode-grid { display: flex; flex-direction: column; gap: 8px; }
+        .mode-btn { background: var(--input-bg); border: 2px solid var(--border); color: var(--text); padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.2s; font-size: 14px; }
         .mode-btn.active { border-color: var(--primary); background: var(--primary); color: #fff; font-weight: bold; }
 
         .divider { text-align: center; margin: 25px 0 15px; color: var(--text-muted); font-size: 0.9em; letter-spacing: 1px; }
@@ -150,7 +150,7 @@
         let globalIndex = 0;
         let historyArray = [];
         let lastScanTime = 0;
-        const SCAN_INTERVAL = 250; 
+        const SCAN_INTERVAL = 100; // Scans 10 times a second
         
         let camMode = "once"; // 'manual', 'once', 'auto', 'off'
         let lastContinuousData = null; 
@@ -163,7 +163,7 @@
 
         // --- 3. CAMERA HARDWARE LOGIC ---
         function startCamera() {
-            if (stream) return; // Already running
+            if (stream) return; 
             cameraOffMsg.style.display = "none";
             video.style.display = "block";
             
@@ -197,17 +197,15 @@
             document.querySelectorAll(".mode-btn").forEach(btn => btn.classList.remove("active"));
             document.getElementById(`btn-${mode}`).classList.add("active");
 
-            // Handle Manual Mode cursor
             if (mode === "manual") videoWrapper.classList.add("manual-mode");
             else videoWrapper.classList.remove("manual-mode");
 
-            // Handle Hardware On/Off
             if (mode === "off") {
                 stopCamera();
                 feedback.innerText = "";
             } else {
                 if (!stream) startCamera();
-                lastContinuousData = null; // Reset history buffer on resume
+                lastContinuousData = null; 
                 feedback.innerText = "";
             }
         }
@@ -217,15 +215,20 @@
             if (!scanning) return;
             requestAnimationFrame(tick); 
             
-            // Skip scanning if mode is manual, or mode is off
             if (camMode === "manual" || camMode === "off") return;
 
             if (video.readyState === video.HAVE_ENOUGH_DATA && (now - lastScanTime >= SCAN_INTERVAL)) {
                 lastScanTime = now;
                 
-                canvasEl.width = video.videoWidth; canvasEl.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvasEl.width, canvasEl.height);
-                const qrData = scanPixels(ctx, canvasEl.width, canvasEl.height, false);
+                const vw = video.videoWidth;
+                const vh = video.videoHeight;
+                if(vw === 0 || vh === 0) return;
+
+                canvasEl.width = vw; 
+                canvasEl.height = vh;
+                ctx.drawImage(video, 0, 0, vw, vh);
+                
+                const qrData = scanPixels(ctx, vw, vh, true);
                 
                 if (qrData) {
                     if (camMode === "once") {
@@ -233,8 +236,7 @@
                         feedback.innerText = "✅ QR Scanned! Camera turned off.";
                         setTimeout(() => { if (feedback.innerText.includes("turned off")) feedback.innerText = ""; }, 4000);
                         
-                        // Automatically switch to OFF mode after scan
-                        setMode("off");
+                        setMode("off"); // Auto turn off
 
                     } else if (camMode === "auto") {
                         if (qrData !== lastContinuousData) {
@@ -254,7 +256,7 @@
             
             canvasEl.width = video.videoWidth; canvasEl.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvasEl.width, canvasEl.height);
-            const qrData = scanPixels(ctx, canvasEl.width, canvasEl.height, false);
+            const qrData = scanPixels(ctx, canvasEl.width, canvasEl.height, true);
             
             if (qrData) {
                 addHistoryItem(qrData, compressImage(canvasEl, 300), "Manual Capture");
@@ -266,7 +268,7 @@
             }
         });
 
-        // --- 6. 50MB+ FILE UPLOAD LOGIC ---
+        // --- 6. FILE UPLOAD LOGIC (MULTI-PASS SCANNER) ---
         document.getElementById("file-input").addEventListener("change", e => {
             const files = Array.from(e.target.files);
             if (!files.length) return;
@@ -277,18 +279,41 @@
                 const img = new Image();
                 img.onload = () => {
                     URL.revokeObjectURL(url); 
-                    const scanMaxDim = 1500;
-                    const scale = Math.min(scanMaxDim / img.width, scanMaxDim / img.height, 1);
-                    const w = img.width * scale; const h = img.height * scale;
-
-                    const tCanvas = document.createElement("canvas");
-                    tCanvas.width = w; tCanvas.height = h;
-                    const tCtx = tCanvas.getContext("2d", { willReadFrequently: true });
-                    tCtx.drawImage(img, 0, 0, w, h);
                     
-                    const qrData = scanPixels(tCtx, w, h, true);
-                    if (qrData) addHistoryItem(qrData, compressImage(tCanvas, 300), file.name);
-                    else errorMsg.innerText += `\n❌ No QR in: ${file.name}`;
+                    let foundData = null;
+                    let finalCanvas = null;
+
+                    // Multi-Pass: Try scanning at 100%, 75%, 50%, and 25% size.
+                    // This forces "circular" style QR codes (like Chrome's T-Rex) to blur into readable blocks.
+                    const testScales = [1, 0.75, 0.5, 0.25];
+                    
+                    for (let s of testScales) {
+                        const MAX_DIM = 3000 * s; 
+                        const scale = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, 1);
+                        const w = Math.floor(img.width * scale); 
+                        const h = Math.floor(img.height * scale);
+
+                        const tCanvas = document.createElement("canvas");
+                        tCanvas.width = w; tCanvas.height = h;
+                        const tCtx = tCanvas.getContext("2d", { willReadFrequently: true });
+                        
+                        // Turn ON smoothing to blend circular dots together
+                        tCtx.imageSmoothingEnabled = true; 
+                        tCtx.drawImage(img, 0, 0, w, h);
+                        
+                        const qrData = scanPixels(tCtx, w, h, true);
+                        if (qrData) {
+                            foundData = qrData;
+                            finalCanvas = tCanvas;
+                            break; // Stop trying scales if we found it!
+                        }
+                    }
+                    
+                    if (foundData) {
+                        addHistoryItem(foundData, compressImage(finalCanvas, 300), file.name);
+                    } else {
+                        errorMsg.innerText += `\n❌ No QR in: ${file.name}`;
+                    }
                 };
                 img.src = url;
             });
@@ -298,9 +323,11 @@
 
         // --- 7. HELPERS ---
         function scanPixels(context, w, h, tryHarder) {
-            const imgData = context.getImageData(0, 0, w, h);
-            const code = jsQR(imgData.data, w, h, { inversionAttempts: tryHarder ? "attemptBoth" : "dontInvert" });
-            return code ? code.data : null;
+            try {
+                const imgData = context.getImageData(0, 0, w, h);
+                const code = jsQR(imgData.data, w, h, { inversionAttempts: tryHarder ? "attemptBoth" : "dontInvert" });
+                return code ? code.data : null;
+            } catch (err) { return null; }
         }
 
         function compressImage(sourceCanvas, maxDim = 300) {
