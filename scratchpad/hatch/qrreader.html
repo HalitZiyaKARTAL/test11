@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced QR Scanner</title>
+    <!-- Load jsQR library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            --bg: #f4f4f9;
+            --surface: #ffffff;
+            --text: #333333;
+            --text-muted: #777777;
+            --primary: #007bff;
+            --primary-hover: #0056b3;
+            --border: #eeeeee;
+            --input-bg: #f9f9f9;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --success: #28a745;
+            --error: #dc3545;
+        }
+
+        [data-theme="dark"] {
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --text: #e0e0e0;
+            --text-muted: #aaaaaa;
+            --primary: #66b2ff;
+            --primary-hover: #99ccff;
+            --border: #333333;
+            --input-bg: #2a2a2a;
+            --shadow: rgba(0, 0, 0, 0.5);
+            --success: #4ade80;
+            --error: #ff6b6b;
+        }
+
+        /* --- Global Styles --- */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            margin: 0; padding: 20px; transition: background 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 600px; margin: 0 auto; background: var(--surface);
+            padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px var(--shadow);
+        }
+        
+        #history-wrapper { max-width: 600px; margin: 30px auto 0; padding: 0; }
+
+        h1, h2 { text-align: center; margin-top: 0; }
+        
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        button.icon-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--text);
+            padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+        }
+        button.icon-btn:hover { border-color: var(--primary); }
+
+        video { width: 100%; border-radius: 8px; background: #000; }
+
+        .btn {
+            display: block; width: 100%; box-sizing: border-box; text-align: center;
+            background: var(--primary); color: #fff; padding: 12px; font-size: 16px; font-weight: 500;
+            border-radius: 8px; cursor: pointer; transition: 0.2s; border: none; margin-top: 15px;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-small { padding: 6px 12px; font-size: 14px; width: auto; display: inline-block; margin-top:0; }
+        .btn-danger { background: var(--error); }
+        .btn-danger:hover { background: #b02a37; }
+
+        input[type="file"] { display: none; }
+        input[type="text"], textarea {
+            width: 100%; padding: 8px; margin: 5px 0 10px; border-radius: 4px;
+            border: 1px solid var(--border); background: var(--input-bg); color: var(--text);
+            box-sizing: border-box; font-family: inherit;
+        }
+
+        .divider { text-align: center; margin: 15px 0; color: var(--text-muted); font-size: 0.9em; letter-spacing: 1px; }
+        .msg { font-weight: bold; text-align: center; margin-top: 10px; min-height: 20px; }
+        .msg.success { color: var(--success); }
+        .msg.error { color: var(--error); }
+
+        /* --- History Section --- */
+        .history-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        .history-card {
+            background: var(--surface); padding: 16px; border-radius: 10px;
+            box-shadow: 0 2px 8px var(--shadow); margin-bottom: 16px; border-left: 4px solid var(--primary);
+            position: relative;
+        }
+        .history-header {
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);
+            padding-bottom: 8px; margin-bottom: 12px; font-size: 0.85em; color: var(--text-muted);
+        }
+        .history-index { font-weight: bold; color: var(--text); font-size: 1.1em; }
+        .history-data { margin-bottom: 12px; word-break: break-word; line-height: 1.5; }
+        .history-data a { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .history-data a:hover { text-decoration: underline; }
+        .history-image { max-width: 100%; max-height: 200px; border-radius: 6px; border: 1px solid var(--border); display: block; object-fit: contain; }
+        
+        .edit-mode { display: none; }
+        .is-editing .view-mode { display: none; }
+        .is-editing .edit-mode { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-actions">
+            <h1 style="margin:0; font-size:1.5em;">QR Scanner</h1>
+            <button id="theme-btn" class="icon-btn">🌓 Theme</button>
+        </div>
+        
+        <p style="color: var(--text-muted); text-align:center; margin-top:0;">Scan via camera or upload files.</p>
+        
+        <video id="video" autoplay playsinline></video>
+        <div id="feedback" class="msg success"></div>
+
+        <div class="divider">— OR —</div>
+
+        <label class="btn">
+            📁 Upload Images
+            <input type="file" id="file-input" accept="image/*" multiple>
+        </label>
+        <div id="error-msg" class="msg error"></div>
+    </div>
+
+    <div id="history-wrapper">
+        <div class="history-controls">
+            <h2 style="margin:0;">Scan History</h2>
+            <div>
+                <button class="btn btn-small" onclick="saveToLocal()">💾 Save Local</button>
+                <button class="btn btn-small btn-danger" onclick="clearHistory()">🗑️ Clear</button>
+            </div>
+        </div>
+        <div id="history-list"></div>
+    </div>
+
+    <canvas id="canvas" hidden></canvas>
+
+    <script>
+        // --- 1. THEME LOGIC ---
+        const themeBtn = document.getElementById("theme-btn");
+        const sysPref = window.matchMedia("(prefers-color-scheme: dark)");
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute("data-theme", theme);
+            themeBtn.innerText = theme === "dark" ? "☀️ Light" : "🌙 Dark";
+            localStorage.setItem("qr-theme", theme);
+        }
+        setTheme(localStorage.getItem("qr-theme") || (sysPref.matches ? "dark" : "light"));
+        themeBtn.addEventListener("click", () => {
+            const current = document.documentElement.getAttribute("data-theme");
+            setTheme(current === "dark" ? "light" : "dark");
+        });
+
+        // --- 2. STATE & SETUP ---
+        const video = document.getElementById("video");
+        const canvasEl = document.getElementById("canvas");
+        const ctx = canvasEl.getContext("2d", { willReadFrequently: true });
+        const historyList = document.getElementById("history-list");
+        const feedback = document.getElementById("feedback");
+        const errorMsg = document.getElementById("error-msg");
+
+        let scanning = false;
+        let paused = false; 
+        let globalIndex = 0;
+        let historyArray = [];
+        const SCAN_INTERVAL = 250; 
+        let lastScanTime = 0;
+
+        // Custom Date Formatter: YYYY-MM-DD HH:mm:ss.SSS
+        function getCustomDate() {
+            const d = new Date();
+            const pad = (num, len=2) => String(num).padStart(len, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
+        }
+
+        // --- 3. CORE LOGIC (CAMERA & FILE) ---
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                scanning = true;
+                video.srcObject = stream;
+                video.play();
+                requestAnimationFrame(tick);
+            })
+            .catch(() => errorMsg.innerText = "Camera denied. Use file upload.");
+
+        function tick(now) {
+            if (!scanning) return;
+            requestAnimationFrame(tick); 
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA && !paused && (now - lastScanTime >= SCAN_INTERVAL)) {
+                lastScanTime = now;
+                canvasEl.width = video.videoWidth; canvasEl.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvasEl.width, canvasEl.height);
+                
+                const qrData = scanPixels(ctx, canvasEl.width, canvasEl.height, false);
+                if (qrData) {
+                    addHistoryItem(qrData, compressImage(canvasEl), "Camera Snapshot");
+                    paused = true;
+                    feedback.innerText = "✅ QR Scanned!";
+                    setTimeout(() => { paused = false; feedback.innerText = ""; }, 2500);
+                }
+            }
+        }
+
+        document.getElementById("file-input").addEventListener("change", e => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            errorMsg.innerText = "";
+            
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = event => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const tCanvas = document.createElement("canvas");
+                        const tCtx = tCanvas.getContext("2d", { willReadFrequently: true });
+                        tCanvas.width = img.width; tCanvas.height = img.height;
+                        tCtx.drawImage(img, 0, 0);
+                        
+                        const qrData = scanPixels(tCtx, img.width, img.height, true);
+                        if (qrData) {
+                            addHistoryItem(qrData, compressImage(tCanvas), file.name);
+                        } else {
+                            errorMsg.innerText += `\n❌ No QR found in: ${file.name}`;
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            e.target.value = ""; 
+            setTimeout(() => errorMsg.innerText = "", 6000);
+        });
+
+        function scanPixels(context, w, h, tryHarder) {
+            const imgData = context.getImageData(0, 0, w, h);
+            const code = jsQR(imgData.data, w, h, { inversionAttempts: tryHarder ? "attemptBoth" : "dontInvert" });
+            return code ? code.data : null;
+        }
+
+        // Compress image to prevent LocalStorage "QuotaExceededError" (Max 5MB)
+        function compressImage(sourceCanvas, maxDim = 400) {
+            const scale = Math.min(maxDim / sourceCanvas.width, maxDim / sourceCanvas.height, 1);
+            const tCan = document.createElement("canvas");
+            tCan.width = sourceCanvas.width * scale; tCan.height = sourceCanvas.height * scale;
+            tCan.getContext("2d").drawImage(sourceCanvas, 0, 0, tCan.width, tCan.height);
+            return tCan.toDataURL("image/jpeg", 0.6); // 60% quality JPEG
+        }
+
+        // --- 4. HISTORY DATA MANAGEMENT ---
+        function addHistoryItem(data, imgUrl, filename) {
+            globalIndex++;
+            const newItem = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                index: globalIndex,
+                date: getCustomDate(),
+                filename: filename,
+                data: data,
+                image: imgUrl
+            };
+            historyArray.unshift(newItem); // Add to top of array
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = "";
+            historyArray.forEach(item => {
+                const isUrl = /^https?:\/\//i.test(item.data);
+                const linkHtml = isUrl ? `<a href="${item.data}" target="_blank" rel="noopener noreferrer">${item.data}</a>` : `<span>${item.data}</span>`;
+
+                const card = document.createElement("div");
+                card.className = "history-card";
+                card.id = `card-${item.id}`;
+                card.innerHTML = `
+                    <div class="history-header">
+                        <div>
+                            <span class="history-index">#${item.index}</span> | <span>${item.date}</span>
+                        </div>
+                        <div>
+                            <button class="icon-btn" onclick="toggleEdit('${item.id}')" title="Edit">✏️</button>
+                            <button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="history-data view-mode">
+                        <strong>File:</strong> ${item.filename} <br>
+                        <strong>Data:</strong> ${linkHtml}
+                    </div>
+
+                    <div class="history-data edit-mode">
+                        <strong>File:</strong>
+                        <input type="text" id="edit-file-${item.id}" value="${item.filename}">
+                        <strong>Data:</strong>
+                        <textarea id="edit-data-${item.id}" rows="3">${item.data}</textarea>
+                        <button class="btn btn-small" onclick="saveEdit('${item.id}')">💾 Save</button>
+                        <button class="btn btn-small btn-danger" onclick="toggleEdit('${item.id}')">❌ Cancel</button>
+                    </div>
+
+                    <img src="${item.image}" class="history-image" alt="QR Code">
+                `;
+                historyList.appendChild(card);
+            });
+        }
+
+        // --- 5. EDIT & DELETE LOGIC ---
+        function toggleEdit(id) {
+            const card = document.getElementById(`card-${id}`);
+            card.classList.toggle("is-editing");
+        }
+
+        function saveEdit(id) {
+            const newFile = document.getElementById(`edit-file-${id}`).value;
+            const newData = document.getElementById(`edit-data-${id}`).value;
+            
+            // Update Array
+            const itemIndex = historyArray.findIndex(item => item.id === id);
+            if(itemIndex > -1) {
+                historyArray[itemIndex].filename = newFile;
+                historyArray[itemIndex].data = newData;
+                renderHistory();
+                // Auto-update local storage if it's currently saved
+                if(localStorage.getItem('qr-history')) saveToLocal(true);
+            }
+        }
+
+        function deleteItem(id) {
+            if(!confirm("Delete this scanned code?")) return;
+            historyArray = historyArray.filter(item => item.id !== id);
+            renderHistory();
+            if(localStorage.getItem('qr-history')) saveToLocal(true);
+        }
+
+        function clearHistory() {
+            if(!confirm("Are you sure you want to clear ALL history? This cannot be undone.")) return;
+            historyArray = [];
+            globalIndex = 0;
+            localStorage.removeItem('qr-history');
+            localStorage.removeItem('qr-index');
+            renderHistory();
+        }
+
+        // --- 6. LOCAL STORAGE SAVE / LOAD ---
+        function saveToLocal(silent = false) {
+            try {
+                localStorage.setItem('qr-history', JSON.stringify(historyArray));
+                localStorage.setItem('qr-index', globalIndex.toString());
+                if(!silent) alert("✅ History saved successfully to your browser!");
+            } catch (e) {
+                console.error(e);
+                alert("❌ Storage Full! Try deleting some older scans first.");
+            }
+        }
+
+        function loadFromLocal() {
+            const saved = localStorage.getItem('qr-history');
+            const savedIdx = localStorage.getItem('qr-index');
+            if (saved) {
+                try {
+                    historyArray = JSON.parse(saved);
+                    globalIndex = savedIdx ? parseInt(savedIdx) : historyArray.length;
+                    renderHistory();
+                } catch(e) { console.error("Error loading history", e); }
+            }
+        }
+
+        // Initialize saved history on page load
+        window.onload = loadFromLocal;
+
+    </script>
+</body>
+</html>
