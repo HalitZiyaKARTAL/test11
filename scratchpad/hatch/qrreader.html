@@ -21,6 +21,8 @@
 
         /* --- Global Styles --- */
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: background 0.3s, color 0.3s; }
+        body.modal-open { overflow: hidden; } 
+        
         .container { max-width: 600px; margin: 0 auto; background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px var(--shadow); }
         #history-wrapper { max-width: 600px; margin: 30px auto 0; padding: 0; }
         h1, h2 { text-align: center; margin-top: 0; }
@@ -37,14 +39,19 @@
         .btn-small { padding: 6px 12px; font-size: 14px; width: auto; display: inline-block; margin-top:0; }
         .btn-danger { background: var(--error); }
         .btn-danger:hover { background: #b02a37; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 
         /* --- Video & UI States --- */
         .video-wrapper { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; min-height: 200px; }
-        video { width: 100%; display: block; }
+        video { width: 100%; display: block; object-fit: cover; }
         .video-wrapper.manual-mode video { cursor: pointer; }
         .video-wrapper.manual-mode video:active { opacity: 0.8; }
         
-        #camera-off-msg { position: absolute; color: white; font-weight: bold; display: none; }
+        #camera-off-msg { position: absolute; color: white; font-weight: bold; display: none; z-index: 10; }
+        
+        /* Progress Bar */
+        #progress-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.2); z-index: 15; display: none; }
+        #progress-bar { height: 100%; width: 0%; background: var(--primary); }
 
         /* --- Camera Mode Buttons --- */
         .mode-container { margin-top: 15px; }
@@ -57,20 +64,56 @@
         .msg { font-weight: bold; text-align: center; margin-top: 10px; min-height: 20px; font-size: 15px; }
         .msg.success { color: var(--success); }
         .msg.error { color: var(--error); }
+        .ram-meter { text-align: center; font-size: 0.8em; color: var(--text-muted); margin-top: 5px; width: 100%; }
 
         /* --- History Section --- */
-        .history-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .history-card { background: var(--surface); padding: 16px; border-radius: 10px; box-shadow: 0 2px 8px var(--shadow); margin-bottom: 16px; border-left: 4px solid var(--primary); position: relative; }
+        .history-controls { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .history-card { background: var(--surface); padding: 16px; border-radius: 10px; box-shadow: 0 2px 8px var(--shadow); margin-bottom: 16px; border-left: 4px solid var(--primary); position: relative; word-wrap: break-word;}
         .history-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; font-size: 0.85em; color: var(--text-muted); }
         .history-index { font-weight: bold; color: var(--text); font-size: 1.1em; }
-        .history-data { margin-bottom: 12px; word-break: break-word; line-height: 1.5; }
-        .history-data a { color: var(--primary); font-weight: 600; text-decoration: none; }
+        .history-data { margin-bottom: 12px; line-height: 1.5; }
+        .history-data a { color: var(--primary); font-weight: 600; text-decoration: none; word-break: break-all; }
         .history-data a:hover { text-decoration: underline; }
-        .history-image { max-width: 100%; max-height: 200px; border-radius: 6px; border: 1px solid var(--border); display: block; object-fit: contain; }
+        
+        .image-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .history-image { max-width: 150px; max-height: 150px; border-radius: 6px; border: 1px solid var(--border); object-fit: contain; }
         
         .edit-mode { display: none; }
         .is-editing .view-mode { display: none; }
         .is-editing .edit-mode { display: block; }
+
+        /* --- Modals (Fullscreen & Text Editor) --- */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            z-index: 9999; display: none; justify-content: center; align-items: center; 
+        }
+        
+        /* Image Modal */
+        #fullscreen-img { 
+            max-width: 70vw; max-height: 50vh; object-fit: contain; 
+            border-radius: 8px; box-shadow: 0 4px 25px rgba(0,0,0,0.8); 
+        }
+        .close-modal-btn { 
+            position: absolute; top: 5%; right: 5%; 
+            background: rgba(255,255,255,0.2); border: none; color: white; 
+            font-size: 28px; cursor: pointer; border-radius: 50%; 
+            width: 50px; height: 50px; display: flex; justify-content: center; align-items: center;
+        }
+        .close-modal-btn:hover { background: rgba(255,255,255,0.4); }
+
+        /* Text Editor Modal */
+        .text-modal-content {
+            background: var(--surface); padding: 20px; border-radius: 12px;
+            width: 90%; max-width: 600px; box-shadow: 0 4px 25px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .text-modal-content h3 { margin: 0; color: var(--text); }
+        #raw-text-area { 
+            width: 100%; height: 300px; resize: vertical; 
+            font-family: monospace; font-size: 14px; white-space: pre-wrap;
+        }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
     </style>
 </head>
 <body>
@@ -84,6 +127,7 @@
         <!-- Video Feed -->
         <div class="video-wrapper" id="video-wrapper">
             <video id="video" autoplay playsinline></video>
+            <div id="progress-bar-container"><div id="progress-bar"></div></div>
             <span id="camera-off-msg">📷 Camera is Off</span>
         </div>
         <div id="feedback" class="msg success"></div>
@@ -92,9 +136,9 @@
         <div class="mode-container">
             <span class="mode-label">camera mode:</span>
             <div class="mode-grid">
-                <button class="mode-btn" id="btn-manual" onclick="setMode('manual')">manual(click image to process)</button>
-                <button class="mode-btn active" id="btn-once" onclick="setMode('once')">once(checks till one qr is gotten)</button>
-                <button class="mode-btn" id="btn-auto" onclick="setMode('auto')">auto(checks new qr till you turn off)</button>
+                <button class="mode-btn" id="btn-manual" onclick="setMode('manual')">manual (click image to process)</button>
+                <button class="mode-btn active" id="btn-once" onclick="setMode('once')">once (checks till one qr is gotten)</button>
+                <button class="mode-btn" id="btn-auto" onclick="setMode('auto')">auto (checks new qr till you turn off)</button>
                 <button class="mode-btn" id="btn-off" onclick="setMode('off')">off</button>
             </div>
         </div>
@@ -113,134 +157,210 @@
     <div id="history-wrapper">
         <div class="history-controls">
             <h2 style="margin:0;">Scan History</h2>
-            <div>
-                <button class="btn btn-small" onclick="saveToLocal()">💾 Save Local</button>
+            <div class="btn-group">
+                <button class="btn btn-small" onclick="openTextModal()">📄 Open Link Texts</button>
+                <button id="btn-save-local" class="btn btn-small" onclick="saveToLocal()">💾 Save Local</button>
                 <button class="btn btn-small btn-danger" onclick="clearHistory()">🗑️ Clear</button>
+                <div class="ram-meter" id="ram-meter">RAM: 0 MB</div>
             </div>
         </div>
         <div id="history-list"></div>
     </div>
 
+    <!-- Smart Fullscreen Image Modal -->
+    <div id="fullscreen-modal" class="modal-overlay" onclick="closeFullscreen(event)">
+        <button class="close-modal-btn" id="close-img-btn">&times;</button>
+        <img id="fullscreen-img" src="">
+    </div>
+
+    <!-- Raw Text Editor Modal -->
+    <div id="text-modal" class="modal-overlay" onclick="closeTextModalClick(event)">
+        <div class="text-modal-content">
+            <h3>Editable Links Text</h3>
+            <textarea id="raw-text-area" spellcheck="false"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-small" onclick="copyFromTextModal()">📋 Copy</button>
+                <button class="btn btn-small btn-danger" onclick="closeTextModal()">❌ Close</button>
+            </div>
+        </div>
+    </div>
+
     <canvas id="canvas" hidden></canvas>
 
     <script>
+        // --- 0. HELPER FUNCTIONS ---
+        function escapeHTML(str) {
+            if (!str) return "";
+            return str.toString().replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+
+        function backupTextData() {
+            const textOnlyList = historyArray.map(item => item.data);
+            localStorage.setItem('qrreader_text_data', JSON.stringify(textOnlyList));
+        }
+
+        // --- Text Modal Functions ---
+        function openTextModal() {
+            const ta = document.getElementById('raw-text-area');
+            ta.value = historyArray.map(item => item.data + ',').join('\n');
+            document.getElementById('text-modal').style.display = 'flex';
+            document.body.classList.add('modal-open');
+        }
+
+        function closeTextModal() {
+            document.getElementById('text-modal').style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+
+        function closeTextModalClick(e) {
+            if (e.target.id === 'text-modal') closeTextModal();
+        }
+
+        function copyFromTextModal() {
+            const ta = document.getElementById('raw-text-area');
+            if(!ta.value.trim()) return alert("Nothing to copy!");
+            ta.select();
+            try {
+                navigator.clipboard.writeText(ta.value).then(() => alert("✅ Copied to clipboard!"))
+                .catch(() => { document.execCommand("copy"); alert("✅ Copied to clipboard!"); });
+            } catch(e) { document.execCommand("copy"); alert("✅ Copied to clipboard!"); }
+        }
+
         // --- 1. THEME LOGIC ---
         const themeBtn = document.getElementById("theme-btn");
         const sysPref = window.matchMedia("(prefers-color-scheme: dark)");
         function setTheme(theme) {
             document.documentElement.setAttribute("data-theme", theme);
             themeBtn.innerText = theme === "dark" ? "☀️ Light" : "🌙 Dark";
-            localStorage.setItem("qr-theme", theme);
+            localStorage.setItem("qrreader_theme", theme);
         }
-        setTheme(localStorage.getItem("qr-theme") || (sysPref.matches ? "dark" : "light"));
+        setTheme(localStorage.getItem("qrreader_theme") || (sysPref.matches ? "dark" : "light"));
         themeBtn.addEventListener("click", () => setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"));
 
         // --- 2. STATE & SETUP ---
         const video = document.getElementById("video");
         const videoWrapper = document.getElementById("video-wrapper");
         const cameraOffMsg = document.getElementById("camera-off-msg");
+        const pbContainer = document.getElementById("progress-bar-container");
+        const progressBar = document.getElementById("progress-bar");
         const canvasEl = document.getElementById("canvas");
         const ctx = canvasEl.getContext("2d", { willReadFrequently: true });
         const historyList = document.getElementById("history-list");
         const feedback = document.getElementById("feedback");
         const errorMsg = document.getElementById("error-msg");
+        const ramMeter = document.getElementById("ram-meter");
 
-        let stream = null;
-        let scanning = false;
-        let globalIndex = 0;
-        let historyArray = [];
-        let lastScanTime = 0;
-        const SCAN_INTERVAL = 100; // Scans 10 times a second
-        
-        let camMode = "once"; // 'manual', 'once', 'auto', 'off'
-        let lastContinuousData = null; 
+        let stream = null; let scanning = false; let globalIndex = 0;
+        let historyArray = []; let lastScanTime = 0; const SCAN_INTERVAL = 150; 
+        let camMode = "once"; let lastContinuousData = null; 
 
         function getCustomDate() {
-            const d = new Date();
-            const pad = (num, len=2) => String(num).padStart(len, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
+            const d = new Date(); const pad = (num, len=2) => String(num).padStart(len, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function animateProgressBar(duration) {
+            progressBar.style.transition = 'none'; progressBar.style.width = '0%';
+            void progressBar.offsetWidth; 
+            progressBar.style.transition = `width ${duration}ms linear`; progressBar.style.width = '100%';
         }
 
         // --- 3. CAMERA HARDWARE LOGIC ---
         function startCamera() {
             if (stream) return; 
-            cameraOffMsg.style.display = "none";
-            video.style.display = "block";
+            cameraOffMsg.style.display = "none"; video.style.display = "block";
+            if(camMode === "once" || camMode === "auto") pbContainer.style.display = "block";
             
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(s => {
-                    stream = s;
-                    scanning = true;
-                    video.srcObject = stream;
-                    video.play();
-                    requestAnimationFrame(tick);
-                })
+                .then(s => { stream = s; scanning = true; video.srcObject = stream; video.play(); requestAnimationFrame(tick); })
                 .catch(() => errorMsg.innerText = "Camera denied. Use file upload.");
         }
 
         function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            scanning = false;
-            video.srcObject = null;
-            video.style.display = "none";
-            cameraOffMsg.style.display = "block";
+            if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+            scanning = false; video.srcObject = null; video.style.display = "none";
+            pbContainer.style.display = "none"; cameraOffMsg.style.display = "block";
         }
 
         // --- 4. CAMERA MODES LOGIC ---
         function setMode(mode) {
             camMode = mode;
-            
-            // UI Button Updates
             document.querySelectorAll(".mode-btn").forEach(btn => btn.classList.remove("active"));
             document.getElementById(`btn-${mode}`).classList.add("active");
 
-            if (mode === "manual") videoWrapper.classList.add("manual-mode");
-            else videoWrapper.classList.remove("manual-mode");
+            if (mode === "manual") { videoWrapper.classList.add("manual-mode"); pbContainer.style.display = "none"; } 
+            else { videoWrapper.classList.remove("manual-mode"); if(stream) pbContainer.style.display = "block"; }
 
-            if (mode === "off") {
-                stopCamera();
-                feedback.innerText = "";
-            } else {
-                if (!stream) startCamera();
-                lastContinuousData = null; 
-                feedback.innerText = "";
-            }
+            if (mode === "off") { stopCamera(); feedback.innerText = ""; } 
+            else { if (!stream) startCamera(); lastContinuousData = null; feedback.innerText = ""; }
         }
 
-        // --- 5. SCANNING LOGIC ---
+        // --- 5. SCANNER ENGINE ---
+        function attemptScan(source, width, height, applyFilters = false) {
+            canvasEl.width = width; canvasEl.height = height;
+            const filters = applyFilters ? ["none", "contrast(200%) grayscale(100%)", "blur(2px) contrast(500%) grayscale(100%)"] : ["none"];
+            for (let filter of filters) {
+                ctx.filter = filter; ctx.drawImage(source, 0, 0, width, height); ctx.filter = "none";
+                try {
+                    const imgData = ctx.getImageData(0, 0, width, height);
+                    const code = jsQR(imgData.data, width, height, { inversionAttempts: "attemptBoth" });
+                    if (code) return code.data;
+                } catch (err) {}
+            }
+            return null;
+        }
+
+        // --- 6. SMART HIGH-RES IMAGE CAPTURE ---
+        function getSmartHighResImage(source, w, h) {
+            const currentRamMB = historyArray.reduce((acc, item) => acc + (item.ramImage?.length * 2 || 0), 0) / (1024 * 1024);
+            let highRes = null;
+
+            // Step 1: Under 100MB? Try ZERO compression (1.0 Quality, Native max dimension)
+            if (currentRamMB < 100) {
+                highRes = generateDataURL(source, w, h, 1.0, 99999); 
+            }
+
+            // Step 2: Fallback if over 100MB, OR if native size crashed the mobile canvas
+            if (!highRes || highRes.length < 5000) {
+                highRes = generateDataURL(source, w, h, 0.95, 2048);
+            }
+
+            return highRes;
+        }
+
+        // --- 7. LIVE CAMERA SCANNING LOGIC ---
         function tick(now) {
             if (!scanning) return;
             requestAnimationFrame(tick); 
-            
             if (camMode === "manual" || camMode === "off") return;
 
             if (video.readyState === video.HAVE_ENOUGH_DATA && (now - lastScanTime >= SCAN_INTERVAL)) {
-                lastScanTime = now;
-                
-                const vw = video.videoWidth;
-                const vh = video.videoHeight;
+                lastScanTime = now; animateProgressBar(SCAN_INTERVAL); 
+                const vw = video.videoWidth; const vh = video.videoHeight;
                 if(vw === 0 || vh === 0) return;
 
-                canvasEl.width = vw; 
-                canvasEl.height = vh;
-                ctx.drawImage(video, 0, 0, vw, vh);
-                
-                const qrData = scanPixels(ctx, vw, vh, true);
+                const qrData = attemptScan(video, vw, vh, true);
                 
                 if (qrData) {
                     if (camMode === "once") {
-                        addHistoryItem(qrData, compressImage(canvasEl, 300), "Camera Scan");
+                        let highRes = getSmartHighResImage(video, vw, vh);
+                        const saveRes = generateDataURL(video, vw, vh, 0.8, 800);
+                        if (!highRes || highRes.length < 5000) highRes = saveRes; // Ultimate fail-safe
+
+                        addHistoryItem(qrData, highRes, saveRes, "Camera Scan");
+                        
                         feedback.innerText = "✅ QR Scanned! Camera turned off.";
                         setTimeout(() => { if (feedback.innerText.includes("turned off")) feedback.innerText = ""; }, 4000);
-                        
-                        setMode("off"); // Auto turn off
-
+                        setMode("off");
                     } else if (camMode === "auto") {
                         if (qrData !== lastContinuousData) {
-                            addHistoryItem(qrData, compressImage(canvasEl, 300), "Auto Scan");
+                            let highRes = getSmartHighResImage(video, vw, vh);
+                            const saveRes = generateDataURL(video, vw, vh, 0.8, 800);
+                            if (!highRes || highRes.length < 5000) highRes = saveRes; // Ultimate fail-safe
+
+                            addHistoryItem(qrData, highRes, saveRes, "Auto Scan");
                             lastContinuousData = qrData;
                             feedback.innerText = "✅ New QR Added!";
                             setTimeout(() => feedback.innerText = "", 2000);
@@ -250,184 +370,306 @@
             }
         }
 
-        // Manual Click Handler
         videoWrapper.addEventListener("click", () => {
             if (camMode !== "manual" || !stream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-            
-            canvasEl.width = video.videoWidth; canvasEl.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvasEl.width, canvasEl.height);
-            const qrData = scanPixels(ctx, canvasEl.width, canvasEl.height, true);
+            const vw = video.videoWidth; const vh = video.videoHeight;
+            const qrData = attemptScan(video, vw, vh, true);
             
             if (qrData) {
-                addHistoryItem(qrData, compressImage(canvasEl, 300), "Manual Capture");
-                feedback.innerText = "✅ QR Captured!";
-                setTimeout(() => feedback.innerText = "", 2500);
+                let highRes = getSmartHighResImage(video, vw, vh);
+                const saveRes = generateDataURL(video, vw, vh, 0.8, 800);
+                if (!highRes || highRes.length < 5000) highRes = saveRes;
+
+                addHistoryItem(qrData, highRes, saveRes, "Manual Capture");
+                feedback.innerText = "✅ QR Captured!"; setTimeout(() => feedback.innerText = "", 2500);
             } else {
-                errorMsg.innerText = "❌ No QR found in frame.";
-                setTimeout(() => errorMsg.innerText = "", 2000);
+                errorMsg.innerText = "❌ No QR found in frame."; setTimeout(() => errorMsg.innerText = "", 2000);
             }
         });
 
-        // --- 6. FILE UPLOAD LOGIC (MULTI-PASS SCANNER) ---
-        document.getElementById("file-input").addEventListener("change", e => {
+        // --- 8. FILE UPLOAD LOGIC ---
+        document.getElementById("file-input").addEventListener("change", async e => {
             const files = Array.from(e.target.files);
             if (!files.length) return;
-            errorMsg.innerText = "⏳ Processing images...";
+            pbContainer.style.display = "block"; errorMsg.innerText = "⏳ Processing image(s)...";
             
-            files.forEach(file => {
-                const url = URL.createObjectURL(file);
-                const img = new Image();
-                img.onload = () => {
-                    URL.revokeObjectURL(url); 
-                    
-                    let foundData = null;
-                    let finalCanvas = null;
+            for (let i = 0; i < files.length; i++) {
+                let file = files[i]; animateProgressBar(500); 
 
-                    // Multi-Pass: Try scanning at 100%, 75%, 50%, and 25% size.
-                    // This forces "circular" style QR codes (like Chrome's T-Rex) to blur into readable blocks.
-                    const testScales = [1, 0.75, 0.5, 0.25];
+                await new Promise((resolve) => {
+                    const url = URL.createObjectURL(file);
+                    const img = new Image();
                     
-                    for (let s of testScales) {
-                        const MAX_DIM = 3000 * s; 
-                        const scale = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, 1);
-                        const w = Math.floor(img.width * scale); 
-                        const h = Math.floor(img.height * scale);
-
-                        const tCanvas = document.createElement("canvas");
-                        tCanvas.width = w; tCanvas.height = h;
-                        const tCtx = tCanvas.getContext("2d", { willReadFrequently: true });
+                    img.onload = async () => {
+                        try { await img.decode(); } catch(err) {} 
                         
-                        // Turn ON smoothing to blend circular dots together
-                        tCtx.imageSmoothingEnabled = true; 
-                        tCtx.drawImage(img, 0, 0, w, h);
+                        let foundData = null;
+                        const testScales = [1, 0.5]; 
                         
-                        const qrData = scanPixels(tCtx, w, h, true);
-                        if (qrData) {
-                            foundData = qrData;
-                            finalCanvas = tCanvas;
-                            break; // Stop trying scales if we found it!
+                        for (let scale of testScales) {
+                            const MAX_DIM = 2000; 
+                            const ratio = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, scale);
+                            const w = Math.floor(img.width * ratio); const h = Math.floor(img.height * ratio);
+                            foundData = attemptScan(img, w, h, true);
+                            if (foundData) break;
                         }
-                    }
-                    
-                    if (foundData) {
-                        addHistoryItem(foundData, compressImage(finalCanvas, 300), file.name);
-                    } else {
-                        errorMsg.innerText += `\n❌ No QR in: ${file.name}`;
-                    }
-                };
-                img.src = url;
-            });
+                        
+                        if (foundData) {
+                            let highRes = getSmartHighResImage(img, img.width, img.height);
+                            const saveRes = generateDataURL(img, img.width, img.height, 0.8, 800);
+                            
+                            // Ultimate Fail-safe
+                            if (!highRes || highRes.length < 5000) highRes = saveRes;
+
+                            addHistoryItem(foundData, highRes, saveRes, file.name);
+                        } else {
+                            errorMsg.innerText += `\n❌ No QR found in: ${file.name}`;
+                        }
+                        
+                        URL.revokeObjectURL(url); 
+                        resolve();
+                    };
+                    img.onerror = () => { errorMsg.innerText += `\n❌ Failed: ${file.name}`; resolve(); }
+                    img.src = url;
+                });
+            }
             e.target.value = ""; 
+            if(camMode !== "once" && camMode !== "auto") pbContainer.style.display = "none";
             setTimeout(() => { if(errorMsg.innerText.includes("⏳")) errorMsg.innerText = ""; }, 3000);
         });
 
-        // --- 7. HELPERS ---
-        function scanPixels(context, w, h, tryHarder) {
+        // --- 9. IMAGE GENERATOR (No Upscaling allowed) ---
+        function generateDataURL(source, w, h, quality, maxDim = 99999) {
+            // Math.min(..., 1) strictly prevents any upscaling of smaller images
+            const scale = Math.min(maxDim / w, maxDim / h, 1);
+            const canvas = document.createElement("canvas");
+            canvas.width = w * scale; 
+            canvas.height = h * scale;
+            const ctx = canvas.getContext("2d");
+            if(scale < 1) ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL("image/jpeg", quality); 
+        }
+
+        function asyncDownsize(dataUrl, scaleFactor, quality) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.max(img.width * scaleFactor, 50); 
+                    canvas.height = Math.max(img.height * scaleFactor, 50);
+                    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL("image/jpeg", quality));
+                };
+                img.src = dataUrl;
+            });
+        }
+
+        let isManagingRAM = false;
+        async function manageRAM() {
+            if (isManagingRAM) return;
+            isManagingRAM = true;
+
+            const getRamBytes = () => historyArray.reduce((acc, item) => acc + (item.ramImage?.length * 2 || 0), 0);
+            const LIMIT = 200 * 1024 * 1024; // 200 MB
+            const TARGET = 100 * 1024 * 1024; // 100 MB
+
             try {
-                const imgData = context.getImageData(0, 0, w, h);
-                const code = jsQR(imgData.data, w, h, { inversionAttempts: tryHarder ? "attemptBoth" : "dontInvert" });
-                return code ? code.data : null;
-            } catch (err) { return null; }
+                if (getRamBytes() > LIMIT) {
+                    let candidates = historyArray.slice(1);
+                    while (getRamBytes() > TARGET && candidates.length > 0) {
+                        candidates.sort((a, b) => (b.ramImage?.length || 0) - (a.ramImage?.length || 0));
+                        let biggest = candidates[0];
+                        if (!biggest.ramImage || biggest.ramImage.length < 50000) { candidates.shift(); continue; }
+                        biggest.ramImage = await asyncDownsize(biggest.ramImage, 0.5, 0.7);
+                    }
+                }
+            } finally {
+                updateRamMeter(); isManagingRAM = false;
+            }
         }
 
-        function compressImage(sourceCanvas, maxDim = 300) {
-            const scale = Math.min(maxDim / sourceCanvas.width, maxDim / sourceCanvas.height, 1);
-            const tCan = document.createElement("canvas");
-            tCan.width = sourceCanvas.width * scale; tCan.height = sourceCanvas.height * scale;
-            tCan.getContext("2d").drawImage(sourceCanvas, 0, 0, tCan.width, tCan.height);
-            return tCan.toDataURL("image/jpeg", 0.6); 
+        function updateRamMeter() {
+            ramMeter.innerText = `RAM: ${(historyArray.reduce((acc, item) => acc + (item.ramImage?.length * 2 || 0), 0) / (1024*1024)).toFixed(1)} MB`;
         }
 
-        // --- 8. HISTORY & DATA MANAGEMENT ---
-        function addHistoryItem(data, imgUrl, filename) {
-            globalIndex++;
-            const newItem = {
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                index: globalIndex, date: getCustomDate(), filename: filename, data: data, image: imgUrl
-            };
-            historyArray.unshift(newItem); 
-            renderHistory();
-        }
+        // --- 10. HISTORY UI ---
+        function generateCardHTML(item) {
+            const safeData = escapeHTML(item.data); const safeFilename = escapeHTML(item.filename);
+            const isUrl = /^https?:\/\//i.test(item.data);
+            const linkHtml = isUrl ? `<a href="${safeData}" target="_blank" rel="noopener noreferrer">${safeData}</a>` : `<span>${safeData}</span>`;
+            
+            const imageHtml = item.saveImage ? `
+                <div class="image-container">
+                    <img src="${item.saveImage}" class="history-image">
+                    <button class="btn btn-small" onclick="openFullscreen('${item.id}')">🔍 View</button>
+                </div>
+            ` : `<div style="color:var(--text-muted); font-size: 0.8em; margin-top:10px;">[Image not available from text recovery]</div>`;
 
-        function renderHistory() {
-            historyList.innerHTML = "";
-            historyArray.forEach(item => {
-                const isUrl = /^https?:\/\//i.test(item.data);
-                const linkHtml = isUrl ? `<a href="${item.data}" target="_blank" rel="noopener noreferrer">${item.data}</a>` : `<span>${item.data}</span>`;
-
-                const card = document.createElement("div");
-                card.className = "history-card";
-                card.id = `card-${item.id}`;
-                card.innerHTML = `
+            return `
+                <div class="history-card" id="card-${item.id}">
                     <div class="history-header">
-                        <div><span class="history-index">#${item.index}</span> | <span>${item.date}</span></div>
+                        <div><span class="history-index">#${item.index}</span> | <span>${escapeHTML(item.date)}</span></div>
                         <div>
                             <button class="icon-btn" onclick="toggleEdit('${item.id}')" title="Edit">✏️</button>
                             <button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete">🗑️</button>
                         </div>
                     </div>
-                    
                     <div class="history-data view-mode">
-                        <strong>File:</strong> ${item.filename} <br>
+                        <strong>File:</strong> ${safeFilename} <br>
                         <strong>Data:</strong> ${linkHtml}
                     </div>
-
                     <div class="history-data edit-mode">
-                        <strong>File:</strong>
-                        <input type="text" id="edit-file-${item.id}" value="${item.filename}">
-                        <strong>Data:</strong>
-                        <textarea id="edit-data-${item.id}" rows="3">${item.data}</textarea>
+                        <input type="text" id="edit-file-${item.id}" value="${safeFilename}">
+                        <textarea id="edit-data-${item.id}" rows="3">${safeData}</textarea>
                         <button class="btn btn-small" onclick="saveEdit('${item.id}')">💾 Save</button>
                         <button class="btn btn-small btn-danger" onclick="toggleEdit('${item.id}')">❌ Cancel</button>
                     </div>
-
-                    <img src="${item.image}" class="history-image" alt="QR Thumbnail">
-                `;
-                historyList.appendChild(card);
-            });
+                    ${imageHtml}
+                </div>
+            `;
         }
 
+        function addHistoryItem(data, highRes, saveRes, filename) {
+            globalIndex++;
+            const newItem = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                index: globalIndex, date: getCustomDate(), filename: filename, 
+                data: data, ramImage: highRes, saveImage: saveRes
+            };
+            historyArray.unshift(newItem); 
+            historyList.insertAdjacentHTML('afterbegin', generateCardHTML(newItem));
+            manageRAM(); backupTextData();
+        }
+
+        function renderHistory() { historyList.innerHTML = historyArray.map(generateCardHTML).join(''); updateRamMeter(); }
         function toggleEdit(id) { document.getElementById(`card-${id}`).classList.toggle("is-editing"); }
+        
         function saveEdit(id) {
             const idx = historyArray.findIndex(i => i.id === id);
             if(idx > -1) {
                 historyArray[idx].filename = document.getElementById(`edit-file-${id}`).value;
                 historyArray[idx].data = document.getElementById(`edit-data-${id}`).value;
-                renderHistory();
-                if(localStorage.getItem('qr-history')) saveToLocal(true);
+                document.getElementById(`card-${id}`).outerHTML = generateCardHTML(historyArray[idx]);
+                backupTextData();
             }
         }
+
         function deleteItem(id) {
             if(!confirm("Delete this scan?")) return;
             historyArray = historyArray.filter(i => i.id !== id);
-            renderHistory();
-            if(localStorage.getItem('qr-history')) saveToLocal(true);
+            document.getElementById(`card-${id}`).remove();
+            updateRamMeter(); backupTextData();
         }
+
         function clearHistory() {
             if(!confirm("Clear ALL history? Cannot be undone.")) return;
-            historyArray = []; globalIndex = 0;
-            localStorage.removeItem('qr-history'); localStorage.removeItem('qr-index');
+            historyArray = []; globalIndex = 0; 
+            localStorage.removeItem('qrreader_history'); localStorage.removeItem('qrreader_index'); localStorage.removeItem('qrreader_text_data');
             renderHistory();
         }
 
-        // --- 9. LOCAL STORAGE ---
-        function saveToLocal(silent = false) {
-            try {
-                localStorage.setItem('qr-history', JSON.stringify(historyArray));
-                localStorage.setItem('qr-index', globalIndex.toString());
-                if(!silent) alert("✅ History saved successfully!");
-            } catch (e) { alert("❌ Storage Full! Delete some older scans."); }
+        // --- 11. FULLSCREEN IMAGE MODAL ---
+        const imageModal = document.getElementById("fullscreen-modal");
+        const modalImg = document.getElementById("fullscreen-img");
+        
+        function openFullscreen(id) {
+            const item = historyArray.find(i => i.id === id);
+            if (item && item.ramImage) {
+                modalImg.src = item.ramImage;
+                imageModal.style.display = "flex";
+                document.body.classList.add("modal-open");
+            }
         }
+        function closeFullscreen(e) {
+            if (e.target.id === "fullscreen-modal" || e.target.closest('#close-img-btn')) {
+                imageModal.style.display = "none";
+                modalImg.src = "";
+                document.body.classList.remove("modal-open");
+            }
+        }
+
+        // --- 12. LOCAL STORAGE & 2MB SMART FALLBACK ---
+        async function saveToLocal(silent = false) {
+            let saved = false; 
+            let attempts = 0;
+            let cooldownsUsed = 0;
+            const TWO_MB = 2 * 1024 * 1024; // 2MB limit threshold
+            
+            const btn = document.getElementById("btn-save-local");
+            const originalText = btn.innerText;
+            btn.innerText = "⏳ Saving...";
+
+            while (!saved && attempts < 15) {
+                try {
+                    const payload = historyArray.map(item => ({
+                        id: item.id, index: item.index, date: item.date,
+                        filename: item.filename, data: item.data, saveImage: item.saveImage
+                    }));
+                    
+                    const payloadString = JSON.stringify(payload);
+                    localStorage.setItem('qrreader_history', payloadString);
+                    localStorage.setItem('qrreader_index', globalIndex.toString());
+                    
+                    saved = true; 
+                    if(!silent) alert("✅ History saved successfully!");
+                } catch (e) {
+                    attempts++;
+                    
+                    // Approximate size of current save payload based on string length
+                    const currentSize = historyArray.reduce((acc, item) => acc + (item.saveImage?.length || 0), 0);
+                    
+                    if (currentSize < TWO_MB && cooldownsUsed < 3) {
+                        // Total is under 2MB but browser still threw an error. 
+                        // It might be a temporary busy-lock. Cooldown for 2 seconds and retry without shrinking.
+                        console.log("Size is under 2MB but save failed. Cooling down for 2 seconds...");
+                        cooldownsUsed++;
+                        await new Promise(r => setTimeout(r, 2000));
+                    } else {
+                        // Quota reached or cooldowns failed. Shrink the single biggest image loop.
+                        let sorted = [...historyArray].sort((a, b) => (b.saveImage?.length || 0) - (a.saveImage?.length || 0));
+                        let biggest = sorted[0];
+                        
+                        if (!biggest.saveImage || biggest.saveImage.length < 5000) {
+                            alert("❌ Storage Full! Images fully compressed. Raw text is still safely backed up."); 
+                            break;
+                        }
+                        
+                        console.log(`Shrinking largest image (Current Size: ${biggest.saveImage.length})...`);
+                        biggest.saveImage = await asyncDownsize(biggest.saveImage, 0.5, 0.7);
+                    }
+                }
+            }
+            btn.innerText = originalText;
+        }
+
         function loadFromLocal() {
-            const saved = localStorage.getItem('qr-history');
+            const saved = localStorage.getItem('qrreader_history');
             if (saved) {
-                historyArray = JSON.parse(saved);
-                globalIndex = parseInt(localStorage.getItem('qr-index') || historyArray.length);
-                renderHistory();
+                try {
+                    historyArray = JSON.parse(saved);
+                    historyArray.forEach(item => item.ramImage = item.saveImage);
+                    globalIndex = parseInt(localStorage.getItem('qrreader_index') || historyArray.length);
+                    renderHistory(); return;
+                } catch(e) { console.error("Corrupted image history"); }
+            }
+            
+            const textBackup = localStorage.getItem('qrreader_text_data');
+            if (textBackup) {
+                try {
+                    const parsedText = JSON.parse(textBackup);
+                    if (parsedText.length > 0) {
+                        historyArray = parsedText.map((textData, idx) => ({
+                            id: 'rec_' + Date.now() + '_' + idx, index: parsedText.length - idx,
+                            date: 'Recovered Backup', filename: 'Text Only Recovery', data: textData,
+                            ramImage: '', saveImage: ''
+                        }));
+                        globalIndex = parsedText.length; renderHistory();
+                    }
+                } catch(e) { console.error("Corrupted text backup"); }
             }
         }
         
-        // Start everything on load
         window.onload = () => { loadFromLocal(); startCamera(); };
     </script>
 </body>
