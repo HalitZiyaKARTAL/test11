@@ -31,15 +31,17 @@
         .icon-btn:hover { border-color: var(--primary); }
         .icon-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
         
+        select { border-radius: 0.4em; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); padding: 0.6em; font-size: 1rem; width: 100%; box-sizing: border-box; }
         select.icon-btn { 
-            appearance: none; -webkit-appearance: none; font-size: 1rem; padding-right: 1.8em;
+            appearance: none; -webkit-appearance: none; font-size: 1rem; padding-right: 1.8em; width: auto;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat; background-position: right 0.4em center; background-size: 1em;
             max-width: 10em; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; outline: none;
         }
 
         input[type="text"], input[type="number"], textarea { width: 100%; padding: 0.6em; margin: 0.3em 0 1em; border-radius: 0.4em; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box; font-family: inherit; font-size: 1rem; }
-        input[type="file"] { display: none; }
+        input[type="file"].hidden-file { display: none; }
+        input[type="file"].standard-file { display: block; width: 100%; margin: 0.5em 0; color: var(--text); }
         input[type="range"] { width: 100%; margin: 0.5em 0; cursor: pointer; }
         
         .btn { display: block; width: 100%; box-sizing: border-box; text-align: center; background: var(--primary); color: #fff; padding: 0.75em; font-size: 1rem; font-weight: 500; border-radius: 0.5em; cursor: pointer; border: none; margin-top: 0.6em; transition: 0.2s; }
@@ -72,21 +74,12 @@
         #engine-badge { position: absolute; top: 1em; left: 0.6em; background: rgba(0,0,0,0.6); color: white; font-size: 0.65rem; padding: 0.3em 0.6em; border-radius: 0.8em; z-index: 20; letter-spacing: 0.05em;}
         #perf-badge { position: absolute; top: 1em; right: 0.6em; background: rgba(0,0,0,0.6); color: white; font-size: 0.65rem; padding: 0.3em 0.6em; border-radius: 0.8em; z-index: 20;}
         
-        /* Progress Bar & Line Icon */
         #progress-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.2); z-index: 15; display: none; }
         #progress-bar { height: 100%; width: 0%; background: var(--primary); transition: background-color 0.1s; }
         
         #scan-result-icon { 
-            position: absolute; 
-            right: 4px; 
-            top: 2px; /* Perfect middle of the 4px bar */
-            transform: translateY(-50%); 
-            font-size: 1.2rem; 
-            font-weight: 900; 
-            z-index: 20; 
-            text-shadow: 0 0 4px rgba(0,0,0,0.8); 
-            opacity: 0; 
-            transition: none; 
+            position: absolute; right: 4px; top: 2px; transform: translateY(-50%); 
+            font-size: 1.2rem; font-weight: 900; z-index: 20; text-shadow: 0 0 4px rgba(0,0,0,0.8); opacity: 0; transition: none; 
         }
         .indicator-success { color: #4ade80; }
         .indicator-fail { color: #ff6b6b; }
@@ -118,16 +111,21 @@
         .is-editing .view-mode { display: none; }
         .is-editing .edit-mode { display: block; }
 
-        /* FULL DISPLAY MODE */
+        /* --- Modals --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); backdrop-filter: blur(5px); z-index: 99999; display: none; justify-content: center; align-items: center; }
         #fullscreen-img { max-width: 70vw; max-height: 65vh; object-fit: contain; border-radius: 0.5em; box-shadow: 0 0.25em 1.5em rgba(0,0,0,1); }
         .close-modal-btn { position: absolute; top: 5%; right: 5%; background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.8rem; cursor: pointer; border-radius: 50%; width: 2em; height: 2em; display: flex; justify-content: center; align-items: center; transition: 0.2s;}
         .close-modal-btn:hover { background: rgba(255,255,255,0.4); }
         
-        .text-modal-content { background: var(--surface); padding: 1.25em; border-radius: 0.75em; width: 90%; max-width: 38em; box-shadow: 0 0.25em 1.5em rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 1em; }
-        .text-modal-content h3 { margin: 0; color: var(--text); }
+        .modal-content-box { background: var(--surface); padding: 1.25em; border-radius: 0.75em; width: 90%; max-width: 38em; box-shadow: 0 0.25em 1.5em rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 1em; max-height: 85vh; overflow-y: auto;}
+        .modal-content-box h3 { margin: 0; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 0.5em;}
         #raw-text-area { width: 100%; height: 18em; resize: vertical; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 0.6em; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 0.6em; margin-top: 0.5em;}
+        
+        .backup-section { border: 1px solid var(--border); padding: 1em; border-radius: 0.5em; background: var(--input-bg); }
+        .backup-section h4 { margin: 0 0 0.8em 0; font-size: 1rem; color: var(--primary); }
+        .backup-field { margin-bottom: 1em; }
+        .backup-field label { display: block; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); margin-bottom: 0.3em; }
     </style>
 </head>
 <body>
@@ -136,11 +134,11 @@
         <div class="header-actions">
             <h1 style="margin:0;">QR Scanner</h1>
             <div style="display:flex; gap:0.4em; align-items: center;">
-                <button id="audio-btn" class="icon-btn active" onclick="toggleAudio()" title="Toggle Audio">🔊</button>
+                <button id="audio-btn" class="icon-btn active" onclick="toggleAudio()" title="Toggle Audio">&#x1F50A;</button>
                 <select id="camera-select" class="icon-btn" onchange="startSelectedCamera(this.value)" title="Select Camera">
-                    <option value="">📷 ▾</option>
+                    <option value="">&#x1F4F7; &#x25BE;</option>
                 </select>
-                <button id="theme-btn" class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
+                <button id="theme-btn" class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">&#x1F312;</button>
             </div>
         </div>
         
@@ -156,7 +154,7 @@
                 <span id="scan-result-icon"></span>
             </div>
             
-            <span id="camera-off-msg">📷 Camera is Off</span>
+            <span id="camera-off-msg">&#x1F4F7; Camera is Off</span>
         </div>
         <div id="feedback" class="msg success"></div>
 
@@ -190,12 +188,12 @@
             </div>
         </div>
 
-        <div class="divider">— OR —</div>
+        <div class="divider">&#x2014; OR &#x2014;</div>
 
         <!-- Multi-File Upload -->
         <label class="btn">
-            📁 Upload Images
-            <input type="file" id="file-input" accept="image/*" multiple>
+            &#x1F4C1; Upload Images
+            <input type="file" id="file-input" class="hidden-file" accept="image/*" multiple>
         </label>
         <div id="error-msg" class="msg error"></div>
     </div>
@@ -205,26 +203,81 @@
         <div class="history-controls">
             <h2 style="margin:0;">Scan History</h2>
             <div class="btn-group">
-                <button class="btn btn-small" onclick="openTextModal()">📄 Open Link Texts</button>
-                <button id="btn-save-local" class="btn btn-small" onclick="saveToLocal()">💾 Save Local</button>
-                <button class="btn btn-small btn-danger" onclick="clearHistory()">🗑️ Clear</button>
+                <button class="btn btn-small" onclick="openTextModal()" title="Links">&#x1F4C4; Texts</button>
+                <button class="btn btn-small" onclick="openBackupModal()" title="Backup / Restore">&#x1F4E5;&#x1F4E4; Backup</button>
+                <button id="btn-save-local" class="btn btn-small" onclick="saveToLocal()">&#x1F4BE; Save</button>
+                <button class="btn btn-small btn-danger" onclick="clearHistory()">&#x1F5D1;&#xFE0F; Clear</button>
                 <div class="ram-meter" id="ram-meter">RAM: 0 MB</div>
             </div>
         </div>
         <div id="history-list"></div>
     </div>
 
-    <!-- Modals -->
+    <!-- Smart Fullscreen Image Modal -->
     <div id="fullscreen-modal" class="modal-overlay" onclick="closeFullscreen(event)">
         <button class="close-modal-btn" id="close-img-btn">&times;</button>
         <img id="fullscreen-img" src="">
     </div>
     
+    <!-- Text Modal -->
     <div id="text-modal" class="modal-overlay" onclick="closeTextModalClick(event)">
-        <div class="text-modal-content">
+        <div class="modal-content-box" id="text-modal-box">
             <h3>Editable Links Text</h3>
             <textarea id="raw-text-area" spellcheck="false"></textarea>
-            <div class="modal-actions"><button class="btn btn-small" onclick="copyFromTextModal()">📋 Copy</button><button class="btn btn-small btn-danger" onclick="closeTextModal()">❌ Close</button></div>
+            <div class="modal-actions">
+                <button class="btn btn-small" onclick="copyFromTextModal()">&#x1F4CB; Copy</button>
+                <button class="btn btn-small btn-danger" onclick="closeTextModal()">&#x274C; Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup & Restore Modal -->
+    <div id="backup-modal" class="modal-overlay" onclick="closeBackupModalClick(event)">
+        <div class="modal-content-box" id="backup-modal-box">
+            <h3>Data Manager (Import / Export)</h3>
+            
+            <!-- Export Section -->
+            <div class="backup-section">
+                <h4>&#x1F4E4; Download Backup</h4>
+                <div class="backup-field">
+                    <label>Export Format:</label>
+                    <select id="export-type" onchange="updateExportExtension()">
+                        <option value="full">Full Backup (Images + Data)</option>
+                        <option value="text">Text Only (Links & Data)</option>
+                    </select>
+                </div>
+                <div class="backup-field">
+                    <label>Filename:</label>
+                    <input type="text" id="export-filename" value="qrreaderdata.json">
+                </div>
+                <button class="btn btn-small" onclick="exportBackupData()">&#x1F4E4; Download File</button>
+            </div>
+
+            <!-- Import Section -->
+            <div class="backup-section">
+                <h4>&#x1F4E5; Upload Backup</h4>
+                
+                <div style="font-size: 0.8rem; color: var(--error); margin-bottom: 0.8em; font-weight: bold; line-height: 1.3;">
+                    &#x26A0;&#xFE0F; Note: Before using Merge, getting a backup is suggested. It can be aggressive in replacing duplicates.
+                </div>
+
+                <div class="backup-field">
+                    <label>Import Mode:</label>
+                    <select id="import-mode">
+                        <option value="merge">Merge (Add new differences only)</option>
+                        <option value="replace">Replace (Wipe and overwrite everything)</option>
+                    </select>
+                </div>
+                <div class="backup-field">
+                    <label>Select File (Any Text/JSON format):</label>
+                    <input type="file" id="import-file" class="standard-file">
+                </div>
+                <button class="btn btn-small" onclick="importBackupData()">&#x1F4E5; Upload & Process</button>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-small btn-danger" onclick="closeBackupModal()">&#x274C; Close</button>
+            </div>
         </div>
     </div>
 
@@ -270,23 +323,19 @@
         const cameraSelect = document.getElementById("camera-select");
         const scanResultIcon = document.getElementById("scan-result-icon");
 
-        // --- Logarithmic Hz Logic (0.1 to 100, where 10 is at 66.6%) ---
+        // --- Logarithmic Hz Logic ---
         function applyHz(hz) {
             targetHz = hz; scanInterval = 1000 / targetHz;
             perfBadge.innerText = `${targetHz} Hz Target`;
         }
         function updateHzFromSlider() {
-            let v = parseFloat(hzSliderLog.value);
-            let hz = 0.1 * Math.pow(1000, v / 100);
-            hz = parseFloat(hz.toFixed(1)); 
-            hzInput.value = hz; applyHz(hz);
+            let v = parseFloat(hzSliderLog.value); let hz = 0.1 * Math.pow(1000, v / 100);
+            hz = parseFloat(hz.toFixed(1)); hzInput.value = hz; applyHz(hz);
         }
         function updateSliderFromHz() {
             let hz = parseFloat(hzInput.value);
-            if (isNaN(hz) || hz < 0.1) hz = 0.1;
-            if (hz > 100) hz = 100;
-            hzInput.value = hz;
-            let v = 100 * Math.log10(hz * 10) / 3;
+            if (isNaN(hz) || hz < 0.1) hz = 0.1; if (hz > 100) hz = 100;
+            hzInput.value = hz; let v = 100 * Math.log10(hz * 10) / 3;
             hzSliderLog.value = v; applyHz(hz);
         }
         hzSliderLog.addEventListener("input", updateHzFromSlider);
@@ -296,7 +345,7 @@
         function toggleAudio() {
             audioEnabled = !audioEnabled;
             const btn = document.getElementById("audio-btn");
-            btn.innerText = audioEnabled ? "🔊" : "🔇";
+            btn.innerHTML = audioEnabled ? "&#x1F50A;" : "&#x1F507;";
             btn.classList.toggle("active", audioEnabled);
         }
 
@@ -338,18 +387,18 @@
             if ('BarcodeDetector' in window) {
                 try {
                     nativeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-                    scanEngine = 'native'; badge.innerText = "⚡ Native API"; badge.style.background = "rgba(40,167,69,0.8)";
+                    scanEngine = 'native'; badge.innerText = "\u26A1 Native API"; badge.style.background = "rgba(40,167,69,0.8)";
                     return;
                 } catch(e) {}
             }
-            badge.innerText = "⏳ Loading jsQR...";
+            badge.innerText = "\u23F3 Loading jsQR...";
             try {
                 await new Promise((res, rej) => {
                     const script = document.createElement('script'); script.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js";
                     script.onload = res; script.onerror = rej; document.head.appendChild(script);
                 });
-                scanEngine = 'jsqr'; badge.innerText = "📚 jsQR"; badge.style.background = "rgba(0,123,255,0.8)";
-            } catch (err) { badge.innerText = "❌ Error"; badge.style.background = "rgba(220,53,69,0.8)"; }
+                scanEngine = 'jsqr'; badge.innerText = "\u{1F4DA} jsQR"; badge.style.background = "rgba(0,123,255,0.8)";
+            } catch (err) { badge.innerText = "\u274C Error"; badge.style.background = "rgba(220,53,69,0.8)"; }
         }
 
         // --- 4. HARDWARE & CAMERAS ---
@@ -357,13 +406,10 @@
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 videoDevices = devices.filter(d => d.kind === 'videoinput');
-                cameraSelect.innerHTML = '<option value="">📷 ▾</option>'; 
-                
+                cameraSelect.innerHTML = '<option value="">&#x1F4F7; &#x25BE;</option>'; 
                 videoDevices.forEach((cam, index) => {
-                    const opt = document.createElement('option');
-                    opt.value = cam.deviceId;
-                    opt.text = cam.label || `Camera ${index + 1}`;
-                    cameraSelect.appendChild(opt);
+                    const opt = document.createElement('option'); opt.value = cam.deviceId;
+                    opt.text = cam.label || `Camera ${index + 1}`; cameraSelect.appendChild(opt);
                 });
             } catch(e) {}
         }
@@ -372,19 +418,14 @@
 
         function startCamera(deviceId = null) {
             if (stream) stopCamera();
-            
             document.getElementById("camera-off-msg").style.display = "none"; 
             video.style.display = "block";
             if (camMode !== "manual") pbContainer.style.display = "block";
-            
             const constraints = deviceId ? { video: { deviceId: { exact: deviceId } } } : { video: { facingMode: "environment" } };
-            
             navigator.mediaDevices.getUserMedia(constraints).then(async s => { 
                 stream = s; scanning = true; video.srcObject = stream; video.play(); 
-                
                 if (videoDevices.length === 0) {
-                    await populateCameraDropdown();
-                    const track = s.getVideoTracks()[0];
+                    await populateCameraDropdown(); const track = s.getVideoTracks()[0];
                     if (track && track.getSettings) {
                         const activeId = track.getSettings().deviceId;
                         if (activeId && cameraSelect.querySelector(`option[value="${activeId}"]`)) { cameraSelect.value = activeId; }
@@ -397,8 +438,7 @@
         function stopCamera() {
             if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
             scanning = false; video.srcObject = null; video.style.display = "none";
-            pbContainer.style.display = "none";
-            document.getElementById("camera-off-msg").style.display = "block";
+            pbContainer.style.display = "none"; document.getElementById("camera-off-msg").style.display = "block";
             oCtx.clearRect(0,0, overlayCanvas.width, overlayCanvas.height);
         }
 
@@ -407,10 +447,13 @@
             document.querySelectorAll(".mode-btn").forEach(btn => btn.classList.remove("active"));
             document.getElementById(`btn-${mode}`).classList.add("active");
             
+            progressBar.style.transition = 'none'; progressBar.style.width = '0%'; scanResultIcon.style.opacity = '0';
+            
             if (mode === "manual") { videoWrapper.classList.add("manual-mode"); pbContainer.style.display = "none"; }
             else { videoWrapper.classList.remove("manual-mode"); if(stream) pbContainer.style.display = "block"; }
-
-            if (mode === "off") stopCamera(); else { if (!stream) startCamera(cameraSelect.value); lastContinuousData = []; }
+            
+            if (mode === "off") { stopCamera(); feedback.innerText = ""; } 
+            else { if (!stream) startCamera(cameraSelect.value); lastContinuousData = []; feedback.innerText = ""; }
         }
 
         // --- 5. HYBRID ARRAY-BASED ENGINE ---
@@ -451,84 +494,61 @@
 
             if (video.readyState === video.HAVE_ENOUGH_DATA && (now - lastScanTime >= scanInterval) && !isDetecting) {
                 isDetecting = true; 
-                
-                // 1. Reset Progress bar and hide result icon
-                progressBar.style.transition = 'none';
-                progressBar.style.width = '0%';
-                progressBar.style.backgroundColor = 'var(--primary)';
+                progressBar.style.transition = 'none'; progressBar.style.width = '0%'; progressBar.style.backgroundColor = 'var(--primary)';
                 scanResultIcon.style.opacity = '0';
 
-                // 2. Start Fill Animation & Scanning Logic after 1 frame paint
                 requestAnimationFrame(async () => {
-                    progressBar.style.transition = 'width 150ms ease-out';
-                    progressBar.style.width = '100%';
+                    progressBar.style.transition = 'width 150ms ease-out'; progressBar.style.width = '100%';
 
                     setTimeout(async () => {
-                        let tStart = performance.now();
-                        const vw = video.videoWidth; const vh = video.videoHeight;
+                        let tStart = performance.now(); const vw = video.videoWidth; const vh = video.videoHeight;
                         let foundQRs = [];
 
                         if (vw > 0 && vh > 0) {
-                            const fScale = focusPct / 100;
-                            const nw = vw * fScale; const nh = vh * fScale;
+                            const fScale = focusPct / 100; const nw = vw * fScale; const nh = vh * fScale;
                             const nx = (vw - nw) / 2; const ny = (vh - nh) / 2;
 
                             narrowCanvasEl.width = nw; narrowCanvasEl.height = nh;
                             nCtx.drawImage(video, nx, ny, nw, nh, 0, 0, nw, nh);
                             let narrowResults = await attemptScan(narrowCanvasEl, nw, nh, true);
                             
-                            narrowResults.forEach(qr => {
-                                qr.points = qr.points.map(p => ({ x: p.x + nx, y: p.y + ny }));
-                                foundQRs.push(qr);
-                            });
+                            narrowResults.forEach(qr => { qr.points = qr.points.map(p => ({ x: p.x + nx, y: p.y + ny })); foundQRs.push(qr); });
 
-                            let elapsed = performance.now() - tStart;
-                            let timeBudgetRemaining = scanInterval - elapsed;
-
+                            let timeBudgetRemaining = scanInterval - (performance.now() - tStart);
                             if (!exclusiveNarrow && timeBudgetRemaining > 20) {
                                 let wideResults = await attemptScan(video, vw, vh, false);
-                                wideResults.forEach(qr => {
-                                    if (!foundQRs.find(existing => existing.data === qr.data)) foundQRs.push(qr);
-                                });
+                                wideResults.forEach(qr => { if (!foundQRs.find(existing => existing.data === qr.data)) foundQRs.push(qr); });
                             }
 
                             if (foundQRs.length > 0) {
                                 foundQRs.forEach(qr => activeFlashes.push({ points: qr.points, time: performance.now() }));
-                                
-                                let highRes = getSmartHighResImage(video, vw, vh);
-                                const saveRes = generateDataURL(video, vw, vh, 0.8, 800);
+                                let highRes = getSmartHighResImage(video, vw, vh); const saveRes = generateDataURL(video, vw, vh, 0.8, 800);
                                 if (!highRes || highRes.length < 5000) highRes = saveRes;
 
                                 foundQRs.forEach(qr => {
                                     if (camMode === "once") {
                                         playBeep(); addHistoryItem(qr.data, highRes, saveRes, "Camera Scan"); setMode("off");
+                                        feedback.innerText = "\u2705 QR Scanned! Camera turned off."; setTimeout(() => { if (feedback.innerText.includes("turned off")) feedback.innerText = ""; }, 4000);
                                     } else if (camMode === "auto") {
                                         if (!lastContinuousData.includes(qr.data)) {
-                                            playBeep(); addHistoryItem(qr.data, highRes, saveRes, "Auto Scan");
-                                            lastContinuousData.push(qr.data);
+                                            playBeep(); addHistoryItem(qr.data, highRes, saveRes, "Auto Scan"); lastContinuousData.push(qr.data);
                                             if(lastContinuousData.length > 20) lastContinuousData.shift(); 
+                                            feedback.innerText = "\u2705 New QR Added!"; setTimeout(() => feedback.innerText = "", 2000);
                                         }
                                     }
                                 });
                             }
                         }
                         
-                        // 3. Scan finished: Snap progress bar color and reveal line icon
                         progressBar.style.backgroundColor = foundQRs.length > 0 ? 'var(--success)' : 'var(--error)';
-                        scanResultIcon.innerText = foundQRs.length > 0 ? "✓" : "✗";
-                        scanResultIcon.className = foundQRs.length > 0 ? "indicator-success" : "indicator-fail";
-                        scanResultIcon.style.opacity = '1';
+                        scanResultIcon.innerText = foundQRs.length > 0 ? "\u2713" : "\u2717";
+                        scanResultIcon.className = foundQRs.length > 0 ? "indicator-success" : "indicator-fail"; scanResultIcon.style.opacity = '1';
                         
-                        // 4. Update FPS Lag Badge
                         let totalTime = performance.now() - tStart;
-                        if (totalTime > scanInterval) {
-                            perfBadge.innerText = `⚠️ Lagging at ${(1000/totalTime).toFixed(1)} Hz`;
-                        } else {
-                            perfBadge.innerText = `${targetHz} Hz OK`;
-                        }
+                        if (totalTime > scanInterval) perfBadge.innerText = `\u26A0\uFE0F Lagging at ${(1000/totalTime).toFixed(1)} Hz`;
+                        else perfBadge.innerText = `${targetHz} Hz OK`;
                         
-                        lastScanTime = performance.now(); 
-                        isDetecting = false; 
+                        lastScanTime = performance.now(); isDetecting = false; 
                     }, 0);
                 });
             }
@@ -537,40 +557,26 @@
         // --- MANUAL CLICK LOGIC ---
         videoWrapper.addEventListener("click", async () => {
             if (camMode !== "manual" || !stream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-            
-            pbContainer.style.display = "block";
-            progressBar.style.transition = 'none';
-            progressBar.style.width = '0%';
-            progressBar.style.backgroundColor = 'var(--primary)';
-            scanResultIcon.style.opacity = '0';
+            pbContainer.style.display = "block"; progressBar.style.transition = 'none'; progressBar.style.width = '0%';
+            progressBar.style.backgroundColor = 'var(--primary)'; scanResultIcon.style.opacity = '0';
             
             requestAnimationFrame(async () => {
-                progressBar.style.transition = 'width 150ms ease-out';
-                progressBar.style.width = '100%';
-
+                progressBar.style.transition = 'width 150ms ease-out'; progressBar.style.width = '100%';
                 setTimeout(async () => {
                     const vw = video.videoWidth; const vh = video.videoHeight;
                     let results = await attemptScan(video, vw, vh, true);
                     
                     progressBar.style.backgroundColor = results.length > 0 ? 'var(--success)' : 'var(--error)';
-                    scanResultIcon.innerText = results.length > 0 ? "✓" : "✗";
-                    scanResultIcon.className = results.length > 0 ? "indicator-success" : "indicator-fail";
-                    scanResultIcon.style.opacity = '1';
+                    scanResultIcon.innerText = results.length > 0 ? "\u2713" : "\u2717";
+                    scanResultIcon.className = results.length > 0 ? "indicator-success" : "indicator-fail"; scanResultIcon.style.opacity = '1';
 
                     if (results.length > 0) {
-                        playBeep();
-                        let highRes = getSmartHighResImage(video, vw, vh);
-                        const saveRes = generateDataURL(video, vw, vh, 0.8, 800);
+                        playBeep(); let highRes = getSmartHighResImage(video, vw, vh); const saveRes = generateDataURL(video, vw, vh, 0.8, 800);
                         if (!highRes || highRes.length < 5000) highRes = saveRes;
-
-                        results.forEach(qr => {
-                            activeFlashes.push({ points: qr.points, time: performance.now() });
-                            addHistoryItem(qr.data, highRes, saveRes, "Manual Capture");
-                        });
-                        feedback.innerText = "✅ QR Captured!"; setTimeout(() => feedback.innerText = "", 2500);
+                        results.forEach(qr => { activeFlashes.push({ points: qr.points, time: performance.now() }); addHistoryItem(qr.data, highRes, saveRes, "Manual Capture"); });
+                        feedback.innerText = "\u2705 QR Captured!"; setTimeout(() => feedback.innerText = "", 2500);
                     } else {
-                        errorFlashEndTime = performance.now() + 300; 
-                        errorMsg.innerText = "❌ No QR found in frame."; setTimeout(() => errorMsg.innerText = "", 2000);
+                        errorFlashEndTime = performance.now() + 300; errorMsg.innerText = "\u274C No QR found in frame."; setTimeout(() => errorMsg.innerText = "", 2000);
                     }
                 }, 0);
             });
@@ -578,82 +584,56 @@
 
         // --- FILE UPLOAD LOGIC ---
         document.getElementById("file-input").addEventListener("change", async e => {
-            const files = Array.from(e.target.files);
-            if (!files.length) return;
-            
-            pbContainer.style.display = "block"; errorMsg.innerText = "⏳ Processing image(s)...";
+            const files = Array.from(e.target.files); if (!files.length) return;
+            pbContainer.style.display = "block"; errorMsg.innerText = "\u23F3 Processing image(s)...";
             
             for (let i = 0; i < files.length; i++) {
                 let file = files[i]; 
-                progressBar.style.transition = 'none'; 
-                progressBar.style.width = '0%';
-                progressBar.style.backgroundColor = 'var(--primary)';
-                scanResultIcon.style.opacity = '0';
-                void progressBar.offsetWidth;
-                progressBar.style.transition = `width 500ms linear`; 
-                progressBar.style.width = '100%';
+                progressBar.style.transition = 'none'; progressBar.style.width = '0%'; progressBar.style.backgroundColor = 'var(--primary)'; scanResultIcon.style.opacity = '0';
+                void progressBar.offsetWidth; progressBar.style.transition = `width 500ms linear`; progressBar.style.width = '100%';
 
                 await new Promise((resolve) => {
-                    const url = URL.createObjectURL(file);
-                    const img = new Image();
-                    
+                    const url = URL.createObjectURL(file); const img = new Image();
                     img.onload = async () => {
                         try { await img.decode(); } catch(err) {} 
-                        
                         let results = [];
-                        if (scanEngine === 'native') {
-                            results = await attemptScan(img, img.width, img.height, true);
-                        } else {
+                        if (scanEngine === 'native') results = await attemptScan(img, img.width, img.height, true);
+                        else {
                             const testScales = [1, 0.5]; 
                             for (let scale of testScales) {
-                                const MAX_DIM = 2000; 
-                                const ratio = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, scale);
+                                const MAX_DIM = 2000; const ratio = Math.min(MAX_DIM / img.width, MAX_DIM / img.height, scale);
                                 const w = Math.floor(img.width * ratio); const h = Math.floor(img.height * ratio);
-                                const tempCanvas = document.createElement("canvas");
-                                tempCanvas.width = w; tempCanvas.height = h;
+                                const tempCanvas = document.createElement("canvas"); tempCanvas.width = w; tempCanvas.height = h;
                                 tempCanvas.getContext("2d").drawImage(img, 0, 0, w, h);
-                                
-                                results = await attemptScan(tempCanvas, w, h, true);
-                                if (results.length > 0) break;
+                                results = await attemptScan(tempCanvas, w, h, true); if (results.length > 0) break;
                             }
                         }
                         
                         progressBar.style.backgroundColor = results.length > 0 ? 'var(--success)' : 'var(--error)';
-                        scanResultIcon.innerText = results.length > 0 ? "✓" : "✗";
-                        scanResultIcon.className = results.length > 0 ? "indicator-success" : "indicator-fail";
-                        scanResultIcon.style.opacity = '1';
+                        scanResultIcon.innerText = results.length > 0 ? "\u2713" : "\u2717";
+                        scanResultIcon.className = results.length > 0 ? "indicator-success" : "indicator-fail"; scanResultIcon.style.opacity = '1';
 
                         if (results.length > 0) {
-                            playBeep();
-                            let highRes = getSmartHighResImage(img, img.width, img.height);
-                            const saveRes = generateDataURL(img, img.width, img.height, 0.8, 800);
+                            playBeep(); let highRes = getSmartHighResImage(img, img.width, img.height); const saveRes = generateDataURL(img, img.width, img.height, 0.8, 800);
                             if (!highRes || highRes.length < 5000) highRes = saveRes;
-
                             results.forEach(qr => addHistoryItem(qr.data, highRes, saveRes, file.name));
-                        } else {
-                            errorMsg.innerText += `\n❌ No QR found in: ${file.name}`;
-                        }
-                        
+                        } else { errorMsg.innerText += `\n\u274C No QR found in: ${file.name}`; }
                         URL.revokeObjectURL(url); resolve();
                     };
-                    img.onerror = () => { errorMsg.innerText += `\n❌ Failed: ${file.name}`; resolve(); }
+                    img.onerror = () => { errorMsg.innerText += `\n\u274C Failed: ${file.name}`; resolve(); }
                     img.src = url;
                 });
             }
             e.target.value = ""; 
-            if(camMode !== "once" && camMode !== "auto") {
-                setTimeout(() => pbContainer.style.display = "none", 1000); // Wait 1 sec to let them see result
-            }
-            setTimeout(() => { if(errorMsg.innerText.includes("⏳")) errorMsg.innerText = ""; }, 3000);
+            if(camMode !== "once" && camMode !== "auto") setTimeout(() => pbContainer.style.display = "none", 1000);
+            setTimeout(() => { if(errorMsg.innerText.includes("\u23F3")) errorMsg.innerText = ""; }, 3000);
         });
 
         // --- 7. IMAGE SCALING & RAM MANAGEMENT ---
         function generateDataURL(source, w, h, quality, maxDim = 99999) {
             const scale = Math.min(maxDim / w, maxDim / h, 1);
-            const canvas = document.createElement("canvas");
-            canvas.width = w * scale; canvas.height = h * scale;
-            const ctx = canvas.getContext("2d");
-            if(scale < 1) ctx.imageSmoothingEnabled = true;
+            const canvas = document.createElement("canvas"); canvas.width = w * scale; canvas.height = h * scale;
+            const ctx = canvas.getContext("2d"); if(scale < 1) ctx.imageSmoothingEnabled = true;
             ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
             return canvas.toDataURL("image/jpeg", quality); 
         }
@@ -662,12 +642,9 @@
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    canvas.width = Math.max(img.width * scaleFactor, 50); canvas.height = Math.max(img.height * scaleFactor, 50);
-                    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL("image/jpeg", quality));
-                };
-                img.src = dataUrl;
+                    const canvas = document.createElement("canvas"); canvas.width = Math.max(img.width * scaleFactor, 50); canvas.height = Math.max(img.height * scaleFactor, 50);
+                    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height); resolve(canvas.toDataURL("image/jpeg", quality));
+                }; img.src = dataUrl;
             });
         }
 
@@ -681,8 +658,7 @@
 
         let isManagingRAM = false;
         async function manageRAM() {
-            if (isManagingRAM) return;
-            isManagingRAM = true;
+            if (isManagingRAM) return; isManagingRAM = true;
             const getRamBytes = () => historyArray.reduce((acc, item) => acc + (item.ramImage?.length * 2 || 0), 0);
             const LIMIT = 200 * 1024 * 1024; const TARGET = 100 * 1024 * 1024; 
             try {
@@ -690,59 +666,42 @@
                     let candidates = historyArray.slice(1);
                     while (getRamBytes() > TARGET && candidates.length > 0) {
                         candidates.sort((a, b) => (b.ramImage?.length || 0) - (a.ramImage?.length || 0));
-                        let biggest = candidates[0];
-                        if (!biggest.ramImage || biggest.ramImage.length < 50000) { candidates.shift(); continue; }
+                        let biggest = candidates[0]; if (!biggest.ramImage || biggest.ramImage.length < 50000) { candidates.shift(); continue; }
                         biggest.ramImage = await asyncDownsize(biggest.ramImage, 0.5, 0.7);
                     }
                 }
-            } finally { 
-                document.getElementById("ram-meter").innerText = `RAM: ${(getRamBytes() / (1024*1024)).toFixed(1)} MB`;
-                isManagingRAM = false; 
-            }
+            } finally { document.getElementById("ram-meter").innerText = `RAM: ${(getRamBytes() / (1024*1024)).toFixed(1)} MB`; isManagingRAM = false; }
         }
 
         // --- 8. 60 FPS UI OVERLAY RENDERER ---
         function renderOverlayUI() {
-            if(!scanning) return;
-            requestAnimationFrame(renderOverlayUI);
-            
+            if(!scanning) return; requestAnimationFrame(renderOverlayUI);
             overlayCanvas.width = video.clientWidth; overlayCanvas.height = video.clientHeight;
             oCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
             const scaleX = overlayCanvas.width / video.videoWidth; const scaleY = overlayCanvas.height / video.videoHeight;
             const now = performance.now();
 
             if(video.videoWidth > 0) {
-                const fScale = focusPct / 100;
-                const fw = overlayCanvas.width * fScale; const fh = overlayCanvas.height * fScale;
+                const fScale = focusPct / 100; const fw = overlayCanvas.width * fScale; const fh = overlayCanvas.height * fScale;
                 const fx = (overlayCanvas.width - fw) / 2; const fy = (overlayCanvas.height - fh) / 2;
                 
                 if (exclusiveNarrow) {
-                    oCtx.fillStyle = "rgba(0, 0, 0, 0.5)"; 
-                    oCtx.fillRect(0, 0, overlayCanvas.width, fy); 
-                    oCtx.fillRect(0, fy + fh, overlayCanvas.width, overlayCanvas.height - (fy + fh)); 
-                    oCtx.fillRect(0, fy, fx, fh); 
-                    oCtx.fillRect(fx + fw, fy, overlayCanvas.width - (fx + fw), fh); 
+                    oCtx.fillStyle = "rgba(0, 0, 0, 0.5)"; oCtx.fillRect(0, 0, overlayCanvas.width, fy); 
+                    oCtx.fillRect(0, fy + fh, overlayCanvas.width, overlayCanvas.height - (fy + fh)); oCtx.fillRect(0, fy, fx, fh); oCtx.fillRect(fx + fw, fy, overlayCanvas.width - (fx + fw), fh); 
                 }
 
-                const isErrorFlash = now < errorFlashEndTime;
-                oCtx.strokeStyle = isErrorFlash ? "rgba(220, 53, 69, 0.9)" : "rgba(40, 167, 69, 0.9)"; 
+                const isErrorFlash = now < errorFlashEndTime; oCtx.strokeStyle = isErrorFlash ? "rgba(220, 53, 69, 0.9)" : "rgba(40, 167, 69, 0.9)"; 
                 oCtx.lineWidth = 3; const len = Math.min(fw, fh) * 0.15; 
-                
-                oCtx.beginPath();
-                oCtx.moveTo(fx, fy+len); oCtx.lineTo(fx, fy); oCtx.lineTo(fx+len, fy);
+                oCtx.beginPath(); oCtx.moveTo(fx, fy+len); oCtx.lineTo(fx, fy); oCtx.lineTo(fx+len, fy);
                 oCtx.moveTo(fx+fw-len, fy); oCtx.lineTo(fx+fw, fy); oCtx.lineTo(fx+fw, fy+len);
                 oCtx.moveTo(fx, fy+fh-len); oCtx.lineTo(fx, fy+fh); oCtx.lineTo(fx+len, fy+fh);
-                oCtx.moveTo(fx+fw-len, fy+fh); oCtx.lineTo(fx+fw, fy+fh); oCtx.lineTo(fx+fw, fy+fh-len);
-                oCtx.stroke();
+                oCtx.moveTo(fx+fw-len, fy+fh); oCtx.lineTo(fx+fw, fy+fh); oCtx.lineTo(fx+fw, fy+fh-len); oCtx.stroke();
             }
 
             activeFlashes = activeFlashes.filter(flash => now - flash.time < 400); 
             activeFlashes.forEach(flash => {
-                const age = now - flash.time; const progress = age / 400; 
-                const alpha = 1 - Math.pow(progress, 2); const expand = 1 + (progress * 0.1); 
-                let cx = 0, cy = 0;
-                flash.points.forEach(p => { cx += p.x * scaleX; cy += p.y * scaleY; }); cx /= 4; cy /= 4;
-
+                const age = now - flash.time; const progress = age / 400; const alpha = 1 - Math.pow(progress, 2); const expand = 1 + (progress * 0.1); 
+                let cx = 0, cy = 0; flash.points.forEach(p => { cx += p.x * scaleX; cy += p.y * scaleY; }); cx /= 4; cy /= 4;
                 oCtx.fillStyle = `rgba(40, 167, 69, ${alpha * 0.4})`; oCtx.strokeStyle = `rgba(40, 167, 69, ${alpha})`; oCtx.lineWidth = 4;
                 oCtx.beginPath();
                 flash.points.forEach((p, idx) => {
@@ -760,38 +719,30 @@
         function backupTextData() { localStorage.setItem('qrreader_text_data', JSON.stringify(historyArray.map(item => item.data))); }
 
         function generateCardHTML(item) {
-            const sData = escapeHTML(item.data); const sFile = escapeHTML(item.filename);
-            const isUrl = /^https?:\/\//i.test(item.data);
+            const sData = escapeHTML(item.data); const sFile = escapeHTML(item.filename); const isUrl = /^https?:\/\//i.test(item.data);
             const linkHtml = isUrl ? `<a href="${sData}" target="_blank">${sData}</a>` : `<span>${sData}</span>`;
-            
-            const imgHtml = item.saveImage ? `<div class="image-container"><img src="${item.saveImage}" class="history-image"><button class="btn btn-small" onclick="openFullscreen('${item.id}')">🔍 View Fullscreen</button></div>` : `<div style="color:var(--text-muted); font-size: 0.8em; margin-top:10px;">[Image not available from text recovery]</div>`;
+            const imgHtml = item.saveImage ? `<div class="image-container"><img src="${item.saveImage}" class="history-image"><button class="btn btn-small" onclick="openFullscreen('${item.id}')">&#x1F50D; View Fullscreen</button></div>` : `<div style="color:var(--text-muted); font-size: 0.8em; margin-top:10px;">[Image not available from text recovery]</div>`;
 
             return `
                 <div class="history-card" id="card-${item.id}">
                     <div class="history-header">
                         <div><b>#${item.index}</b> | ${escapeHTML(item.date)}</div>
-                        <div>
-                            <button class="icon-btn" onclick="toggleEdit('${item.id}')" title="Edit">✏️</button>
-                            <button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete">🗑️</button>
-                        </div>
+                        <div><button class="icon-btn" onclick="toggleEdit('${item.id}')" title="Edit">&#x270F;&#xFE0F;</button><button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete">&#x1F5D1;&#xFE0F;</button></div>
                     </div>
                     <div class="history-data view-mode"><b>File:</b> ${sFile} <br><b>Data:</b> ${linkHtml}</div>
                     <div class="history-data edit-mode">
                         <input type="text" id="edit-file-${item.id}" value="${sFile}">
                         <textarea id="edit-data-${item.id}" rows="3">${sData}</textarea>
-                        <button class="btn btn-small" onclick="saveEdit('${item.id}')">💾 Save</button>
-                        <button class="btn btn-small btn-danger" onclick="toggleEdit('${item.id}')">❌ Cancel</button>
+                        <button class="btn btn-small" onclick="saveEdit('${item.id}')">&#x1F4BE; Save</button>
+                        <button class="btn btn-small btn-danger" onclick="toggleEdit('${item.id}')">&#x274C; Cancel</button>
                     </div>
                     ${imgHtml}
                 </div>`;
         }
 
         function addHistoryItem(data, highRes, saveRes, filename) {
-            globalIndex++;
-            const newItem = { id: Date.now()+Math.random().toString(36).substr(2,5), index: globalIndex, date: getCustomDate(), filename, data, ramImage: highRes, saveImage: saveRes };
-            historyArray.unshift(newItem); 
-            document.getElementById("history-list").insertAdjacentHTML('afterbegin', generateCardHTML(newItem));
-            backupTextData(); manageRAM();
+            globalIndex++; const newItem = { id: Date.now()+Math.random().toString(36).substr(2,5), index: globalIndex, date: getCustomDate(), filename, data, ramImage: highRes, saveImage: saveRes };
+            historyArray.unshift(newItem); document.getElementById("history-list").insertAdjacentHTML('afterbegin', generateCardHTML(newItem)); backupTextData(); manageRAM();
         }
 
         function toggleEdit(id) { document.getElementById(`card-${id}`).classList.toggle("is-editing"); }
@@ -800,134 +751,209 @@
             if(idx > -1) {
                 historyArray[idx].filename = document.getElementById(`edit-file-${id}`).value;
                 historyArray[idx].data = document.getElementById(`edit-data-${id}`).value;
-                document.getElementById(`card-${id}`).outerHTML = generateCardHTML(historyArray[idx]);
-                backupTextData();
+                document.getElementById(`card-${id}`).outerHTML = generateCardHTML(historyArray[idx]); backupTextData();
             }
         }
 
-        function renderHistory() { 
-            document.getElementById("history-list").innerHTML = historyArray.map(generateCardHTML).join(''); 
-            manageRAM(); 
-        }
+        function renderHistory() { document.getElementById("history-list").innerHTML = historyArray.map(generateCardHTML).join(''); manageRAM(); }
         
         function deleteItem(id) { 
             if (!confirm("Delete this scan?")) return;
-            historyArray = historyArray.filter(i => i.id !== id); 
-            document.getElementById(`card-${id}`).remove(); 
-            backupTextData(); manageRAM(); 
+            historyArray = historyArray.filter(i => i.id !== id); document.getElementById(`card-${id}`).remove(); backupTextData(); manageRAM(); 
         }
 
         function clearHistory() { 
             if (historyArray.length > 0) {
                 if (!confirm("Clear all image scans from view? \n\n(Your raw text links will be safely kept in your background backup).")) return;
-                historyArray = []; 
-                globalIndex = 0; 
-                localStorage.removeItem('qrreader_history'); 
-                localStorage.removeItem('qrreader_index'); 
-                document.getElementById("history-list").innerHTML = ""; 
-                manageRAM(); 
+                historyArray = []; globalIndex = 0; localStorage.removeItem('qrreader_history'); localStorage.removeItem('qrreader_index'); document.getElementById("history-list").innerHTML = ""; manageRAM(); 
             } else {
                 if (localStorage.getItem('qrreader_text_data')) {
-                    if (confirm("!!! WARNING !!!\n\nDo you want to permanently delete the Text Backup too?\n\n(Not suggested unless there is a bug persisting page refreshes. If there is, also notify the developer.)")) {
-                        localStorage.removeItem('qrreader_text_data');
-                        alert("✅ Text backup permanently deleted.");
+                    if (confirm("\u26A0\uFE0F WARNING \u26A0\uFE0F\n\nDo you want to permanently delete the Text Backup too?\n\n(Not suggested unless there is a bug persisting page refreshes. If there is, also notify the developer.)")) {
+                        localStorage.removeItem('qrreader_text_data'); alert("\u2705 Text backup permanently deleted.");
                     }
-                } else {
-                    alert("History is already completely empty.");
-                }
+                } else { alert("History is already completely empty."); }
             }
         }
 
+        // --- Modals Logic ---
         function openFullscreen(id) { 
             const it = historyArray.find(i => i.id === id); 
-            if(it?.ramImage) { 
-                document.getElementById("fullscreen-img").src = it.ramImage; 
-                document.getElementById("fullscreen-modal").style.display = "flex"; 
-                document.body.classList.add("modal-open");
-            } 
+            if(it?.ramImage) { document.getElementById("fullscreen-img").src = it.ramImage; document.getElementById("fullscreen-modal").style.display = "flex"; document.body.classList.add("modal-open"); } 
         }
         function closeFullscreen(e) { 
-            if(e.target.id==="fullscreen-modal" || e.target.closest('.close-modal-btn')) {
-                document.getElementById("fullscreen-modal").style.display="none"; 
-                document.getElementById("fullscreen-img").src = "";
-                document.body.classList.remove("modal-open");
-            }
+            if(e.target.id==="fullscreen-modal" || e.target.closest('.close-modal-btn')) { document.getElementById("fullscreen-modal").style.display="none"; document.getElementById("fullscreen-img").src = ""; document.body.classList.remove("modal-open"); }
         }
-        
-        function openTextModal() { 
-            document.getElementById('raw-text-area').value = historyArray.map(i => i.data+',').join('\n'); 
-            document.getElementById('text-modal').style.display='flex'; 
-            document.body.classList.add("modal-open");
-        }
-        function closeTextModal() { 
-            document.getElementById('text-modal').style.display='none'; 
-            document.body.classList.remove("modal-open");
-        }
+        function openTextModal() { document.getElementById('raw-text-area').value = historyArray.map(i => i.data+',').join('\n'); document.getElementById('text-modal').style.display='flex'; document.body.classList.add("modal-open"); }
+        function closeTextModal() { document.getElementById('text-modal').style.display='none'; document.body.classList.remove("modal-open"); }
         function closeTextModalClick(e) { if(e.target.id==='text-modal') closeTextModal(); }
-        
         function copyFromTextModal() { 
-            const ta = document.getElementById('raw-text-area'); 
-            if(!ta.value.trim()) return alert("Nothing to copy!");
-            ta.select(); 
-            try {
-                navigator.clipboard.writeText(ta.value).then(() => alert("✅ Copied!")).catch(() => { document.execCommand("copy"); alert("✅ Copied!"); });
-            } catch(e) { document.execCommand("copy"); alert("✅ Copied!"); }
+            const ta = document.getElementById('raw-text-area'); if(!ta.value.trim()) return alert("Nothing to copy!");
+            ta.select(); try { navigator.clipboard.writeText(ta.value).then(() => alert("\u2705 Copied!")).catch(() => { document.execCommand("copy"); alert("\u2705 Copied!"); }); } catch(e) { document.execCommand("copy"); alert("\u2705 Copied!"); }
         }
 
+        // --- 10. BACKUP & RESTORE IMPORT/EXPORT ---
+        function openBackupModal() { document.getElementById('backup-modal').style.display = 'flex'; document.body.classList.add('modal-open'); updateExportExtension(); }
+        function closeBackupModal() { document.getElementById('backup-modal').style.display = 'none'; document.body.classList.remove('modal-open'); }
+        function closeBackupModalClick(e) { if(e.target.id === 'backup-modal') closeBackupModal(); }
+
+        function updateExportExtension() {
+            const type = document.getElementById('export-type').value; const input = document.getElementById('export-filename');
+            let name = input.value.replace(/\.[^/.]+$/, ""); 
+            input.value = name + (type === 'full' ? '.json' : '.txt');
+        }
+
+        function exportBackupData() {
+            if (historyArray.length === 0) return alert("\u26A0\uFE0F Nothing to export! Scan some codes first.");
+            const type = document.getElementById('export-type').value;
+            let filename = document.getElementById('export-filename').value || "qrreaderdata";
+            let content = ""; let mimeType = "";
+
+            if (type === "full") {
+                if (!filename.toLowerCase().endsWith('.json')) filename += '.json';
+                const safePayload = historyArray.map(item => ({
+                    id: item.id, index: item.index, date: item.date, 
+                    filename: item.filename, data: item.data, saveImage: item.saveImage
+                }));
+                // Secure JSON Wrapper
+                const exportData = { app_id: "qr_scanner", scans: safePayload };
+                content = JSON.stringify(exportData); mimeType = "application/json";
+            } else {
+                if (!filename.toLowerCase().endsWith('.txt')) filename += '.txt';
+                // Secure Text Header
+                content = "QR Scanner Link List\n" + historyArray.map(i => i.data).join('\n'); mimeType = "text/plain";
+            }
+
+            const blob = new Blob([content], { type: mimeType }); const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+        }
+
+        async function importBackupData() {
+            const fileInput = document.getElementById('import-file'); const mode = document.getElementById('import-mode').value;
+            const file = fileInput.files[0];
+            if (!file) return alert("\u26A0\uFE0F Please select a file first.");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result; 
+                    if (!text || text.trim() === '') throw new Error("File is completely empty.");
+
+                    let parsedData = [];
+                    let isStrictMatch = false;
+
+                    // 1. STRICT PARSE: JSON
+                    try {
+                        const tempJson = JSON.parse(text);
+                        if (tempJson && tempJson.app_id === "qr_scanner" && Array.isArray(tempJson.scans)) {
+                            parsedData = tempJson.scans;
+                            isStrictMatch = true;
+                        } 
+                    } catch (err) {}
+
+                    // 2. STRICT PARSE: Text List
+                    if (!isStrictMatch) {
+                        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+                        if (lines.length > 0 && lines[0] === "QR Scanner Link List") {
+                            lines.shift(); // Remove the header
+                            parsedData = lines.map((line, idx) => ({
+                                id: 'imp_' + Date.now() + '_' + idx, index: 0, date: getCustomDate(),
+                                filename: 'Imported from Text', data: line, ramImage: '', saveImage: ''
+                            }));
+                            isStrictMatch = true;
+                        }
+                    }
+
+                    // 3. FALLBACK: Ask User to Force Override
+                    if (!isStrictMatch) {
+                        const force = confirm(`It doesn't appear fitting to expected format, still wanna force?\n\nFor reference your file name was: ${file.name}`);
+                        if (!force) {
+                            fileInput.value = "";
+                            return;
+                        }
+                        
+                        // Parse as raw text
+                        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '');
+                        if (lines.length === 0) throw new Error("No readable text data could be extracted.");
+
+                        parsedData = lines.map((line, idx) => ({
+                            id: 'frc_' + Date.now() + '_' + idx, index: 0, date: getCustomDate(),
+                            filename: `Forced (${file.name})`, data: line, ramImage: '', saveImage: ''
+                        }));
+                    }
+
+                    // Restore images for fullscreen viewer (if any exist from JSON)
+                    parsedData.forEach(item => { if (item.saveImage && !item.ramImage) item.ramImage = item.saveImage; });
+
+                    // Execute Merge or Replace
+                    if (mode === "replace") {
+                        historyArray = parsedData;
+                    } else if (mode === "merge") {
+                        const existingData = new Set(historyArray.map(item => item.data));
+                        const newItems = parsedData.filter(item => !existingData.has(item.data));
+                        historyArray = [...newItems, ...historyArray]; 
+                    }
+
+                    historyArray.forEach((item, idx) => { item.index = historyArray.length - idx; });
+                    globalIndex = historyArray.length;
+
+                    renderHistory(); backupTextData(); saveToLocal(true);
+                    
+                    alert(`\u2705 Successfully imported ${parsedData.length} items (${mode} mode).`);
+                    closeBackupModal(); fileInput.value = ""; 
+
+                } catch (error) {
+                    alert(`\u274C Error importing file:\n${error.message}\n\nYou can also reach out to the developer for recovery if the upload isn't working properly.`);
+                    fileInput.value = "";
+                }
+            };
+            reader.onerror = () => { alert(`\u274C Error reading file.\n\nYou can also reach out to the developer for recovery if the upload isn't working properly.`); };
+            reader.readAsText(file);
+        }
+
+        // --- 11. LOCAL STORAGE ---
         async function saveToLocal(silent = false) {
             let saved = false; let attempts = 0; let cooldownsUsed = 0; const TWO_MB = 2 * 1024 * 1024;
-            const btn = document.getElementById("btn-save-local"); const originalText = btn.innerText; btn.innerText = "⏳ Saving...";
+            const btn = document.getElementById("btn-save-local"); const originalText = btn.innerHTML; btn.innerText = "\u23F3 Saving...";
 
             while (!saved && attempts < 15) {
                 try {
                     const payload = historyArray.map(item => ({ id: item.id, index: item.index, date: item.date, filename: item.filename, data: item.data, saveImage: item.saveImage }));
-                    localStorage.setItem('qrreader_history', JSON.stringify(payload)); 
-                    localStorage.setItem('qrreader_index', globalIndex.toString());
-                    saved = true; if(!silent) alert("✅ History saved successfully!");
+                    localStorage.setItem('qrreader_history', JSON.stringify(payload)); localStorage.setItem('qrreader_index', globalIndex.toString());
+                    saved = true; if(!silent) alert("\u2705 History saved successfully!");
                 } catch (e) {
                     attempts++; const currentSize = historyArray.reduce((acc, item) => acc + (item.saveImage?.length || 0), 0);
                     if (currentSize < TWO_MB && cooldownsUsed < 3) { cooldownsUsed++; await new Promise(r => setTimeout(r, 2000)); }
                     else {
                         let sorted = [...historyArray].sort((a, b) => (b.saveImage?.length || 0) - (a.saveImage?.length || 0)); let biggest = sorted[0];
-                        if (!biggest || !biggest.saveImage || biggest.saveImage.length < 5000) { alert("❌ Storage Full! Raw text safely backed up."); break; }
+                        if (!biggest || !biggest.saveImage || biggest.saveImage.length < 5000) { alert("\u274C Storage Full! Raw text safely backed up."); break; }
                         biggest.saveImage = await asyncDownsize(biggest.saveImage, 0.5, 0.7);
                     }
                 }
             }
-            btn.innerText = originalText;
+            btn.innerHTML = originalText;
         }
 
         function loadFromLocal() {
             const saved = localStorage.getItem('qrreader_history');
             if (saved) {
                 try {
-                    historyArray = JSON.parse(saved);
-                    historyArray.forEach(item => item.ramImage = item.saveImage);
-                    globalIndex = parseInt(localStorage.getItem('qrreader_index') || historyArray.length);
-                    renderHistory(); return;
+                    historyArray = JSON.parse(saved); historyArray.forEach(item => item.ramImage = item.saveImage);
+                    globalIndex = parseInt(localStorage.getItem('qrreader_index') || historyArray.length); renderHistory(); return;
                 } catch(e) {}
             }
-            
             const textBackup = localStorage.getItem('qrreader_text_data');
             if (textBackup) {
                 try {
                     const parsedText = JSON.parse(textBackup);
                     if (parsedText.length > 0) {
-                        historyArray = parsedText.map((textData, idx) => ({
-                            id: 'rec_' + Date.now() + '_' + idx, index: parsedText.length - idx,
-                            date: 'Recovered Backup', filename: 'Text Only Recovery', data: textData,
-                            ramImage: '', saveImage: ''
-                        }));
+                        historyArray = parsedText.map((textData, idx) => ({ id: 'rec_' + Date.now() + '_' + idx, index: parsedText.length - idx, date: 'Recovered Backup', filename: 'Text Only Recovery', data: textData, ramImage: '', saveImage: '' }));
                         globalIndex = parsedText.length; renderHistory();
                     }
                 } catch(e) {}
             }
         }
 
-        window.onload = async () => { 
-            loadFromLocal();
-            await initScannerEngine(); startCamera(); 
-        };
+        window.onload = async () => { loadFromLocal(); await initScannerEngine(); startCamera(); };
     </script>
 </body>
 </html>
