@@ -1,9 +1,9 @@
 name: url to url data transfer
 permissions:
   contents: write
-  checks: write
+  statuses: write
 concurrency:
-  group: copy-${{ github.workflow }}-${{ replace(github.event.inputs.destination_url, '/', '_' ) }}
+  group: copy-${{ github.workflow }}-${{ github.event.inputs.destination_url }}
   cancel-in-progress: false
 on:
   workflow_dispatch:
@@ -65,7 +65,7 @@ jobs:
           set -euo pipefail
           DEST_URL_RAW="${{ github.event.inputs.destination_url }}"; DEST_URL="$(printf "%s" "$DEST_URL_RAW" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
           CLEAN_URL="$(printf "%s" "$DEST_URL" | sed -e 's|^https://||' -e 's|^http://||')"; DEST_REPO="$(printf "%s" "$CLEAN_URL" | cut -d'/' -f2,3)"
-          DEST_FULL_PATH="$(printf "%s" "$CLEAN_URL" | sed -E 's|[^/]*/[^/]*/[^/]*/tree/||')"; DEST_BRANCH="$(printf "%s" "$DEST_FULL_PATH" | cut -d'/' -f1)"
+          DEST_FULL_PATH="$(printf "%s" "$CLEAN_URL" | sed -E 's@[^/]*/[^/]*/[^/]*/tree/@@')"; DEST_BRANCH="$(printf "%s" "$DEST_FULL_PATH" | cut -d'/' -f1)"
           DEST_FOLDER="$(printf "%s" "$DEST_FULL_PATH" | sed -e "s|^$DEST_BRANCH/||" -e "s|^$DEST_BRANCH$||")"
           { echo "DEST_REPO_NAME=$DEST_REPO"; echo "DEST_BRANCH=$DEST_BRANCH"; echo "DEST_FOLDER=$DEST_FOLDER"; } >> "$GITHUB_ENV"
 
@@ -80,8 +80,8 @@ jobs:
         run: |
           set -euo pipefail
           REPO="${{ env.DEST_REPO_NAME }}"; BR="${{ env.DEST_BRANCH }}"; TOK="${{ steps.dest_token_logic.outputs.token }}"
-          git -c http.extraHeader="Authorization: token $TOK" clone --depth 0 "https://github.com/$REPO.git" .
-          git config http.https://github.com/.extraheader "Authorization: token $TOK"
+          git clone --depth 1 "https://${TOK}@github.com/${REPO}.git" .
+          git remote set-url origin "https://${TOK}@github.com/${REPO}.git"
           if git ls-remote --exit-code --heads origin "$BR" >/dev/null 2>&1; then git checkout -B "$BR" "origin/$BR"; else git checkout -B "$BR"; fi
 
       - name: Process All Sources
@@ -110,7 +110,7 @@ jobs:
             SOURCE_URL="$(printf "%s" "$SOURCE_URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"; [[ -z "$SOURCE_URL" ]] && continue
             echo "--- Processing Source: $SOURCE_URL ---"
             CLEAN_SRC="$(printf "%s" "$SOURCE_URL" | sed -e 's|^https://||' -e 's|^http://||')"; SOURCE_REPO="$(printf "%s" "$CLEAN_SRC" | cut -d'/' -f2,3)"
-            SOURCE_FULL_PATH="$(printf "%s" "$CLEAN_SRC" | sed -E 's|[^/]*/[^/]*/[^/]*/(tree|blob)/||')"; MODE="tree"; [[ "$SOURCE_URL" == *"/blob/"* ]] && MODE="blob"
+            SOURCE_FULL_PATH="$(printf "%s" "$CLEAN_SRC" | sed -E 's@[^/]*/[^/]*/[^/]*/(tree|blob)/@@')"; MODE="tree"; [[ "$SOURCE_URL" == *"/blob/"* ]] && MODE="blob"
             if ! resolve_branch_and_relpath "$SOURCE_REPO" "$SOURCE_FULL_PATH"; then echo "::warning::Could not resolve branch for $SOURCE_URL. Skipping."; SKIPPED_COUNT=$((SKIPPED_COUNT + 1)); continue; fi
             API_URL="https://api.github.com/repos/$SOURCE_REPO/tarball/$SOURCE_BRANCH"; TEMP_DIR="source-temp-$$-$(date +%s%N)"; TAR_FILE="$TEMP_DIR.tar.gz"
             STATUS_CODE="$(curl -sSL -o "$TAR_FILE" -w "%{http_code}" --fail-with-body "$API_URL" || true)"
@@ -164,25 +164,25 @@ jobs:
 
       - name: Publish attention status
         if: always()
-        uses: actions/github-script@v7
-        continue-on-error: true
-        env: { HEAD_SHA: '${{ steps.head.outputs.sha }}', DEST_REPO: '${{ env.DEST_REPO_NAME }}', DEST_BRANCH: '${{ env.DEST_BRANCH }}', SUCCESS_COUNT: '${{ steps.process_sources.outputs.success_count }}', SKIPPED_COUNT: '${{ steps.process_sources.outputs.skipped_count }}', NO_MATCH_COUNT: '${{ steps.process_sources.outputs.no_match_count }}', FILES_COPIED: '${{ steps.process_sources.outputs.files_copied }}' }
-        with:
-          github-token: ${{ steps.dest_token_logic.outputs.token }}
-          script: |
-            const success = parseInt(process.env.SUCCESS_COUNT || '0', 10);
-            const skipped = parseInt(process.env.SKIPPED_COUNT || '0', 10);
-            const nomatch = parseInt(process.env.NO_MATCH_COUNT || '0', 10);
-            const filesCopied = (process.env.FILES_COPIED || 'false') === 'true';
-            let summary = `Copied: ${success} | Skipped: ${skipped} | Whitelist no-match: ${nomatch} | Files changed: ${filesCopied}`;
-            let conclusion = 'success';
-            if (success === 0 || skipped > 0 || nomatch > 0 || !filesCopied) {
-              conclusion = 'action_required';
-            }
-            if (skipped > 0 && success === 0) { conclusion = 'failure'; }
-            const [owner, repo] = (process.env.DEST_REPO || '').split('/');
-            if (!owner || !repo) { throw new Error(`Could not parse DEST_REPO env var: ${process.env.DEST_REPO}`); }
-            await github.rest.checks.create({ owner, repo, name: 'Import status', head_sha: process.env.HEAD_SHA, status: 'completed', conclusion, output: { title: `Import status → ${process.env.DEST_BRANCH}`, summary } });
+        run: |
+          set -euo pipefail
+          SUCCESS="${{ steps.process_sources.outputs.success_count }}"
+          SKIPPED="${{ steps.process_sources.outputs.skipped_count }}"
+          NOMATCH="${{ steps.process_sources.outputs.no_match_count }}"
+          COPIED="${{ steps.process_sources.outputs.files_copied }}"
+          SUMMARY="Copied: ${SUCCESS:-0} | Skipped: ${SKIPPED:-0} | Whitelist no-match: ${NOMATCH:-0} | Files changed: ${COPIED:-false}"
+          STATE="success"
+          if [[ "${SKIPPED:-0}" -gt 0 || "${SUCCESS:-0}" -eq 0 ]]; then STATE="failure"; fi
+          SHA="${{ steps.head.outputs.sha }}"
+          if [[ -n "$SHA" ]]; then
+            PAYLOAD=$(printf '{"state":"%s","description":"%s","context":"Import status"}' "$STATE" "$SUMMARY")
+            curl -sL -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ steps.dest_token_logic.outputs.token }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${{ env.DEST_REPO_NAME }}/statuses/$SHA" \
+              -d "$PAYLOAD" || true
+          fi
 
       - name: Cleanup Temporary Files
         if: always()
