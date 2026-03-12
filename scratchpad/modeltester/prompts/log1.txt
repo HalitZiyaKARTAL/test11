@@ -1,0 +1,13 @@
+hi, check this js code, be hyper aware it's tricky, here are main points I want(compulsory)but you can self add more if you wanna mention(preferred)
+
+note: you can use unlimited compute and unlimited response length(>64k tokens allowed), keep being hyper aware to make sure no hallicunated answers(if you need you can use all the self promoting logic organizations etc(like explicitly telling your logic flow to embed in tokens) since hallicunated answers means you don't even give logical answers let alone getting target information, especially considering this is vanilla js, so syntax errors are banned), you can think silently extremely long, triple check everything, as we said it's tricky and this is a test
+
+1)what it does(exclude nothing)
+2)how it does( including things like logic flow,  scenario based response, compute requirements, garbage situation, memory usage, self healing, error resistance, statistic based properties, accessing data back etc etc, so exclude nothing)
+3)assume user somehow written wrong c or f values, can data be recovered and how (analyse error rich cases like more than 1 wrong c per f)(it's also possible user forgot to update initialization array after adding new calls)
+
+here is js code 
+
+```JavaScript
+log(1,7);var debuglogs;function log(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs||!debuglogs["-1"])&&(s=2,debuglogs=Array(1997).fill().map(()=>[]),debuglogs["-1"]=[2],debuglogs["-2"]=[],debuglogs[0]=[0],debuglogs[999]=[0],[63,5,...Array(98).fill(0),2,2,13,1,1,6,2,1,3,2,1,2,1,1,2,2].forEach((v,i)=>{debuglogs[0][0]+=v,debuglogs[i+1]=[v,...Array(v).fill(0)],debuglogs[1001+i]=[0],debuglogs[999].push(0),s+=v,debuglogs["-1"].push(s)}),debuglogs[998]=[0,1,...Array(debuglogs[0][0]).fill(1)],debuglogs[998][0]=debuglogs[998].filter(x=>!x).length-1,debuglogs[1000]=[0],log(1,1));if(debuglogs[998][1]&&(s=debuglogs["-1"][f-1]+c-1,debuglogs[998][0]==0||debuglogs[998][s])){debuglogs["-2"][s]||(debuglogs["-2"][s]=f+'.'+c,debuglogs[0].push(s),(debuglogs[0].length>debuglogs[0][0]+3||debuglogs[1000].length>1003||debuglogs[1000+f].length>103)&&[[0,'Sequential',debuglogs[0][0]],[1000,'Recent',1000],[1000+f,`Function ${f}`,100]].forEach(([a,t,l])=>debuglogs[a].length>l+3&&alert(`${t} overflow: ${debuglogs[a].length}, limit: ${l+3}`)));debuglogs[f][c]++;debuglogs[999][f]=++debuglogs[1000+f][0];debuglogs[1000][0]=++debuglogs[999][0];debuglogs[1000][(debuglogs[1000][0]%1000)+1]=debuglogs["-2"][s];debuglogs[1000+f][(debuglogs[1000+f][0]%100)+1]=c}};log(1,8);
+```
