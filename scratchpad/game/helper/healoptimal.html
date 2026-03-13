@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logistics Calc</title>
+<style>
+body{--bg:#f4ece1;--cb:#fff;--tm:#333;--tx:#666;--ib:#ccc;--in:#fff;--hb:#e8f5e9;--hc:#4CAF50;--bb:#007BFF;--bh:#0056b3;--i:"\1F311";font-family:system-ui,sans-serif;background:var(--bg);color:var(--tm);max-width:850px;margin:0 auto;padding:20px;transition:.3s}
+body:has(#t:checked){--bg:#1e1e2e;--cb:#282a36;--tm:#f8f8f2;--tx:#a2a2ba;--ib:#44475a;--in:#383a59;--hb:#3a4a3e;--hc:#50fa7b;--bb:#6272a4;--bh:#8be9fd;--i:"\1F506"}
+@media(prefers-color-scheme:dark){
+body{--bg:#1e1e2e;--cb:#282a36;--tm:#f8f8f2;--tx:#a2a2ba;--ib:#44475a;--in:#383a59;--hb:#3a4a3e;--hc:#50fa7b;--bb:#6272a4;--bh:#8be9fd;--i:"\1F506"}
+body:has(#t:checked){--bg:#f4ece1;--cb:#fff;--tm:#333;--tx:#666;--ib:#ccc;--in:#fff;--hb:#e8f5e9;--hc:#4CAF50;--bb:#007BFF;--bh:#0056b3;--i:"\1F311"}
+}
+#t{display:none}#tb{position:absolute;top:15px;right:20px;font-size:1.8em;cursor:pointer;z-index:99}#tb::after{content:var(--i)}
+.c{background:var(--cb);padding:20px;border-radius:10px;box-shadow:0 4px 10px #0002;margin-bottom:15px;position:relative}
+h1,h2{margin-top:0;color:var(--tm)}.hc,.r,.nr,.hf{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.tb{padding:8px;font:bold 14px monospace;background:#4CAF50;color:#111;border:0;border-radius:5px;cursor:pointer}
+.tb.o{background:#f44336;color:#fff}.cb{padding:8px;font:bold 14px sans-serif;background:var(--bb);color:#fff;border:0;border-radius:5px;cursor:pointer;display:none}
+.ib{flex:1;display:flex;flex-direction:column;min-width:150px}label{font-weight:bold;font-size:.9em;color:var(--tx)}
+input,textarea{padding:8px;font:16px inherit;border:2px solid var(--ib);border-radius:5px;background:var(--in);color:var(--tm);outline:0}
+input:focus,textarea:focus{border-color:var(--hc)}.nl{display:flex;flex-direction:column;gap:5px;font:14px monospace}
+.nr{padding:8px;background:var(--in);border-radius:5px;border-left:5px solid transparent}
+.nr.op{background:var(--hb);border-left-color:var(--hc);font-weight:bold;transform:scale(1.01)}
+.cp{padding:5px 8px;font:bold 12px sans-serif;background:var(--bb);color:#fff;border:0;border-radius:4px;cursor:pointer;min-width:50px}
+.op .cp{background:var(--hc);color:#111}textarea{width:100%;height:120px;resize:vertical;box-sizing:border-box}
+</style></head><body>
+<input type="checkbox" id="t"><label for="t" id="tb"></label>
+<div class="c"><div class="hc"><h1 style="margin:0">&#x1F6A2; Config</h1><div><button id="cb" class="cb" onclick="ca()">Calc</button><button id="at" class="tb" onclick="ta()">[ Auto: ON ]</button></div></div>
+<div class="r"><div class="ib"><label>Target Depot</label><input type="number" id="tu" value="185294" oninput="hi()"></div><div class="ib"><label>Cap per X</label><input type="number" id="ux" value="1400" oninput="hi()"></div></div></div>
+<div class="c"><h2>&#x1F3AF; Target Finder</h2><div class="r"><div class="ib"><label>I have [ X ] containers:</label><input type="number" id="mx" value="8" oninput="hi()"></div></div><div class="nl" id="no"></div></div>
+<div class="c"><h2>&#x1F4CB; Lists</h2><div class="hf"><label>Short</label><button class="cp" onclick="cx(this,'st')">Copy</button></div><textarea id="st" onclick="this.select()" readonly></textarea><br><br>
+<div class="hf"><label>Expanded</label><button class="cp" onclick="cx(this,'et')">Copy</button></div><textarea id="et" onclick="this.select()" readonly></textarea></div>
+<script>
+let a=1;const g=i=>document.getElementById(i),v=i=>parseInt(g(i).value)||1;
+let sd=localStorage.getItem('calculate20260313');if(sd)sd.split(',').map((val,i)=>g(['tu','ux','mx'][i]).value=val);
+const ta=()=>{a=!a;g('at').innerText=a?"[ Auto: ON ]":"[ Auto: OFF ]";g('at').className=a?"tb":"tb o";g('cb').style.display=a?"none":"inline-block";if(a)ca()};
+const hi=()=>a&&ca(),ca=()=>{
+let t=v('tu'),u=v('ux'),m=v('mx'),l=[],s=new Set();if(t<1||u<1)return;
+localStorage.setItem('calculate20260313',t+','+u+','+m);
+for(let i=1;;i++){let c=Math.floor(t/i);if(c<1)break;let x=Math.ceil(c/u),e=t-(c*i),p=x*u;if(!s.has(x)){s.add(x);l.push({t:i,c,x,p,e})}if(x<=1)break}
+let o=l.findIndex(r=>r.x<=m);o=o<0?l.length-1:o;let h="";
+for(let i=Math.max(0,o-3);i<=Math.min(l.length-1,o+3);i++){let r=l[i],k=i===o,c=`\u00F7${r.t}=${r.c} X=${r.x}+(${r.p})+${r.e}`,e=k?`<span style="font-size:11px">\u2705 ${r.x===m?'MATCH':`(+${m-r.x}x)`}</span>`:"";
+h+=`<div class="nr ${k?'op':''}"><span>Req [${r.x}x] \u2192 ${c} ${e}</span><button class="cp" onclick="cc(this,'${c}')">Copy</button></div>`}
+g('no').innerHTML=h;g('st').value=l.map(r=>`\u00F7${r.t}=${r.c} X=${r.x}+(${r.p})+${r.e}`).join('\n');g('et').value=l.map(r=>`\u00F7${r.t} Trips \u2192 Min ${r.x}x (${r.p} max) \u2192 Cargo: ${r.c} (Leaves ${r.e})`).join('\n')};
+const cc=(b,t)=>{navigator.clipboard.writeText(t);let o=b.innerText;b.innerText='\u2714';setTimeout(()=>b.innerText=o,1000)};
+const cx=(b,i)=>{let e=g(i);e.select();cc(b,e.value)};window.onload=ca;
+</script></body></html>
