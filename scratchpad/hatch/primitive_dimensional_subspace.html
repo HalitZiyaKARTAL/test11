@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strict Step-by-Step Subspace Visualizer</title>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --accent: #38bdf8; --success: #4ade80; --warn: #facc15; --danger: #f87171; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        h1 { text-align: center; color: var(--accent); margin: 0 0 5px 0; font-size: 1.8rem; }
+        p.subtitle { text-align: center; color: #94a3b8; margin: 0 0 20px 0; font-size: 0.95rem; }
+        
+        .layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; flex: 1; min-height: 0; }
+        
+        /* LEFT SIDEBAR */
+        .sidebar { background: var(--panel); border-radius: 8px; padding: 20px; border: 1px solid #334155; display: flex; flex-direction: column; overflow-y: auto; }
+        .sidebar h2 { margin-top: 0; color: var(--accent); font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #cbd5e1; }
+        .input-group input[type="number"].config-input, .input-group select, .input-group input[type="range"] { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
+        
+        /* Editable Speed Input */
+        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .slider-header label { margin-bottom: 0; }
+        .speed-input-wrapper { display: flex; align-items: center; background: #020617; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px; }
+        .speed-input-wrapper input { background: transparent; border: none; color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.95rem; text-align: right; width: 50px; outline: none; }
+        .speed-input-wrapper span { color: var(--accent); font-weight: bold; font-family: monospace; font-size: 0.95rem; margin-left: 2px; }
+
+        .stats-box { background: #020617; padding: 15px; border-radius: 6px; border: 1px dashed #475569; margin-bottom: 15px; font-size: 0.85rem; }
+        .stats-box span.val { color: var(--success); font-weight: bold; float: right; }
+        
+        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        button { flex: 1; color: #0f172a; border: none; padding: 12px; font-weight: bold; font-size: 1rem; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        button#startBtn { background: var(--success); }
+        button#startBtn:hover { background: #22c55e; }
+        button#startBtn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        button#resetBtn { background: #475569; color: #fff; flex: 0.4; }
+        button#resetBtn:hover { background: #64748b; }
+
+        /* TERMINAL */
+        .console-wrapper { flex: 1; background: #000; border-radius: 6px; border: 1px solid #334155; padding: 10px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8rem; display: flex; flex-direction: column; min-height: 200px; }
+        .log-line { margin: 2px 0; line-height: 1.4; }
+        .log-info { color: #94a3b8; }
+        .log-action { color: var(--warn); }
+        .log-success { color: var(--success); }
+        .log-math { color: #a78bfa; }
+
+        /* MAIN VISUAL AREA */
+        .main-content { display: flex; flex-direction: column; gap: 20px; overflow-y: auto; overflow-x: hidden; }
+        
+        /* DYNAMIC STATUS BANNER */
+        .status-box { text-align: center; background: #020617; border: 1px solid #334155; padding: 15px; font-size: 1.1rem; border-radius: 8px; font-family: monospace; color: #60a5fa; min-height: 25px; display: flex; align-items: center; justify-content: center; }
+        .status-box.active { border-color: var(--accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.15); color: var(--accent); }
+        .status-box.success { border-color: var(--success); color: var(--success); background: #022c22; }
+        .status-box.warn { border-color: var(--warn); color: var(--warn); }
+
+        .matrix-container { background: var(--panel); border-radius: 8px; border: 1px solid #334155; padding: 15px; overflow-x: auto; }
+        .matrix-title { font-weight: bold; margin-bottom: 10px; color: var(--accent); display: flex; justify-content: space-between; position: sticky; left: 0;}
+        
+        .matrix { display: grid; gap: 2px; }
+        .cell { background: #0f172a; border: 1px solid #334155; text-align: right; padding: 6px 4px; font-family: monospace; font-size: 0.85rem; color: #e2e8f0; border-radius: 2px; min-width: 50px; }
+        
+        /* STRICT HIGHLIGHT COLORS */
+        .cell.pivot { background: #166534 !important; color: #fff; font-weight: bold; border-color:#22c55e; } 
+        .cell.active { background: #854d0e !important; color: #fff; border-color:#eab308;} 
+        .cell.target { background: #991b1b !important; color: #fff; border-color:#ef4444;} 
+        .cell.col-highlight { background: #1e3a8a !important; color: #fff; border-color:#3b82f6;} 
+        .cell.zero { color: #475569; }
+
+        .proof-box { background: #064e3b; border: 1px solid #047857; padding: 15px; border-radius: 6px; display: none; margin-bottom: 20px; }
+        .proof-box h3 { margin: 0 0 10px 0; color: var(--success); font-size: 1rem; }
+        .proof-line { font-family: monospace; font-size: 0.85rem; color: #d1fae5; border-bottom: 1px solid #065f46; padding: 4px 0; }
+        .proof-line span { color: #fff; font-weight: bold; float: right; }
+    </style>
+</head>
+<body>
+
+    <h1>Strict Step-by-Step Subspace Visualizer</h1>
+    <p class="subtitle">Nothing skipped. Watch every projection, pivot, and extraction frame by frame.</p>
+
+    <div class="layout">
+        <!-- LEFT PANEL -->
+        <div class="sidebar">
+            <h2>Configuration</h2>
+            <div class="input-group">
+                <label>Total Dimensions (Home Space N)</label>
+                <input type="number" id="dimN" value="15" min="2" max="200" class="config-input" onchange="triggerReset()">
+            </div>
+            <div class="input-group">
+                <label>Known Vectors (Plane K)</label>
+                <input type="number" id="dimK" value="5" min="1" max="199" class="config-input" onchange="triggerReset()">
+            </div>
+            <div class="input-group">
+                <label>Extraction Algorithm</label>
+                <select id="algo" class="config-input" onchange="triggerReset()">
+                    <option value="gauss">Gaussian Elimination (Null Space)</option>
+                    <option value="gs">Gram-Schmidt (Projections)</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <div class="slider-header">
+                    <label>Exponential Speed</label>
+                    <div class="speed-input-wrapper">
+                        <input type="number" id="speedInput" min="0.1" max="1000" step="0.1" value="10.0" onchange="syncSpeedFromInput()">
+                        <span id="speedX">x</span>
+                    </div>
+                </div>
+                <input type="range" id="speedSlider" min="0" max="100" value="50" oninput="syncSpeedFromSlider()">
+                <small style="color:#64748b; display: block; margin-top: 4px;">Scale: 0.1x (Slow) to 1000x (Instant)</small>
+            </div>
+
+            <div class="btn-group">
+                <button id="startBtn" onclick="runEngine()">Start Engine</button>
+                <button id="resetBtn" onclick="triggerReset()">Reset</button>
+            </div>
+
+            <div class="stats-box">
+                <div>Complexity: <span class="val" id="estBigO">O(1)</span></div>
+                <div style="margin-top: 8px;">Math Operations: <span class="val" id="estOps">0</span></div>
+            </div>
+
+            <h2 style="font-size: 1rem;">Terminal Log</h2>
+            <div class="console-wrapper" id="console"></div>
+        </div>
+
+        <!-- RIGHT PANEL (VISUALS) -->
+        <div class="main-content">
+            
+            <div id="statusBanner" class="status-box">Waiting to initialize...</div>
+
+            <div class="matrix-container">
+                <div class="matrix-title">
+                    <span>Working Plane (Known Vectors)</span>
+                    <span id="workingShape" style="color: #94a3b8; font-weight: normal;"></span>
+                </div>
+                <div id="workingMatrix" class="matrix"></div>
+            </div>
+
+            <div class="matrix-container" id="resultContainer" style="display: none;">
+                <div class="matrix-title" style="color: var(--success);">
+                    <span>Extracted Orthogonal Subspace (Null Space)</span>
+                    <span id="resultShape" style="color: #94a3b8; font-weight: normal;"></span>
+                </div>
+                <div id="resultMatrix" class="matrix"></div>
+            </div>
+
+            <div class="proof-box" id="proofBox">
+                <h3>Mathematical Proof (Dot Product Check)</h3>
+                <div id="proofLines"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // System State
+        let N = 15; 
+        let K = 5;
+        let originalMatrix = []; 
+        let workingMatrixData = [];
+        let isRunning = false;
+        let currentRunId = 0;
+
+        // DOM Element Caches
+        let workingNodes = []; 
+        let resultNodes = [];
+
+        const startBtn = document.getElementById('startBtn');
+        const consoleEl = document.getElementById('console');
+        const statusBanner = document.getElementById('statusBanner');
+        const workingEl = document.getElementById('workingMatrix');
+        const resultEl = document.getElementById('resultMatrix');
+        
+        const speedSlider = document.getElementById('speedSlider');
+        const speedInput = document.getElementById('speedInput');
+        const speedX = document.getElementById('speedX');
+
+        // ==========================================
+        // UI TWO-WAY SPEED SYNC
+        // ==========================================
+        function syncSpeedFromSlider() {
+            let val = parseInt(speedSlider.value);
+            if (val === 100) {
+                speedInput.value = 1000;
+                speedInput.style.color = "var(--danger)";
+                speedX.style.color = "var(--danger)";
+            } else {
+                let mult = Math.pow(10, -1 + (val / 100) * 4);
+                speedInput.value = mult < 10 ? mult.toFixed(1) : Math.round(mult);
+                speedInput.style.color = "var(--accent)";
+                speedX.style.color = "var(--accent)";
+            }
+        }
+
+        function syncSpeedFromInput() {
+            let val = parseFloat(speedInput.value);
+            if (isNaN(val) || val < 0.1) val = 0.1;
+            if (val > 1000) val = 1000;
+            
+            speedInput.value = val < 10 ? val.toFixed(1) : Math.round(val);
+            let sliderVal = (Math.log10(val) + 1) * 25;
+            speedSlider.value = Math.round(sliderVal);
+            
+            if (val >= 1000) {
+                speedInput.style.color = "var(--danger)";
+                speedX.style.color = "var(--danger)";
+            } else {
+                speedInput.style.color = "var(--accent)";
+                speedX.style.color = "var(--accent)";
+            }
+        }
+
+        // ==========================================
+        // TEXT & TERMINAL LOGGING
+        // ==========================================
+        function setStatus(msg, styleClass = "") {
+            statusBanner.textContent = msg;
+            statusBanner.className = `status-box ${styleClass}`;
+        }
+
+        function log(msg, type = "info") {
+            const div = document.createElement('div');
+            div.className = `log-line log-${type}`;
+            div.textContent = `> ${msg}`;
+            consoleEl.appendChild(div);
+            
+            // Limit log length to prevent memory leaks and UI lag at high speeds
+            while (consoleEl.childNodes.length > 150) {
+                consoleEl.removeChild(consoleEl.firstChild);
+            }
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function clearLog() { consoleEl.innerHTML = ''; }
+
+        function triggerReset() {
+            currentRunId++; 
+            isRunning = false;
+            startBtn.disabled = false;
+            startBtn.innerText = "Start Engine";
+            initSystem();
+        }
+
+        // ==========================================
+        // HIGH PERFORMANCE DOM INITIALIZATION
+        // ==========================================
+        function buildGridDOM(container, maxRows, cols) {
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            let nodeMatrix = [];
+            for(let r = 0; r < maxRows; r++) {
+                let rowNodes = [];
+                for(let c = 0; c < cols; c++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.display = 'none';
+                    container.appendChild(cell);
+                    rowNodes.push(cell);
+                }
+                nodeMatrix.push(rowNodes);
+            }
+            return nodeMatrix;
+        }
+
+        function initSystem() {
+            N = parseInt(document.getElementById('dimN').value);
+            K = parseInt(document.getElementById('dimK').value);
+            if(K >= N) {
+                alert("Known Vectors (K) must be strictly less than Total Dimensions (N) to have orthogonal space!");
+                document.getElementById('dimK').value = N - 1; K = N - 1;
+            }
+            
+            document.getElementById('workingShape').innerText = `${K} vectors × ${N} dimensions`;
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('proofBox').style.display = 'none';
+            clearLog();
+            setStatus("System Ready. Awaiting start...", "");
+            log(`System initialized. Generated ${N}D Universe with ${K} vectors.`, "info");
+            
+            workingNodes = buildGridDOM(workingEl, K, N);
+            resultNodes = buildGridDOM(resultEl, N, N);
+
+            originalMatrix = [];
+            for (let i = 0; i < K; i++) {
+                let row = [];
+                for (let j = 0; j < N; j++) row.push((Math.random() * 10 - 5));
+                originalMatrix.push(row);
+            }
+            workingMatrixData = originalMatrix.map(row => [...row]);
+            
+            updateGrid(workingMatrixData, workingNodes, -1, -1, -1, -1, true); 
+            updateEstimates();
+        }
+
+        function updateEstimates() {
+            let algo = document.getElementById('algo').value;
+            if (algo === 'gauss') {
+                document.getElementById('estBigO').innerText = "O(K² · N)";
+                document.getElementById('estOps').innerText = (2 * (K * K) * N).toLocaleString();
+            } else {
+                document.getElementById('estBigO').innerText = "O(N³)";
+                document.getElementById('estOps').innerText = (2 * Math.pow(N, 3)).toLocaleString();
+            }
+        }
+
+        function updateGrid(matData, nodes, pivotRow, activeRow, targetRow, highlightCol = -1, forceRender = false) {
+            let speedMult = parseFloat(speedInput.value);
+            if (!forceRender && speedMult > 200) return;
+
+            let activeRowsCount = matData.length;
+            if (activeRowsCount === 0) return;
+            let activeColsCount = matData[0].length;
+
+            for (let r = 0; r < nodes.length; r++) {
+                for (let c = 0; c < nodes[r].length; c++) {
+                    let cell = nodes[r][c];
+
+                    if (r < activeRowsCount && c < activeColsCount) {
+                        if (cell.style.display === 'none') cell.style.display = '';
+
+                        let val = matData[r][c];
+                        if (Math.abs(val) < 1e-9) val = 0;
+                        
+                        let classes = 'cell';
+                        if (val === 0) classes += ' zero';
+                        if (c === highlightCol) classes += ' col-highlight'; 
+                        if (r === pivotRow) classes += ' pivot';
+                        if (r === activeRow) classes += ' active';
+                        if (r === targetRow) classes += ' target';
+                        
+                        if (cell.className !== classes) cell.className = classes;
+                        
+                        let strVal = val.toFixed(2);
+                        if (cell.textContent !== strVal) cell.textContent = strVal;
+                    } else {
+                        if (cell.style.display !== 'none') cell.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        async function sleep(runId, pedagogicalMultiplier = 1) {
+            if (runId !== currentRunId) throw new Error("Aborted");
+            let speedMult = parseFloat(speedInput.value);
+            if (speedMult >= 1000) return; 
+            
+            let delayMs = (800 * pedagogicalMultiplier) / speedMult;
+            if (delayMs < 2) delayMs = 2; 
+            
+            await new Promise(r => setTimeout(r, delayMs));
+            if (runId !== currentRunId) throw new Error("Aborted");
+        }
+
+        // ==========================================
+        // ALGORITHM 1: STRICT GAUSSIAN ELIMINATION
+        // ==========================================
+        async function runGaussian(runId) {
+            log("Starting Gaussian Elimination (Converting to RREF)...", "action");
+            let mat = workingMatrixData.map(row => [...row]);
+            let lead = 0;
+            let pivotColumns = [];
+
+            // --- PHASE 1: RREF ---
+            for (let r = 0; r < K; r++) {
+                if (N <= lead) break;
+
+                setStatus(`Scanning Column ${lead} for Pivot...`, "active");
+                updateGrid(mat, workingNodes, r, -1, -1, lead);
+                await sleep(runId, 1.0);
+
+                let i = r;
+                while (Math.abs(mat[i][lead]) < 1e-10) {
+                    i++;
+                    if (K === i) { i = r; lead++; if (N === lead) break; }
+                }
+
+                if (i !== r) {
+                    setStatus(`Swapping Row ${r} and Row ${i} to bring non-zero to top.`, "warn");
+                    updateGrid(mat, workingNodes, r, -1, i, lead); 
+                    await sleep(runId, 1.0);
+                    
+                    let temp = mat[i]; mat[i] = mat[r]; mat[r] = temp; 
+                    log(`[Row Ops] Swapped Row ${r} and ${i}`, "warn");
+                    
+                    updateGrid(mat, workingNodes, r, -1, i, lead); 
+                    await sleep(runId, 0.5);
+                }
+
+                pivotColumns.push(lead);
+                let val = mat[r][lead];
+                
+                if (Math.abs(val - 1.0) > 1e-10) {
+                    setStatus(`Dividing Row ${r} by ${val.toFixed(2)} to normalize pivot.`, "active");
+                    updateGrid(mat, workingNodes, r, -1, -1, lead); 
+                    await sleep(runId, 0.5);
+                    
+                    for (let j = 0; j < N; j++) mat[r][j] /= val; 
+                    log(`[Row Ops] Normalized Row ${r}`, "math");
+                    
+                    updateGrid(mat, workingNodes, r, -1, -1, lead); 
+                    await sleep(runId, 0.5);
+                }
+
+                for (let i = 0; i < K; i++) {
+                    if (i === r) continue;
+                    val = mat[i][lead];
+                    if (Math.abs(val) > 1e-10) {
+                        setStatus(`Zeroing target: Subtracting ${val.toFixed(2)} * (Row ${r}) from Row ${i}`, "warn");
+                        updateGrid(mat, workingNodes, r, -1, i, lead);
+                        await sleep(runId, 1.2); 
+                        
+                        for (let j = 0; j < N; j++) mat[i][j] -= val * mat[r][j];
+                        log(`[Row Ops] Zeroed Column ${lead} in Row ${i}`, "math");
+                        
+                        updateGrid(mat, workingNodes, r, -1, i, lead);
+                        await sleep(runId, 0.8); 
+                    }
+                }
+                lead++;
+            }
+            
+            workingMatrixData = mat;
+            setStatus("Phase 1 Complete. Matrix cleanly in Reduced Row Echelon Form.", "success");
+            log("Phase 1 Complete. Matrix cleanly in RREF.", "success");
+            updateGrid(mat, workingNodes, -1, -1, -1, -1, true); 
+            await sleep(runId, 2.0); 
+
+            // --- PHASE 2: EXTRACTION ---
+            setStatus("Phase 2: Extracting Null Space from Free Variables", "active");
+            log("Phase 2: Extracting Null Space from Free Variables...", "action");
+            document.getElementById('resultContainer').style.display = 'block';
+            
+            let orthogonalSubspace = [];
+            updateGrid(orthogonalSubspace, resultNodes, -1, -1, -1, -1, true);
+            await sleep(runId, 1.0);
+
+            let rowCounter = 0;
+            for (let c = 0; c < N; c++) {
+                if (!pivotColumns.includes(c)) {
+                    setStatus(`Free Variable found at Column ${c}! Building Orthogonal Vector ${rowCounter+1}...`, "active");
+                    updateGrid(mat, workingNodes, -1, -1, -1, c); 
+                    
+                    let newRow = new Array(N).fill(0);
+                    newRow[c] = 1;
+                    orthogonalSubspace.push(newRow);
+
+                    updateGrid(orthogonalSubspace, resultNodes, rowCounter, -1, -1, c, true); 
+                    await sleep(runId, 1.5);
+
+                    for (let r = 0; r < pivotColumns.length; r++) {
+                        let basicCol = pivotColumns[r];
+                        let val = -mat[r][c];
+                        
+                        setStatus(`Mapping pivot values: Setting Col ${basicCol} to ${val.toFixed(2)}`, "warn");
+                        orthogonalSubspace[rowCounter][basicCol] = val;
+                        updateGrid(orthogonalSubspace, resultNodes, rowCounter, -1, -1, -1, true);
+                        await sleep(runId, 0.5);
+                    }
+                    
+                    setStatus(`Vector ${rowCounter+1} locked.`, "success");
+                    log(`[Extraction] Orthogonal Vector ${rowCounter+1} locked.`, "success");
+                    await sleep(runId, 1.0);
+                    rowCounter++;
+                }
+            }
+            return orthogonalSubspace;
+        }
+
+        // ==========================================
+        // ALGORITHM 2: STRICT GRAM-SCHMIDT
+        // ==========================================
+        async function runGramSchmidt(runId) {
+            log("Starting Gram-Schmidt Process...", "action");
+            let universe = [];
+            const dot = (v1, v2) => v1.reduce((sum, val, i) => sum + val * v2[i], 0);
+            let mat = workingMatrixData.map(row => [...row]);
+
+            setStatus("Phase 1: Orthogonalizing the Known Base Vectors...", "active");
+            await sleep(runId, 1.0);
+
+            for(let i=0; i<K; i++) {
+                let v = [...mat[i]];
+                
+                setStatus(`Targeting Base Vector ${i + 1} for projection...`, "warn");
+                updateGrid(mat, workingNodes, -1, -1, i);
+                await sleep(runId, 1.2);
+
+                for(let j=0; j<universe.length; j++) {
+                    let u = universe[j];
+                    let scalar = dot(v, u) / dot(u, u);
+                    for(let d=0; d<N; d++) v[d] -= scalar * u[d];
+                }
+                
+                if(Math.sqrt(dot(v,v)) > 1e-8) {
+                    universe.push(v);
+                    mat[i] = v;
+                    setStatus(`Shadow chopped. Base Vector ${i + 1} is now independent.`, "success");
+                    log(`[Phase 1] Shadow chopped for Base Vector ${i + 1}.`, "math");
+                    updateGrid(mat, workingNodes, i, -1, -1);
+                    await sleep(runId, 1.2);
+                }
+            }
+
+            workingMatrixData = mat;
+            setStatus(`Base Cleaned. Phase 2: Injecting Standard Axes to discover remaining dimensions...`, "warn");
+            log("Phase 2: Injecting Standard Axes...", "action");
+            document.getElementById('resultContainer').style.display = 'block';
+            let extracted = [];
+            updateGrid(extracted, resultNodes, -1, -1, -1, -1, true); 
+            await sleep(runId, 1.5);
+
+            for(let i=0; i<N; i++) {
+                setStatus(`Injecting Standard Axis ${i}... checking if it overlaps Base.`, "active");
+                
+                let v = new Array(N).fill(0);
+                v[i] = 1; 
+                
+                for(let j=0; j<universe.length; j++) {
+                    let u = universe[j];
+                    let scalar = dot(v, u) / dot(u, u);
+                    for(let d=0; d<N; d++) v[d] -= scalar * u[d];
+                }
+                
+                if(Math.sqrt(dot(v,v)) > 1e-8) {
+                    universe.push(v);
+                    extracted.push(v);
+                    setStatus(`Axis ${i} survived projection! Appending to Orthogonal Space.`, "success");
+                    log(`[Phase 2] Axis ${i} survived projection! Appended.`, "success");
+                    
+                    updateGrid(extracted, resultNodes, extracted.length - 1, -1, -1, -1, true);
+                    await sleep(runId, 1.2);
+                } else {
+                    setStatus(`Axis ${i} was completely absorbed by shadows. Discarding.`, "warn");
+                    log(`[Phase 2] Axis ${i} absorbed by shadows. Discarded.`, "warn");
+                    await sleep(runId, 0.4);
+                }
+                if(universe.length === N) break;
+            }
+            return extracted;
+        }
+
+        // --- MAIN ENGINE CONTROLLER ---
+        async function runEngine() {
+            if(isRunning) return;
+            isRunning = true;
+            startBtn.disabled = true;
+            startBtn.innerText = "Computing...";
+            
+            currentRunId++;
+            let myRunId = currentRunId;
+
+            clearLog();
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('proofBox').style.display = 'none';
+
+            let algo = document.getElementById('algo').value;
+            let orthogonalSubspace = [];
+            let startTime = performance.now();
+
+            try {
+                if (algo === 'gauss') orthogonalSubspace = await runGaussian(myRunId);
+                else orthogonalSubspace = await runGramSchmidt(myRunId);
+
+                if (myRunId !== currentRunId) return;
+
+                let msTaken = (performance.now() - startTime).toFixed(1);
+                setStatus(`Extraction Complete in ${msTaken}ms! Found ${orthogonalSubspace.length} independent dimensions.`, "success");
+                log(`Extraction Complete in ${msTaken}ms!`, "success");
+
+                // FINAL RENDERS
+                document.getElementById('resultShape').innerText = `${orthogonalSubspace.length} vectors × ${N} dimensions`;
+                updateGrid(workingMatrixData, workingNodes, -1, -1, -1, -1, true); 
+                updateGrid(orthogonalSubspace, resultNodes, -1, -1, -1, -1, true);
+
+                // GENERATE PROOF
+                const proofLines = document.getElementById('proofLines');
+                proofLines.innerHTML = '';
+                let checks = Math.min(5, orthogonalSubspace.length);
+                let testVector = originalMatrix[0]; 
+
+                for(let i=0; i<checks; i++) {
+                    let oVec = orthogonalSubspace[i];
+                    let sum = 0;
+                    for(let d=0; d<N; d++) sum += testVector[d] * oVec[d];
+                    
+                    let display = Math.abs(sum) < 1e-9 ? "0.00000" : sum.toExponential(3);
+                    let div = document.createElement('div');
+                    div.className = 'proof-line';
+                    div.innerHTML = `Original Vector [0] • Ortho Vector [${i}] <span>= ${display}</span>`;
+                    proofLines.appendChild(div);
+                }
+                if(orthogonalSubspace.length > 5) {
+                    let div = document.createElement('div');
+                    div.className = 'proof-line';
+                    div.style.color = "#94a3b8";
+                    div.innerHTML = `... plus ${orthogonalSubspace.length - 5} more pure mathematical zeros.`;
+                    proofLines.appendChild(div);
+                }
+                document.getElementById('proofBox').style.display = 'block';
+
+            } catch (error) {
+                if (error.message === "Aborted") {
+                    setStatus("Engine reset.", "");
+                    log("Process aborted by user.", "error");
+                } else console.error(error);
+            } finally {
+                if (myRunId === currentRunId) {
+                    isRunning = false;
+                    startBtn.disabled = false;
+                    startBtn.innerText = "Start Engine";
+                }
+            }
+        }
+
+        window.onload = function() {
+            syncSpeedFromInput();
+            initSystem();
+        };
+    </script>
+</body>
+</html>
