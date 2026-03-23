@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dimensional Vector Extraction Optimizer</title>
+    <style>
+        :root {
+            --bg: #f5f5f5; --text: #1a1a1a; --panel: #ffffff; --border: #cccccc;
+            --btn-bg: #e0e0e0; --btn-hover: #d0d0d0; --ghost: #888888; --accent: #0066cc;
+            --danger: #cc0000; --danger-hover: #a30000; --success: #008800;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #121212; --text: #e0e0e0; --panel: #1e1e1e; --border: #444444;
+                --btn-bg: #333333; --btn-hover: #4a4a4a; --ghost: #aaaaaa; --accent: #4da6ff;
+                --danger: #ff4d4d; --danger-hover: #cc0000; --success: #00cc00;
+            }
+        }
+
+        body { background-color: var(--bg); color: var(--text); font-family: system-ui, sans-serif; margin: 0; padding: 2rem; line-height: 1.5; }
+        h1 { font-size: 1.5rem; margin-top: 0; }
+        
+        .header-controls { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        button { background-color: var(--btn-bg); color: var(--text); border: 0.1rem solid var(--border); border-radius: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: var(--btn-hover); }
+        .btn-small { font-size: 0.8rem; padding: 0.3rem 0.6rem; }
+        .btn-action { font-family: monospace; font-weight: bold; width: 1.8em; }
+        
+        .btn-restore { background-color: var(--success); color: white; display: none; font-weight: bold; }
+        .btn-restore:hover { background-color: #006600; }
+
+        input { background-color: transparent; color: var(--text); border: 0.1rem solid transparent; border-bottom-color: var(--border); font-size: 1rem; padding: 0.1rem 0.2rem; font-family: inherit; }
+        input:focus { outline: none; border-bottom-color: var(--accent); }
+        input::placeholder { color: var(--ghost); }
+        .num-input { width: 4em; }
+
+        .checkbox-label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--ghost); cursor: pointer; user-select: none; width: fit-content; }
+        
+        .section { background: var(--panel); border: 0.1rem solid var(--border); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; width: fit-content; max-width: 100%; overflow-x: auto; }
+        .row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+
+        .linear-container { display: flex; align-items: center; flex-grow: 1; min-width: 300px; background: var(--bg); border: 0.1rem solid var(--border); border-radius: 0.25rem; padding: 0.2rem 0.5rem; margin-left: 0.5rem; }
+        .linear-input { flex-grow: 1; background: transparent; border: none; color: var(--accent); font-family: monospace; font-size: 1rem; outline: none; padding: 0 0.5rem; width: 100%; }
+        .cost-group { display: inline-flex; align-items: center; background: var(--bg); border-radius: 0.25rem; border: 0.1rem solid var(--border); padding: 0.1rem 0.3rem; }
+        .cost-label { font-size: 0.85rem; color: var(--ghost); }
+
+        .algorithm-toggle { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.5rem; background: var(--bg); padding: 0.5rem 1rem; border-radius: 0.5rem; border: 0.1rem solid var(--border); width: fit-content; }
+        .toggle-label { font-size: 0.9rem; transition: color 0.3s; }
+        .toggle-label.active { color: var(--accent); font-weight: bold; }
+        .toggle-label.inactive { color: var(--ghost); }
+        
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--panel); transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        #results { margin-top: 1rem; padding: 1rem; background: var(--bg); border: 0.1rem solid var(--accent); border-radius: 0.5rem; white-space: pre-wrap; font-family: monospace; display: none; }
+        
+        #progress-panel { display: none; margin-top: 1rem; padding: 1rem; background: var(--panel); border: 0.1rem dashed var(--accent); border-radius: 0.5rem; font-family: monospace; }
+        .progress-stat { color: var(--accent); font-weight: bold; font-size: 1.1em; }
+        .btn-abort { background-color: var(--danger); color: white; font-weight: bold; margin-top: 0.5rem; border: none; }
+        .btn-abort:hover { background-color: var(--danger-hover); }
+
+        .calc-bar { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+
+    <h1 id="app-title">Dimensional Vector Extraction Optimizer</h1>
+    
+    <div class="header-controls">
+        <button class="btn-small" onclick="prefillKingshot()">prefill for kingshot kingdom feast</button>
+        <button class="btn-small" onclick="prefillTestNumbers()">prefill with test numbers</button>
+        <button class="btn-small btn-restore" id="btnRestore" onclick="restoreUserData()">↺ restore last user data</button>
+        
+        <label class="checkbox-label" style="margin-left: auto;">
+            <input type="checkbox" id="condenseNumbers" onchange="toggleCheckbox('numbers')"> condense to numbers only
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" id="condenseHybrid" onchange="toggleCheckbox('hybrid')"> condense hybrid
+        </label>
+    </div>
+
+    <div class="section">
+        <div>dimension count of hyperspace: <input id="dimCount" type="number" class="num-input" min="0" step="1" value="0" onchange="updateDimensionCount()"></div>
+        
+        <div class="row" style="margin-top: 1rem; font-weight: bold; width: 100%;">
+            <button class="btn-action" onclick="addDimension()">+</button>
+            <button class="btn-action" onclick="removeDimension()">-</button>
+            <span id="label-main">main vector in hyperspace↓</span> 
+            <div class="linear-container">
+                <span style="color: var(--accent); font-family: monospace;">[</span>
+                <input type="text" id="linearMainInput" class="linear-input" placeholder="e.g. x=5, 6, 7, y=8" oninput="handleLinearInput(this.value)">
+                <span style="color: var(--accent); font-family: monospace;">]</span>
+            </div>
+        </div>
+        <div id="mainVectorContainer"></div>
+    </div>
+
+    <div class="section" style="margin-bottom: 0.5rem;">
+        <div class="row" style="font-weight: bold;">
+            <button class="btn-action" onclick="addRecipe()">+</button>
+            <button class="btn-action" onclick="removeRecipe()">-</button>
+            <span id="label-removal">vectors to be extracted:</span>
+        </div>
+        <div id="removalVectorsContainer"></div>
+    </div>
+
+    <div style="margin-left: 0.5rem; margin-bottom: 0.5rem;">
+        <label class="checkbox-label">
+            <input type="checkbox" id="autoSaveToggle" onchange="toggleAutoSave()" checked> 💾 auto-save to localdata
+        </label>
+    </div>
+
+    
+    <div class="section" style="margin-bottom: 2rem;">
+        <div class="algorithm-toggle">
+            <span class="toggle-label active" id="lbl-algo1">faster for smaller size: Basic DFS</span>
+            <label class="switch">
+                <input type="checkbox" id="algoToggle" onchange="updateAlgoLabels(); autoSave();">
+                <span class="slider"></span>
+            </label>
+            <span class="toggle-label inactive" id="lbl-algo2">faster for bigger size: Surrogate ILP</span>
+        </div>
+
+        <div class="calc-bar">
+            <label><span id="label-multiplier">General Multiplier:</span> <input id="globalMultiplier" type="number" class="num-input" value="1" onchange="autoSave()"></label>
+            <button id="calcBtn" style="background-color: var(--accent); color: white; padding: 0.5rem 1rem; font-weight: bold; text-align: center;" onclick="startCalculation()">
+                CALCULATE MAXIMUM<br>
+                <span style="font-size: 0.7em; font-weight: normal; opacity: 0.9;">( only non negative vectors )</span>
+            </button>
+        </div>
+
+        <div id="progress-panel">
+            <div>Status: <span style="color: var(--accent)">Calculating deeply...</span></div>
+            <div>Nodes Explored: <span class="progress-stat" id="stat-nodes">0</span></div>
+            <div>Best Score Found: <span class="progress-stat" id="stat-score">0</span></div>
+            <button class="btn-abort" onclick="abortCalculation()">⏹ ABORT & SHOW BEST RESULT</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+<script>
+    
+    let dimensions = []; let recipes = []; let nextDimId = 1; let nextRecipeId = 1;
+    let uiTerms = { title: "Dimensional Vector Extraction Optimizer", mainHeader: "main vector in hyperspace↓", removalHeader: "vectors to be extracted:", weightLabel: "vector weight", multiplierLabel: "General Multiplier:", extractedList: "Extracted Vectors", leftoversList: "Remaining Vector Elements (Leftovers)" };
+
+    
+    function toggleAutoSave() { const isChecked = document.getElementById('autoSaveToggle').checked; localStorage.setItem('optimizer_autosave_pref', isChecked); if (isChecked) autoSave(); }
+    
+    function autoSave() {
+        if (!document.getElementById('autoSaveToggle').checked) return;
+        const data = { dimensions, recipes, nextDimId, nextRecipeId, uiTerms, algoToggle: document.getElementById('algoToggle').checked, globalMultiplier: document.getElementById('globalMultiplier').value };
+        localStorage.setItem('optimizer_userdata', JSON.stringify(data));
+        evaluateRestoreButton();
+    }
+    
+    function loadSavedData() {
+        const pref = localStorage.getItem('optimizer_autosave_pref'); if (pref !== null) document.getElementById('autoSaveToggle').checked = (pref === 'true');
+        evaluateRestoreButton();
+        const raw = localStorage.getItem('optimizer_userdata');
+        if (raw) { try { applyDataState(JSON.parse(raw)); return true; } catch(e) { console.error("Corrupt save"); } } return false;
+    }
+
+    function isCustomData(parsed) {
+        if (!parsed || !parsed.dimensions || !parsed.recipes) return false;
+        let dims = parsed.dimensions; let recs = parsed.recipes;
+        
+        
+        if (recs.length === 0 && dims.every(d => d.name === '' && d.value === '')) return false;
+
+        
+        if (recs.length === 6 && recs[0].name === 'Beef Bourguignon' && dims.length === 12 && dims[0].name === 'Beef') {
+            let isPureKingshot = dims.every(d => d.value === '');
+            if (isPureKingshot) return false;
+            let isPureTest = dims[0].value === 31 && dims[1].value === 89 && dims[11].value === 95;
+            if (isPureTest) return false;
+        }
+        return true; 
+    }
+    
+    function evaluateRestoreButton() {
+        const backupStr = localStorage.getItem('optimizer_backup');
+        const currentStr = localStorage.getItem('optimizer_userdata');
+        
+        if (backupStr && backupStr !== currentStr) {
+            try {
+                let parsed = JSON.parse(backupStr);
+                if (isCustomData(parsed)) {
+                    document.getElementById('btnRestore').style.display = 'inline-block';
+                    return;
+                }
+            } catch(e) {}
+        }
+        document.getElementById('btnRestore').style.display = 'none';
+    }
+
+    function applyDataState(data) {
+        dimensions = data.dimensions || []; recipes = data.recipes || []; nextDimId = data.nextDimId || 1; nextRecipeId = data.nextRecipeId || 1; uiTerms = data.uiTerms;
+        document.getElementById('algoToggle').checked = data.algoToggle || false; document.getElementById('globalMultiplier').value = data.globalMultiplier || 1; document.getElementById('dimCount').value = dimensions.length;
+        updateAlgoLabels(); render();
+    }
+    
+    function backupUserData() {
+        const currentData = localStorage.getItem('optimizer_userdata');
+        if (currentData) {
+            try {
+                
+                if (isCustomData(JSON.parse(currentData))) {
+                    localStorage.setItem('optimizer_backup', currentData);
+                }
+            } catch(e) {}
+        }
+        evaluateRestoreButton();
+    }
+    
+    function restoreUserData() {
+        const backup = localStorage.getItem('optimizer_backup');
+        if (backup) { applyDataState(JSON.parse(backup)); localStorage.setItem('optimizer_userdata', backup); localStorage.removeItem('optimizer_backup'); evaluateRestoreButton(); }
+    }
+
+    // --- UI LOGIC ---
+    function updateAlgoLabels() {
+        const isAlgo2 = document.getElementById('algoToggle').checked;
+        if (isAlgo2) { document.getElementById('lbl-algo1').classList.replace('active', 'inactive'); document.getElementById('lbl-algo2').classList.replace('inactive', 'active'); } 
+        else { document.getElementById('lbl-algo1').classList.replace('inactive', 'active'); document.getElementById('lbl-algo2').classList.replace('active', 'inactive'); }
+    }
+    function toggleCheckbox(selected) {
+        if (selected === 'numbers' && document.getElementById('condenseNumbers').checked) document.getElementById('condenseHybrid').checked = false;
+        else if (selected === 'hybrid' && document.getElementById('condenseHybrid').checked) document.getElementById('condenseNumbers').checked = false;
+        syncLinearInput(); render();
+    }
+    function syncLinearInput() {
+        if (document.activeElement && document.activeElement.id === 'linearMainInput') return;
+        const isNum = document.getElementById('condenseNumbers').checked, isHyb = document.getElementById('condenseHybrid').checked;
+        document.getElementById('linearMainInput').value = dimensions.map(d => { let v = d.value !== '' ? d.value : ''; return isNum ? `${v}` : (isHyb ? (d.name ? `${d.name}=${v}` : `${v}`) : `${d.name || 'dim'+d.id}=${v}`); }).join(', ');
+    }
+    function handleLinearInput(val) {
+        let tokens = val.split(','); while(dimensions.length < tokens.length) dimensions.push({ id: nextDimId++, name: '', value: '' }); while(dimensions.length > tokens.length) dimensions.pop();
+        document.getElementById('dimCount').value = dimensions.length;
+        tokens.forEach((t, i) => { t = t.trim(); if (t.includes('=')) { let p = t.split('='); dimensions[i].name = p[0].trim(); dimensions[i].value = p[1].trim() === '' ? '' : (parseInt(p[1]) || 0); } else { if (t === '') { dimensions[i].name = ''; dimensions[i].value = ''; } else if (/[0-9\-]/.test(t.charAt(0))) { dimensions[i].name = ''; dimensions[i].value = parseInt(t) || 0; } else { dimensions[i].name = t; dimensions[i].value = ''; } } });
+        render(); autoSave();
+    }
+    function updateDimensionCount() { const t = parseInt(document.getElementById('dimCount').value) || 0; while (dimensions.length < t) dimensions.push({ id: nextDimId++, name: '', value: '' }); while (dimensions.length > t) dimensions.pop(); render(); autoSave(); }
+    function addDimension() { dimensions.push({ id: nextDimId++, name: '', value: '' }); document.getElementById('dimCount').value = dimensions.length; render(); autoSave(); }
+    function removeDimension() { if (dimensions.length) dimensions.pop(); document.getElementById('dimCount').value = dimensions.length; render(); autoSave(); }
+    function addRecipe() { let c = {}; dimensions.forEach(d => c[d.id] = 0); recipes.push({ id: nextRecipeId++, name: '', weight: 1, costs: c }); render(); autoSave(); }
+    function removeRecipe() { if (recipes.length) recipes.pop(); render(); autoSave(); }
+
+    function render() {
+        let act = null, selS = null, selE = null;
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') { act = document.activeElement.id; try { selS = document.activeElement.selectionStart; selE = document.activeElement.selectionEnd; } catch(e) {} }
+        const isNum = document.getElementById('condenseNumbers').checked, isHyb = document.getElementById('condenseHybrid').checked;
+
+        document.getElementById('app-title').innerText = uiTerms.title; document.title = uiTerms.title;
+        document.getElementById('label-main').innerText = uiTerms.mainHeader; document.getElementById('label-removal').innerText = uiTerms.removalHeader;
+        document.getElementById('label-multiplier').innerText = uiTerms.multiplierLabel;
+
+        syncLinearInput();
+        const mvC = document.getElementById('mainVectorContainer'); mvC.innerHTML = '';
+        dimensions.forEach((dim, i) => { mvC.innerHTML += `<div class="row"><button class="btn-action" onclick="removeSpecificDim(${i})">-</button><input type="text" id="dim-name-${i}" placeholder="name" value="${dim.name}" oninput="updateDimName(${i}, this.value)"> : <input type="text" inputmode="numeric" class="num-input" id="dim-val-${i}" placeholder="count" value="${dim.value !== '' ? dim.value : ''}" oninput="updateDimValue(${i}, this.value)"></div>`; });
+
+        recipes.forEach(r => dimensions.forEach(d => { if (!(d.id in r.costs)) r.costs[d.id] = 0; }));
+        const rvC = document.getElementById('removalVectorsContainer'); rvC.innerHTML = '';
+        recipes.forEach((rec, rI) => {
+            let costsHtml = dimensions.map((d) => {
+                let lbl = isNum ? '' : (isHyb ? (d.name ? `<span class="cost-label">${d.name}=</span>` : '') : `<span class="cost-label">${d.name || 'dim'+d.id}=</span>`);
+                let w = (isNum || (!isHyb && !d.name && isHyb)) ? '2em' : '2.5em'; let a = (isNum || (!d.name && isHyb)) ? 'center' : 'left';
+                return `<span class="cost-group">${lbl}<input type="text" inputmode="numeric" class="num-input" id="rec-cost-${rI}-${d.id}" style="width: ${w}; border-bottom: none; text-align: ${a};" value="${rec.costs[d.id]}" oninput="updateRecipeCost(${rI}, ${d.id}, this.value)"></span>`;
+            }).join('<span style="color:var(--ghost)">,</span> ');
+            rvC.innerHTML += `<div class="row"><button class="btn-action" onclick="removeSpecificRecipe(${rI})">-</button><input type="text" id="rec-name-${rI}" placeholder="name" value="${rec.name}" oninput="updateRecipeName(${rI}, this.value)"> (${uiTerms.weightLabel}: <input type="text" inputmode="decimal" class="num-input" id="rec-weight-${rI}" style="width:3em" value="${rec.weight}" oninput="updateRecipeWeight(${rI}, this.value)">) = [ ${costsHtml} ]</div>`;
+        });
+        if (act) { let el = document.getElementById(act); if (el) { el.focus(); try { if (selS !== null) el.setSelectionRange(selS, selE); else el.setSelectionRange(el.value.length, el.value.length); } catch(e) {} } }
+    }
+
+    function removeSpecificDim(i) { dimensions.splice(i, 1); document.getElementById('dimCount').value = dimensions.length; render(); autoSave(); }
+    function removeSpecificRecipe(i) { recipes.splice(i, 1); render(); autoSave(); }
+    function updateRecipeName(i, v) { recipes[i].name = v; autoSave(); }
+    function updateRecipeWeight(i, v) { recipes[i].weight = parseFloat(v) || 0; autoSave(); }
+    function updateDimName(i, v) { dimensions[i].name = v; render(); autoSave(); }
+    function updateDimValue(i, v) { dimensions[i].value = v === '' ? '' : (parseInt(v) || 0); syncLinearInput(); autoSave(); }
+    function updateRecipeCost(rI, dI, v) { recipes[rI].costs[dI] = parseInt(v) || 0; autoSave(); }
+
+    function switchToGameTerminology() { uiTerms = { title: "Kingshot Kingdom Feast Optimization", mainHeader: "ingredients↓", removalHeader: "dishes:", weightLabel: "Dish value", multiplierLabel: "Event Multiplier:", extractedList: "Dishes Crafted", leftoversList: "Remaining Ingredients" }; }
+    function prefillKingshot() {
+        backupUserData(); switchToGameTerminology();
+        dimensions = [ { id: 1, name: 'Beef', value: '' }, { id: 2, name: 'Chocolate', value: '' }, { id: 3, name: 'Cod', value: '' }, { id: 4, name: 'Mushroom', value: '' }, { id: 5, name: 'Cheese', value: '' }, { id: 6, name: 'Chicken', value: '' }, { id: 7, name: 'Seasonings', value: '' }, { id: 8, name: 'Water', value: '' }, { id: 9, name: 'Butter', value: '' }, { id: 10, name: 'Egg', value: '' }, { id: 11, name: 'Flour', value: '' }, { id: 12, name: 'Milk', value: '' } ];
+        recipes = [ { id: 1, name: 'Beef Bourguignon', weight: 1, costs: {1:2, 2:0, 3:0, 4:0, 5:0, 6:0, 7:1, 8:1, 9:0, 10:0, 11:0, 12:0} }, { id: 2, name: 'Pastry Palace', weight: 1, costs: {1:0, 2:2, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:1, 10:1, 11:0, 12:0} }, { id: 3, name: 'Pan-Seared Cod', weight: 1, costs: {1:0, 2:0, 3:2, 4:0, 5:0, 6:0, 7:1, 8:0, 9:0, 10:0, 11:1, 12:0} }, { id: 4, name: 'Cream of Mushroom Soup', weight: 1, costs: {1:0, 2:0, 3:0, 4:2, 5:0, 6:0, 7:0, 8:1, 9:0, 10:0, 11:0, 12:1} }, { id: 5, name: 'Cheese Pudding', weight: 1, costs: {1:0, 2:0, 3:0, 4:0, 5:2, 6:0, 7:0, 8:0, 9:0, 10:1, 11:0, 12:1} }, { id: 6, name: 'Chicken Pie', weight: 1, costs: {1:0, 2:0, 3:0, 4:0, 5:0, 6:2, 7:0, 8:0, 9:1, 10:0, 11:1, 12:0} } ];
+        nextDimId = 13; nextRecipeId = 7; document.getElementById('dimCount').value = dimensions.length; document.getElementById('globalMultiplier').value = 40; render(); autoSave();
+    }
+    function prefillTestNumbers() {
+        if(dimensions.length === 0 || dimensions[0].name !== 'Beef') prefillKingshot(); else switchToGameTerminology();
+        const testVals = [31, 89, 94, 49, 124, 123, 47, 34, 112, 109, 97, 95];
+        dimensions.forEach((d, i) => { if (testVals[i] !== undefined) d.value = testVals[i]; }); render(); autoSave();
+    }
+
+    
+    const workerScript = `
+        self.onmessage = function(e) {
+            if (e.data.type === 'abort') { self.shouldAbort = true; return; }
+            if (e.data.type === 'start') {
+                self.shouldAbort = false; const payload = e.data.payload;
+                const numDims = payload.originalInv.length; const numRecipes = payload.parsedRecipes.length;
+                const useILP = payload.useILP; const use32Bit = payload.use32Bit;
+                const ArrayType = use32Bit ? Int32Array : Float64Array; const INF = use32Bit ? 2147483647 : Infinity;
+
+                let inventory = new ArrayType(payload.originalInv);
+                let wRecipes = payload.parsedRecipes.map(r => ({ weight: r.weight, costs: new ArrayType(r.costs) }));
+                
+                let w_arr = new Float64Array(numDims); let item_weight = new Float64Array(numRecipes); let item_sc = new Float64Array(numRecipes); let item_ratio = new Float64Array(numRecipes); let item_maxT = new Float64Array(numRecipes);
+                let bestScore = -1; let bestCounts = new ArrayType(numRecipes); let bestLeftovers = new ArrayType(numDims); let currentCounts = new ArrayType(numRecipes);
+                
+                let dfsCounter = 0; let timeoutTriggered = false;
+                let startTime = performance.now(); let lastTelemetry = startTime;
+
+                function dfsWorker(rIndex, currentInv, currentScore) {
+                    if (self.shouldAbort) return;
+                    if ((++dfsCounter & 2047) === 0) {
+                        let now = performance.now();
+                        if (now - lastTelemetry > 16) { self.postMessage({ type: 'progress', nodes: dfsCounter, best: bestScore }); lastTelemetry = now; }
+                        if (now - startTime > 15000) { timeoutTriggered = true; self.shouldAbort = true; return; }
+                    }
+
+                    if (!useILP) {
+                        let maxAdd = 0;
+                        for (let i = rIndex; i < numRecipes; i++) {
+                            let mT = INF; let cF = false; let rec = wRecipes[i];
+                            for (let j = 0; j < numDims; j++) {
+                                let c = rec.costs[j];
+                                if (c > 0) { cF = true; let p = use32Bit ? ((currentInv[j]/c)|0) : Math.floor(currentInv[j]/c); if (p < mT) mT = p; }
+                            }
+                            if (cF && mT > 0) maxAdd += mT * rec.weight;
+                        }
+                        if (currentScore + maxAdd <= bestScore) return;
+                    } else {
+                        let C = 0;
+                        for (let j = 0; j < numDims; j++) { let inv = currentInv[j]; if (inv > 0) { w_arr[j] = 1.0 / inv; C += 1.0; } else { w_arr[j] = 0; } }
+                        let act = 0;
+                        for (let i = rIndex; i < numRecipes; i++) {
+                            let r = wRecipes[i]; let mT = Infinity; let sc = 0.0; let cF = false;
+                            for (let j = 0; j < numDims; j++) {
+                                let c = r.costs[j];
+                                if (c > 0) { cF = true; let inv = currentInv[j]; if (inv === 0) { mT = 0; break; } let p = inv / c; if (p < mT) mT = p; }
+                                if (w_arr[j] > 0) sc += c * w_arr[j];
+                            }
+                            if (cF && mT > 0 && sc > 0) { item_weight[act] = r.weight; item_sc[act] = sc; item_ratio[act] = r.weight/sc; item_maxT[act] = mT; act++; }
+                        }
+                        for (let i = 1; i < act; i++) {
+                            let w = item_weight[i], s = item_sc[i], rt = item_ratio[i], m = item_maxT[i], j = i - 1;
+                            while (j >= 0 && item_ratio[j] < rt) { item_weight[j+1] = item_weight[j]; item_sc[j+1] = item_sc[j]; item_ratio[j+1] = item_ratio[j]; item_maxT[j+1] = item_maxT[j]; j--; }
+                            item_weight[j+1] = w; item_sc[j+1] = s; item_ratio[j+1] = rt; item_maxT[j+1] = m;
+                        }
+                        let bS = currentScore; let cap = C;
+                        for (let i = 0; i < act; i++) {
+                            let take = cap / item_sc[i]; if (item_maxT[i] < take) take = item_maxT[i];
+                            bS += take * item_weight[i]; cap -= take * item_sc[i];
+                            if (cap <= 0.0001) break;
+                        }
+                        if (bS <= bestScore + 1e-6) return;
+                    }
+
+                    if (rIndex === numRecipes) {
+                        if (currentScore > bestScore) { bestScore = currentScore; bestCounts.set(currentCounts); bestLeftovers.set(currentInv); }
+                        return;
+                    }
+
+                    let rec = wRecipes[rIndex]; let mT = INF; let cS = 0;
+                    for (let j = 0; j < numDims; j++) {
+                        let c = rec.costs[j]; cS += c;
+                        if (c > 0) { let p = use32Bit ? ((currentInv[j]/c)|0) : Math.floor(currentInv[j]/c); if (p < mT) mT = p; }
+                    }
+                    if (cS === 0 || mT === INF) mT = 0;
+
+                    for (let k = mT; k >= 0; k--) {
+                        if (self.shouldAbort) return;
+                        currentCounts[rIndex] = k;
+                        for (let j = 0; j < numDims; j++) currentInv[j] -= k * rec.costs[j];
+                        dfsWorker(rIndex + 1, currentInv, currentScore + (k * rec.weight));
+                        for (let j = 0; j < numDims; j++) currentInv[j] += k * rec.costs[j];
+                    }
+                }
+
+                dfsWorker(0, inventory, 0);
+                self.postMessage({ type: 'done', bestScore, bestCounts: Array.from(bestCounts), bestLeftovers: Array.from(bestLeftovers), timeoutTriggered, aborted: self.shouldAbort });
+            }
+        };
+    `;
+
+    let activeWorker = null;
+
+    function startCalculation() {
+        const resultsDiv = document.getElementById('results'); const progressDiv = document.getElementById('progress-panel'); const calcBtn = document.getElementById('calcBtn');
+        resultsDiv.style.display = 'none'; progressDiv.style.display = 'none'; 
+        document.getElementById('stat-nodes').innerText = '0'; document.getElementById('stat-score').innerText = '0';
+        calcBtn.disabled = true; calcBtn.style.opacity = '0.5';
+
+        const useILP = document.getElementById('algoToggle').checked;
+        const globalMultiplier = parseFloat(document.getElementById('globalMultiplier').value) || 1;
+        const numDims = dimensions.length;
+        
+        let maxInputVal = 0;
+        let originalInv = dimensions.map(d => { let val = d.value || 0; if (val > maxInputVal) maxInputVal = val; return val; });
+        
+        const use32Bit = maxInputVal <= 2000000;
+        const ArrayType = use32Bit ? Int32Array : Float64Array;
+        const INF = use32Bit ? 2147483647 : Infinity;
+
+        let inventory = new ArrayType(originalInv);
+        let parsedRecipes = recipes.map((r, index) => ({
+            id: r.id, name: r.name || 'vec' + (index + 1), weight: r.weight * globalMultiplier, costs: new ArrayType(dimensions.map(d => r.costs[d.id] || 0))
+        }));
+
+        if (useILP) {
+            let wInit = originalInv.map(v => v > 0 ? 1.0 / v : 0);
+            parsedRecipes.forEach(r => { let norm = 0; for (let j = 0; j < numDims; j++) norm += r.costs[j] * wInit[j]; r.initDensity = norm > 0 ? (r.weight / norm) : Infinity; });
+            parsedRecipes.sort((a, b) => b.initDensity - a.initDensity);
+        }
+
+        const numRecipes = parsedRecipes.length;
+        let bestScore = -1; let bestCounts = new ArrayType(numRecipes); let bestLeftovers = new ArrayType(numDims); let currentCounts = new ArrayType(numRecipes);
+        let dfsCounter = 0; let startTime = performance.now();
+        let bailoutTriggered = false;
+
+        const w_arr = new Float64Array(numDims); const item_weight = new Float64Array(numRecipes); const item_sc = new Float64Array(numRecipes); const item_ratio = new Float64Array(numRecipes); const item_maxT = new Float64Array(numRecipes);
+
+        try {
+            function dfs(rIndex, currentInv, currentScore) {
+                // Ultra-fast bitwise check. Limit UI freeze to 250ms max.
+                if ((++dfsCounter & 2047) === 0 && (performance.now() - startTime) > 250) throw 'BAILOUT';
+
+                if (!useILP) {
+                    let maxAdditionalTheoreticalScore = 0;
+                    for (let i = rIndex; i < numRecipes; i++) {
+                        let maxTimes = INF; let costFound = false; let rec = parsedRecipes[i];
+                        for (let j = 0; j < numDims; j++) {
+                            let c = rec.costs[j];
+                            if (c > 0) { costFound = true; let possible = use32Bit ? ((currentInv[j] / c) | 0) : Math.floor(currentInv[j] / c); if (possible < maxTimes) maxTimes = possible; }
+                        }
+                        if (costFound && maxTimes > 0) maxAdditionalTheoreticalScore += maxTimes * rec.weight;
+                    }
+                    if (currentScore + maxAdditionalTheoreticalScore <= bestScore) return;
+                } else {
+                    let C = 0;
+                    for (let j = 0; j < numDims; j++) { let inv = currentInv[j]; if (inv > 0) { w_arr[j] = 1.0 / inv; C += 1.0; } else { w_arr[j] = 0; } }
+                    let activeCount = 0;
+                    for (let i = rIndex; i < numRecipes; i++) {
+                        let r = parsedRecipes[i]; let maxT = Infinity; let sc = 0.0; let costFound = false;
+                        for (let j = 0; j < numDims; j++) {
+                            let c = r.costs[j];
+                            if (c > 0) { costFound = true; let inv = currentInv[j]; if (inv === 0) { maxT = 0; break; } let possible = inv / c; if (possible < maxT) maxT = possible; }
+                            if (w_arr[j] > 0) sc += c * w_arr[j];
+                        }
+                        if (costFound && maxT > 0 && sc > 0) { item_weight[activeCount] = r.weight; item_sc[activeCount] = sc; item_ratio[activeCount] = r.weight / sc; item_maxT[activeCount] = maxT; activeCount++; }
+                    }
+                    for (let i = 1; i < activeCount; i++) {
+                        let w = item_weight[i], s = item_sc[i], rt = item_ratio[i], mT = item_maxT[i], j = i - 1;
+                        while (j >= 0 && item_ratio[j] < rt) { item_weight[j + 1] = item_weight[j]; item_sc[j + 1] = item_sc[j]; item_ratio[j + 1] = item_ratio[j]; item_maxT[j + 1] = item_maxT[j]; j--; }
+                        item_weight[j + 1] = w; item_sc[j + 1] = s; item_ratio[j + 1] = rt; item_maxT[j + 1] = mT;
+                    }
+                    let boundScore = currentScore; let cap = C;
+                    for (let i = 0; i < activeCount; i++) {
+                        let take = cap / item_sc[i]; if (item_maxT[i] < take) take = item_maxT[i];
+                        boundScore += take * item_weight[i]; cap -= take * item_sc[i];
+                        if (cap <= 0.0001) break;
+                    }
+                    if (boundScore <= bestScore + 1e-6) return;
+                }
+
+                if (rIndex === numRecipes) {
+                    if (currentScore > bestScore) { bestScore = currentScore; bestCounts.set(currentCounts); bestLeftovers.set(currentInv); }
+                    return;
+                }
+
+                let recipe = parsedRecipes[rIndex]; let maxTimes = INF; let costSum = 0;
+                for (let j = 0; j < numDims; j++) {
+                    let c = recipe.costs[j]; costSum += c;
+                    if (c > 0) { let possible = use32Bit ? ((currentInv[j] / c) | 0) : Math.floor(currentInv[j] / c); if (possible < maxTimes) maxTimes = possible; }
+                }
+                if (costSum === 0 || maxTimes === INF) maxTimes = 0;
+
+                for (let k = maxTimes; k >= 0; k--) {
+                    currentCounts[rIndex] = k;
+                    for (let j = 0; j < numDims; j++) currentInv[j] -= k * recipe.costs[j];
+                    dfs(rIndex + 1, currentInv, currentScore + (k * recipe.weight));
+                    for (let j = 0; j < numDims; j++) currentInv[j] += k * recipe.costs[j];
+                }
+            }
+
+            dfs(0, inventory, 0);
+
+        } catch (e) {
+            if (e === 'BAILOUT') bailoutTriggered = true; else throw e;
+        }
+
+        if (bailoutTriggered) {
+            progressDiv.style.display = 'block';
+            let plainRecipes = parsedRecipes.map(r => ({ weight: r.weight, costs: Array.from(r.costs) }));
+            
+            if (activeWorker) activeWorker.terminate();
+            activeWorker = new Worker(URL.createObjectURL(new Blob([workerScript], { type: 'application/javascript' })));
+            
+            activeWorker.onmessage = function(e) {
+                if (e.data.type === 'progress') {
+                    document.getElementById('stat-nodes').innerText = e.data.nodes.toLocaleString();
+                    document.getElementById('stat-score').innerText = e.data.best.toLocaleString();
+                }
+                if (e.data.type === 'done') {
+                    progressDiv.style.display = 'none'; calcBtn.disabled = false; calcBtn.style.opacity = '1';
+                    renderResults(e.data, originalInv, parsedRecipes, Math.round((performance.now() - startTime) * 1000));
+                    activeWorker.terminate(); activeWorker = null;
+                }
+            };
+            activeWorker.postMessage({ type: 'start', payload: { originalInv, parsedRecipes: plainRecipes, useILP, use32Bit } });
+        } else {
+            calcBtn.disabled = false; calcBtn.style.opacity = '1';
+            let finalTimeUs = Math.max(0, Math.round((performance.now() - startTime) * 1000));
+            renderResults({ bestScore, bestCounts, bestLeftovers, timeoutTriggered: false, aborted: false }, originalInv, parsedRecipes, finalTimeUs);
+        }
+    }
+
+    function abortCalculation() { if (activeWorker) activeWorker.postMessage({ type: 'abort' }); }
+
+    function renderResults(data, originalInv, parsedRecipes, totalUs) {
+        const resultsDiv = document.getElementById('results'); resultsDiv.style.display = 'block';
+
+        if (data.bestScore === -1) { resultsDiv.innerText = "Error: Invalid setup or no possible extractions."; return; }
+
+        let calc_s = Math.floor(totalUs / 1000000); let calc_ms = Math.floor((totalUs % 1000000) / 1000); let calc_us = totalUs % 1000;
+        let timeString = calc_s > 0 ? `${calc_s}s ${String(calc_ms).padStart(3, '0')}ms ${String(calc_us).padStart(3, '0')}μs` : (calc_ms > 0 ? `${calc_ms}ms ${String(calc_us).padStart(3, '0')}μs` : `${calc_us}μs`);
+
+        let out = `==== ${data.aborted ? 'PARTIAL RESULT (ABORTED)' : 'EXACT OPTIMAL RESULT'} ====\n`;
+        out += `calculated in ${timeString}\n`;
+        if (data.timeoutTriggered) out += `[Note: 15s Time limit reached. Displaying best found branch.]\n`;
+        out += `Maximum Final Score: ${data.bestScore}\n\n`;
+        
+        out += `[${uiTerms.extractedList}]\n`;
+        let totalEx = 0;
+        
+        parsedRecipes.forEach((r, i) => {
+            if (data.bestCounts[i] > 0) { out += `> ${data.bestCounts[i]}x ${r.name || 'vec'+(i+1)}\n`; totalEx += data.bestCounts[i]; }
+        });
+        if (totalEx === 0) out += `> None\n`;
+
+        out += `\n[${uiTerms.leftoversList}]\n`;
+        dimensions.forEach((d, i) => {
+            let start = originalInv[i]; let left = data.bestLeftovers[i];
+            let pc = start > 0 ? Math.round((left / start) * 100) : 0;
+            out += `${d.name || 'dim'+d.id}: ${left} / ${start} (${pc}% left)\n`;
+        });
+
+        resultsDiv.innerText = out;
+    }
+
+    if (!loadSavedData()) { addDimension(); render(); }
+
+</script>
+</body>
+</html>
