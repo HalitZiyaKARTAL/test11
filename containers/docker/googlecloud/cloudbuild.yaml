@@ -7,3 +7,4 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/my-app'
       - '.'                                         
+#dont forget to set trigger etc later im free time 
