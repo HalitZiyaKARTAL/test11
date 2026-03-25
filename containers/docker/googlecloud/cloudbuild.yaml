@@ -1,0 +1,9 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - '-f'
+      - 'containers/docker/googlecloud/Dockerfile'  
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/my-app'
+      - '.'                                         
