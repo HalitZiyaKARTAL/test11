@@ -97,7 +97,12 @@ jobs:
           SRC_INPUTS_RAW="${{ github.event.inputs.source_urls }}"; SRC_INPUTS="$(printf "%s" "$SRC_INPUTS_RAW" | tr -d '\r')"
           FILTER_INPUTS_RAW="${{ github.event.inputs.filter_list }}"; FILTER_INPUTS="$(printf "%s" "$FILTER_INPUTS_RAW" | tr -d '\r')"
           DEST_PATH="${{ github.workspace }}"; if [[ -n "${{ env.DEST_FOLDER }}" ]]; then DEST_PATH="${{ github.workspace }}/${{ env.DEST_FOLDER }}"; mkdir -p "$DEST_PATH"; fi
-          KEYCHAIN_RAW="${{ github.event.inputs.source_keys }}"; KEYCHAIN="$(printf "%s" "$KEYCHAIN_RAW" | tr -d '\r')"; mapfile -t KEYCHAIN_ARR <<< "$KEYCHAIN"
+          
+          # Inject GITHUB_TOKEN directly into keychain so private repos always work
+          KEYCHAIN_RAW="${{ github.event.inputs.source_keys }}"
+          KEYCHAIN="$(printf "%s\n%s" "$KEYCHAIN_RAW" "${{ secrets.GITHUB_TOKEN }}" | tr -d '\r')"
+          mapfile -t KEYCHAIN_ARR <<< "$KEYCHAIN"
+          
           resolve_branch_and_relpath() {
             local repo="$1"; local full="$2"; IFS='/' read -r -a PARTS <<< "$full"; local n=${#PARTS[@]}
             for ((i=n; i>=1; i--)); do
@@ -154,10 +159,14 @@ jobs:
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"; git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin "${{ env.DEST_BRANCH }}" || true
-          git checkout -B "${{ env.DEST_BRANCH }}" "origin/${{ env.DEST_BRANCH }}" || git checkout -B "${{ env.DEST_BRANCH }}"
-          echo "Rebasing before push…"; git pull --rebase origin "${{ env.DEST_BRANCH }}" || echo "No remote branch yet; continuing."
-          git add -A; git commit -m "Data transfer from sources:${{ steps.process_sources.outputs.processed_sources }}" || { echo "No changes to commit."; exit 0; }
+          
+          # Stage and commit BEFORE pulling so Git doesn't crash on untracked files
+          git add -A
+          git commit -m "Data transfer from sources:${{ steps.process_sources.outputs.processed_sources }}" || { echo "No changes to commit."; exit 0; }
+          
+          echo "Rebasing before push to prevent traffic jams…"
+          git pull --rebase origin "${{ env.DEST_BRANCH }}" || echo "No remote branch yet; continuing."
+          
           git push origin "${{ env.DEST_BRANCH }}"
 
       - name: Get HEAD SHA (for check-run)
