@@ -76,12 +76,12 @@ jobs:
           if [[ -n "${{ github.event.inputs.destination_key }}" ]]; then echo "token=${{ github.event.inputs.destination_key }}" >> "$GITHUB_OUTPUT"; else echo "token=${{ secrets.GITHUB_TOKEN }}" >> "$GITHUB_OUTPUT"; fi
           if [[ "${{ steps.dest_token_logic.outputs.token }}" == "${{ secrets.GITHUB_TOKEN }}" && "${{ env.DEST_REPO_NAME }}" != "${{ github.repository }}" ]]; then echo "::error::destination_key is required for cross-repository writes."; exit 1; fi
 
-      - name: Checkout Destination Repo (robust)
+      - name: Checkout Destination Repo (hopefully robuster)
         run: |
           set -euo pipefail
           REPO="${{ env.DEST_REPO_NAME }}"; BR="${{ env.DEST_BRANCH }}"; TOK="${{ steps.dest_token_logic.outputs.token }}"
-          git clone --depth 1 "https://${TOK}@github.com/${REPO}.git" .
-          git remote set-url origin "https://${TOK}@github.com/${REPO}.git"
+          git clone --depth 1 "https://x-access-token:${TOK}@github.com/${REPO}.git" .
+          git remote set-url origin "https://x-access-token:${TOK}@github.com/${REPO}.git"
           if git ls-remote --exit-code --heads origin "$BR" >/dev/null 2>&1; then 
             git fetch origin "$BR:refs/remotes/origin/$BR"
             git checkout -B "$BR" "origin/$BR"
