@@ -1,0 +1,31 @@
+name: Create Empty Branch
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Type the name for your new empty branch (no spaces):'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  create-empty-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create and push empty branch
+        run: |
+          NEW_BRANCH="${{ inputs.branch_name }}"
+          NEW_BRANCH=$(echo "$NEW_BRANCH" | tr -d ' ')
+          
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git repo
+          cd repo
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          EMPTY_TREE=$(git mktree < /dev/null)
+          COMMIT_SHA=$(git commit-tree $EMPTY_TREE -m "Created empty branch: $NEW_BRANCH")
+          
+          git push origin $COMMIT_SHA:refs/heads/$NEW_BRANCH
