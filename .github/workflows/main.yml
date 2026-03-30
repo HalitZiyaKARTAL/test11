@@ -82,8 +82,13 @@ jobs:
           REPO="${{ env.DEST_REPO_NAME }}"; BR="${{ env.DEST_BRANCH }}"; TOK="${{ steps.dest_token_logic.outputs.token }}"
           git clone --depth 1 "https://${TOK}@github.com/${REPO}.git" .
           git remote set-url origin "https://${TOK}@github.com/${REPO}.git"
-          if git ls-remote --exit-code --heads origin "$BR" >/dev/null 2>&1; then git checkout -B "$BR" "origin/$BR"; else git checkout -B "$BR"; fi
-
+          if git ls-remote --exit-code --heads origin "$BR" >/dev/null 2>&1; then 
+            git fetch origin "$BR:refs/remotes/origin/$BR"
+            git checkout -B "$BR" "origin/$BR"
+          else 
+            git checkout -B "$BR"
+          fi
+          
       - name: Process All Sources
         id: process_sources
         run: |
