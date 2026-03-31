@@ -152,7 +152,7 @@ T[0][0][84]=P.now();
 T[0][0][85]=P.now();
 T[0][0][86]=0;log(1,19);
 
-function createCar(srcIdx=0){if(!T[srcIdx])return null;const nCD=JSON.parse(JSON.stringify(T[srcIdx]));const nR=T[srcIdx].length-1;const dRC=T[0][0][13];Object.assign(nCD[0],{0:0,1:0,2:0,3:1,4:'#fff',22:null,91:0,92:0});for(let r=1;r<=nR;r++){if(!nCD[r])nCD[r]=[];Object.assign(nCD[r],{0:null,1:null,2:Infinity,3:0,4:r===1?'#f00':(T[0][r]?.['4']||dRC)})}nCD.length=1+nR;T.push(nCD);T[0][0][88]=1;T[0][0][89]=1;return T.length-1};
+function createCar(srcIdx=0){if(!T[srcIdx])return null;const nCD=JSON.parse(JSON.stringify(T[srcIdx]));const nR=T[srcIdx].length-1;const dRC=T[0][0][13];Object.assign(nCD[0],{0:0,1:0,2:0,3:1,4:'#fff',22:null,91:0,92:0,107:0});for(let r=1;r<=nR;r++){if(!nCD[r])nCD[r]=[];Object.assign(nCD[r],{0:null,1:null,2:Infinity,3:0,4:r===1?'#f00':(T[0][r]?.['4']||dRC)})}nCD.length=1+nR;T.push(nCD);T[0][0][88]=1;T[0][0][89]=1;return T.length-1};
 log(1,20);
 /* BLOCK_5: ending of initialization and entity creation */
 
