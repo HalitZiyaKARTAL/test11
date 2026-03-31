@@ -190,7 +190,7 @@ const config=LD[0][0];const numLayers=config.numLayers;if(config.inputSize!==inp
 let currentVector=inputVector;try{for(let layerIdx=1;layerIdx<=numLayers;layerIdx++){const weights=LD[layerIdx];const activationFuncName=LD[0]?.[layerIdx];if(!weights||!activationFuncName||!activations[activationFuncName]){log(106,4);throw new Error(`AI Driver definition incomplete for layer ${layerIdx}.`)}
 currentVector=mm(T[0]?.[0]?.[110] || 0)(weights,currentVector);currentVector=aa(currentVector,activationFuncName)}}catch(error){log(106,5);console.error("AI Compute (ff) Error:",error);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
 t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];
-const output=currentVector.slice(i=T[0][0][110]===3,i+2).map(v=>v||0);if(T[cI]?.[0]){T[cI][0][11]=output[0];T[cI][0][12]=output[1]}
+const idx=(T[0][0][110]===3)?1:0;if(T[cI]?.[0]){T[cI][0][11]=currentVector[idx]||0;T[cI][0][12]=currentVector[idx+1]||0}
 log(106,6)};log(1,29);
 
 function buildAIInputVector(arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||T[0][0][21]||1;const C=T[cI];if(!C||!C[0])return null;const S=C[0],nr=C.length-1,pad=S[91]??0,pmd=S[92]??0,x=S[0],y=S[1],ar=S[2]*RAD,sa=SIN(ar),ca=COS(ar),abr=(S[2]-pad)*RAD,vx=pmd*COS(abr),vy=pmd*SIN(abr);const el=10+nr,out=new Array(el);out[0]=1;out[1]=pad;out[2]=pmd;out[3]=x;out[4]=y;out[5]=sa;out[6]=ca;out[7]=vx;out[8]=vy;out[9]=0;for(let r=1;r<=nr;r++){let d=C[r]?.[2];out[9+r]=d==null||!Number.isFinite(d)?LARGE_NUM_FOR_INFINITY:d}return out};
