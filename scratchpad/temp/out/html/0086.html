@@ -84,7 +84,7 @@ log(1,5);
 var T=[],D=[],Ds=[],debuglogs,magicdata,tested=[[]],cachedRoadGeometry=null,cachedRoadTrace=null,LARGE_NUM_FOR_INFINITY=1e6;
 const $=id=>document.getElementById(id),
 P=performance,M=Math,RAD=M.PI/180,COS=M.cos,SIN=M.sin,SQRT=M.sqrt,ABS=M.abs,MAX=M.max,MIN=M.min,FLOOR=M.floor,CARPROP_VALIDATORS={xO:x=>+x,yO:x=>+x,d:x=>+x%360},
-activations={identity:x=>x,relu:x=>MAX(0,x),tanh:x=>M.tanh(x),sigmoid:x=>1/(1+M.exp(-x))},validActivationNames=Object.keys(activations),
+activations={identity:x=>x,relu:x=>MAX(0,x),tanh:x=>M.tanh(x),sigmoid:x=>1/(1+M.exp(-x)),signlogp:x=>(x<0)?-M.log(1-x):M.log(1+x)},validActivationNames=Object.keys(activations),
 traceCfgs={road:{type:"scatter",mode:"lines",line:{color:"#aaa",width:1.5},name:"Road",legendgroup:"road",showlegend:!0,hoverinfo:"skip"},ray:{type:"scatter",mode:"lines",line:{width:1},showlegend:!1,hoverinfo:"skip"},car:{type:"scatter",mode:"markers",marker:{size:8,symbol:"circle"},showlegend:!0,hoverinfo:"name+x+y"}};
 log(1,6);
 /* BLOCK_2: ending of aliases, constants, and global state */
@@ -187,7 +187,7 @@ function aa(vov,nS){const fn=activations[nS]||activations.identity;if(Array.isAr
 function ff(inputVector,arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||T[0][0][21]||1;ff.t=ff.t||[];var t0=ff.t;t0[0]=P.now();if(T[0]?.[0]?.[98]){log(106,1);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
 T[0][0][32]++;const LD=Ds?.[cI]??D;if(!LD||!LD[0]?.[0]?.numLayers||!inputVector){log(106,2);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
 const config=LD[0][0];const numLayers=config.numLayers;if(config.inputSize!==inputVector.length){log(106,3);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
-let currentVector=inputVector;try{for(let layerIdx=1;layerIdx<=numLayers;layerIdx++){const weights=LD[layerIdx];const activationFuncName=LD[0]?.[layerIdx];if(!weights||!activationFuncName||!activations[activationFuncName]){log(106,4);throw new Error(`AI Driver definition incomplete for layer ${layerIdx}.`)}
+let currentVector=inputVector.map(activations.signlogp);try{for(let layerIdx=1;layerIdx<=numLayers;layerIdx++){const weights=LD[layerIdx];const activationFuncName=LD[0]?.[layerIdx];if(!weights||!activationFuncName||!activations[activationFuncName]){log(106,4);throw new Error(`AI Driver definition incomplete for layer ${layerIdx}.`)}
 currentVector=mm(T[0]?.[0]?.[110] || 0)(weights,currentVector);currentVector=aa(currentVector,activationFuncName)}}catch(error){log(106,5);console.error("AI Compute (ff) Error:",error);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
 t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];const idx=(T[0][0][110]===3)?1:0;if(T[cI]?.[0]){T[cI][0][11]=currentVector[idx]||0;T[cI][0][12]=currentVector[idx+1]||0}log(106,6)};log(1,29);
 
