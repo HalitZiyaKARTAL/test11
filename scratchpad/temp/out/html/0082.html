@@ -183,7 +183,7 @@ mm.pass=(A,B)=>{let I=A.length,K=A[0].length,r=new Array(I+1);r[0]=B[0];for(let 
 
 function aa(vov,nS){const fn=activations[nS]||activations.identity;if(Array.isArray(vov)){if(!vov[0]?.[0]){for(let i=T[0]?.[0]?.[110]===3,e=vov.length;i<e;i++)vov[i]=fn(vov[i]);return vov}return vov.map(r=>r.map(fn))}return fn(vov)};log(1,28);
 
-function ff(inputVector,arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||0;ff.t=ff.t||[];var t0=ff.t;t0[0]=P.now();if(T[0]?.[0]?.[98]){log(106,1);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
+function ff(inputVector,arg){const cI=+arg>=0?+arg:T[0][0][130]&&T[0][0][129]||T[0][0][21]||1;ff.t=ff.t||[];var t0=ff.t;t0[0]=P.now();if(T[0]?.[0]?.[98]){log(106,1);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
 T[0][0][32]++;const LD=Ds?.[cI]??D;if(!LD||!LD[0]?.[0]?.numLayers||!inputVector){log(106,2);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
 const config=LD[0][0];const numLayers=config.numLayers;if(config.inputSize!==inputVector.length){log(106,3);t0[1]=P.now();T[0][0][39]+=t0[1]-t0[0];if(T[cI]?.[0]){T[cI][0][11]=0;T[cI][0][12]=0}return}
 let currentVector=inputVector;try{for(let layerIdx=1;layerIdx<=numLayers;layerIdx++){const weights=LD[layerIdx];const activationFuncName=LD[0]?.[layerIdx];if(!weights||!activationFuncName||!activations[activationFuncName]){log(106,4);throw new Error(`AI Driver definition incomplete for layer ${layerIdx}.`)}
