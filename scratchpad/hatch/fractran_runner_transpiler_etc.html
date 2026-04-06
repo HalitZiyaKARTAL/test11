@@ -2,314 +2,396 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>FRACTRAN IDE & Compiler</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1e1e1e">
+<title>FRACTRAN IDE</title>
 <style>
-    /* ======================================================================
-       1. FLUID CSS & DEVICE SAFE ZONES (Zero Pixels)
-       ====================================================================== */
-    :root {
-        --bg: #1e1e1e; --panel: #252526; --border: #3c3c3c;
-        --text: #d4d4d4; --text-muted: #858585; --accent: #007acc;
-        --danger: #f14c4c; --success: #4ec9b0;
-        --font-ui: system-ui, -apple-system, sans-serif;
-        --font-code: 'Consolas', 'Courier New', monospace;
+    /* GLOBAL SCALING & HARDWARE PROTECTION */
+    :root { color-scheme: dark; }
+    body {
+        margin: 0; padding: 0; background: #1e1e1e; color: #d4d4d4;
+        font-family: system-ui, sans-serif; font-size: clamp(6px, 2vw, 16px);
+        min-height: 100dvh; display: flex; flex-direction: column; overflow-x: hidden;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        overscroll-behavior-y: none;
     }
     
-    /* Fluid typography scales to screen size */
-    html { font-size: clamp(0.7rem, 0.8vw + 0.8vh, 2rem); }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    /* The Outer Safe Zone (10 top, 5 bottom/sides). Allows native scrolling if screen is tiny. */
-    body { 
-        background-color: #000; color: var(--text); font-family: var(--font-ui); 
-        min-height: 100dvh; padding: 10vh 5vw 5vh 5vw; 
-        overflow-x: hidden; overflow-y: auto; 
+    /* COMPONENT GEOMETRY */
+    button, input, select, textarea {
+        background: #252526; color: #d4d4d4; border: 1px solid #3c3c3c; border-radius: 0.25em;
+        padding: 0.5em 1em; font-family: inherit; font-size: 1em;
+        touch-action: manipulation; transition: all 0.2s;
     }
+    button:hover { background: #333; cursor: pointer; }
+    input:focus, textarea:focus { outline: 1px solid #007acc; border-color: #007acc; }
     
-    /* The Main App Box */
-    #app { 
-        background-color: var(--bg); display: flex; flex-direction: column; 
-        min-height: 85vh; border-radius: 0.5rem; border: 0.1rem solid var(--border); 
-        box-shadow: 0 1rem 3rem rgba(255,255,255,0.05); overflow: hidden; 
-    }
+    /* TOOLBARS & SPLIT BUTTONS */
+    .toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5em; padding: 0.5em 1em; background: #252526; border-bottom: 1px solid #333; z-index: 10; }
+    .split-btn { display: inline-flex; align-items: stretch; position: relative; }
+    .split-btn button:first-child { border-radius: 0.25em 0 0 0.25em; border-right: none; }
+    .split-trigger { border-radius: 0 0.25em 0.25em 0; border-left: 1px solid #555; background: #1e1e1e; padding: 0 0.5em; display: flex; align-items: center; cursor: pointer; }
+    .drop-menu { display: none; position: absolute; top: 100%; right: 0; background: #252526; border: 1px solid #444; border-radius: 0.25em; z-index: 20; min-width: max-content; box-shadow: 0 4px 6px rgba(0,0,0,0.5); flex-direction: column; }
+    .split-btn.open .drop-menu { display: flex; }
+    .drop-menu div { padding: 0.75em 1em; cursor: pointer; border-bottom: 1px solid #333; }
+    .drop-menu div:hover { background: #333; }
+    .inline-limit { width: 8ch; text-align: center; padding: 0.2em; margin: 0 0.5em; background: #111; color: #4CAF50; }
 
-    /* Buttons & Content-Sized Textareas */
-    button { background: var(--panel); border: 0.1rem solid var(--border); color: var(--text); padding: 0.4rem 0.8rem; border-radius: 0.3rem; cursor: pointer; font-family: var(--font-ui); font-size: 1rem; transition: 0.2s; white-space: nowrap; width: max-content; }
-    button:hover { background: #333; }
-    button.primary { background: var(--accent); border-color: var(--accent); }
-    button.danger { background: var(--danger); border-color: var(--danger); }
-
-    textarea { background: #3c3c3c; border: 0.1rem solid transparent; color: #fff; padding: 0.4rem; border-radius: 0.3rem; font-family: var(--font-code); font-size: 1rem; width: 100%; min-width: 5rem; resize: vertical; min-height: 2.2rem; field-sizing: content; line-height: 1.2; }
-    textarea:focus { border-color: var(--accent); outline: none; }
+    /* EDITOR ZONE */
+    .editor { flex-grow: 1; padding: 1em; overflow-y: auto; scroll-behavior: smooth; z-index: 1; }
+    .start-row { display: grid; grid-template-columns: min-content minmax(5em, 30%) 1fr; gap: 1em; align-items: center; margin-bottom: 1.5em; }
+    .ghost-txt { color: #666; font-size: 0.8em; white-space: pre-wrap; pointer-events: none; }
     
-    /* Toolbars (Wrap cleanly on mobile) */
-    .toolbar { display: flex; gap: 0.5rem; padding: 0.8rem; background: var(--panel); border-bottom: 0.1rem solid var(--border); align-items: center; flex-wrap: wrap; }
-    .split-btn { display: flex; align-items: stretch; position: relative; flex-shrink: 0; }
-    .split-btn button:first-child { border-radius: 0.3rem 0 0 0.3rem; border-right: none; }
-    .split-btn button:last-child { border-radius: 0 0.3rem 0.3rem 0; padding: 0.4rem; }
+    .line-row { display: grid; grid-template-columns: min-content minmax(5em, 30%) 1fr 1fr; gap: 1em; align-items: center; margin-bottom: 0.5em; }
+    .line-row label { font-size: 0.8em; color: #888; }
     
-    .dropdown { position: absolute; top: 100%; right: 0; background: var(--panel); border: 0.1rem solid var(--border); border-radius: 0.3rem; padding: 0.5rem; display: none; flex-direction: column; gap: 0.5rem; z-index: 100; box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.5); width: max-content; max-width: 80vw; }
-    .dropdown.show { display: flex; }
-    .dropdown div { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; cursor: pointer; padding: 0.3rem; border-radius: 0.2rem; }
-    .dropdown div:hover { background: #333; }
-    .dropdown textarea { width: 5rem; min-height: 1.5rem; }
+    /* INPUT GRID HACK (Auto-Expand) */
+    .input-wrapper { display: grid; grid-column: 2; }
+    .input-wrapper::after, .line-input { grid-area: 1/1/2/2; font: inherit; padding: 0.4em; word-break: break-all; }
+    .input-wrapper::after { content: attr(data-value) " "; visibility: hidden; white-space: pre-wrap; }
+    .line-input { resize: none; overflow: hidden; background: #111; color: #4CAF50; }
 
-    /* Editor Area (Contains the 20vh internal scroll buffer at the bottom) */
-    .editor { flex: 1; padding: 1.5rem 1rem 20vh 1rem; display: flex; flex-direction: column; gap: 0.8rem; overflow-y: auto; }
-    .start-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding-bottom: 1rem; border-bottom: 0.1rem dashed var(--border); }
-    .start-row textarea { flex: 1; min-width: 15rem; max-width: 40vw; }
-    .ghost { color: var(--text-muted); font-size: 0.85rem; font-style: italic; flex-basis: 100%; }
+    /* HELPERS */
+    .h-js, .h-ar { display: none; font-family: monospace; font-size: clamp(0.6em, 2cqi, 1em); }
+    body.show-js .h-js { display: block; word-spacing: clamp(-0.15em, 2vw, 0.1em); }
+    body.show-ar .h-ar { display: inline-flex; align-items: center; gap: 1em; }
+    .line-row:last-child::after { content: "use values like 42/13 5 5/1 1/12 (1/ would prevent lines below due to fractran logic and don't halt)"; grid-column: 3/5; color: #666; font-size: 0.8em; pointer-events: none; white-space: nowrap; }
 
-    /* Horizontal Rows */
-    .line-row { display: flex; align-items: center; gap: 1rem; min-height: 2.5rem; flex-wrap: wrap; }
-    .line-row label { width: max-content; font-weight: bold; color: var(--text-muted); }
-    .line-row textarea { flex: 1; min-width: 10rem; max-width: 25vw; }
+    /* TERMINAL */
+    .terminal { height: 30vh; min-height: 15vh; background: #0a0a0a; color: #0f0; font-family: monospace; display: flex; flex-direction: column; border-top: 1px solid #333; z-index: 5; }
+    .term-head { padding: 0.5em; border-bottom: 1px solid #222; background: #111; overflow-wrap: anywhere; word-break: break-all; }
+    #ui_tFeed { position: relative; flex-grow: 1; overflow-y: scroll; scrollbar-gutter: stable; }
+    #ui_tGhost { width: 1px; }
+    #ui_tTrain { position: absolute; top: 0; left: 0; width: 100%; white-space: pre-wrap; padding: 0.5em; overflow-wrap: anywhere; word-break: break-all; }
 
-    /* Helpers */
-    .h-js { flex: 2; min-width: 15rem; color: #ce9178; font-family: var(--font-code); font-size: 0.9rem; white-space: pre-wrap; display: none; word-break: break-all; }
-    .h-ar { flex: 2; min-width: 15rem; color: var(--success); font-family: var(--font-code); font-size: 0.9rem; display: none; align-items: center; justify-content: flex-start; gap: 0.5rem; }
-    .h-ar .st-col { display: flex; flex-direction: column; text-align: center; justify-content: center; }
-    .empty-hint { flex: 3; min-width: 20rem; color: var(--text-muted); font-size: 0.85rem; display: none; }
-
-    body.show-js .line-row:not(:last-child) .h-js { display: block; }
-    body.show-arr .line-row:not(:last-child) .h-ar { display: flex; }
-    .line-row:last-child .empty-hint { display: block; }
-
-    /* Unified Terminal */
-    .terminal { height: 35vh; min-height: 15rem; background: #111; border-top: 0.2rem solid var(--accent); display: flex; flex-direction: column; font-family: var(--font-code); font-size: 0.85rem; }
-    .term-header { background: #222; padding: 0.5rem 1rem; border-bottom: 0.1rem solid #333; display: flex; flex-direction: column; gap: 0.3rem; flex-shrink: 0; }
-    .term-status { color: #569cd6; font-weight: bold; }
-    .term-state { color: #4ec9b0; word-break: break-all; }
-    .term-feed { flex: 1; padding: 0.5rem 1rem; overflow-y: auto; color: #ccc; white-space: pre-wrap; word-break: break-all; }
-
-    /* Modals */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 2rem; }
-    .modal { background: var(--panel); border: 0.1rem solid var(--border); padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 60vw; max-height: 80vh; display: flex; flex-direction: column; gap: 1rem; box-shadow: 0 1rem 3rem rgba(0,0,0,0.8); overflow-y: auto; }
-    .modal textarea { width: 100%; min-height: 6rem; background: #111; color: var(--success); }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
-    .view-code { flex: 1; min-height: 40vh; overflow-y: auto; white-space: pre-wrap; font-family: var(--font-code); color: #dcdcaa; background: #111; padding: 1rem; border: 0.1rem solid var(--border); word-break: break-all; }
+    /* MODALS */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; }
+    .mod-content { background: #1e1e1e; border: 1px solid #444; border-radius: 0.5em; padding: 1.5em; max-width: 90vw; max-height: 90dvh; display: flex; flex-direction: column; gap: 1em; }
+    .mod-body { overflow-y: auto; display: flex; flex-direction: column; gap: 1em; }
+    
+    /* UTILS */
+    .btn-green { color: #4CAF50; border-color: #4CAF50; }
+    .btn-red { color: #f44336; border-color: #f44336; display: none; }
+    .footer-txt { text-align: center; color: #444; padding: 1em; font-size: 0.7em; pointer-events: none; }
 </style>
 </head>
 <body>
 
-<div id="app">
-    <!-- ZONE 1: TOP TOOLBAR -->
-    <div class="toolbar">
-        <label><input type="checkbox" id="ui_togJS"> JS Helper</label>
-        <label><input type="checkbox" id="ui_togArr"> Arrow Helper</label>
-        
-        <div class="split-btn" style="margin-left:auto;">
-            <button onclick="applyPrefill()">Prefill: <span id="ui_preLbl">Fibonacci</span></button>
-            <button onclick="toggleDrop('drop_prefill', event)">↓</button>
-            <div id="drop_prefill" class="dropdown">
-                <div onclick="selectPrefill('fib', event)">Fibonacci till <textarea id="ui_pF" rows="1" onclick="event.stopPropagation()">1000</textarea></div>
-                <div onclick="selectPrefill('conway', event)">Conway's Primegame till <textarea id="ui_pC" rows="1" onclick="event.stopPropagation()">10000</textarea></div>
-            </div>
+<!-- ZONE 1: TOP NAVBAR -->
+<div class="toolbar">
+    <div>
+        <label><input type="checkbox" id="ui_togJS"> JS helper</label>
+        <label><input type="checkbox" id="ui_togArr" style="margin-left:1em;"> Arrow helper</label>
+    </div>
+    <div class="split-btn" id="prefillSplit">
+        <button id="ui_btnPrefillAction">Prefill with:</button>
+        <div class="split-trigger drop-trigger">
+            <span id="ui_prefillLabel">Fibonacci till</span>
+            <input type="text" id="ui_prefillLimit" class="inline-limit" value="1000" onclick="event.stopPropagation()" onmousedown="event.preventDefault()">
+            <span>↓</span>
+        </div>
+        <div id="ui_prefillMenu" class="drop-menu">
+            <div data-type="fib">Fibonacci</div>
+            <div data-type="conway">primes in A[1] (John Conway's primegame)</div>
+            <div data-type="imp">+ Custom Import/Export...</div>
         </div>
     </div>
+</div>
 
-    <!-- ZONE 2: EDITOR -->
-    <div class="editor" id="ui_editor">
-        <div class="start-row">
-            <label>Starting Value:</label>
-            <textarea id="ui_start" rows="1" placeholder="e.g. 5, 33, or 2^6*5^72"></textarea>
-            <span class="ghost">use values like 5 33 2^6*5^72</span>
-        </div>
-        <div id="ui_lines"></div>
+<!-- ZONE 2: EDITOR -->
+<div class="editor">
+    <div class="start-row">
+        <label>Start Value:</label>
+        <input type="text" id="ui_start" class="line-input" placeholder="1">
+        <span class="ghost-txt">use values like 5 33 2^6*5^72 (especially if input pass 100 digits)</span>
     </div>
+    <div id="ui_lines"></div>
+</div>
 
-    <!-- ZONE 3: EXECUTION BAR -->
-    <div class="toolbar">
-        <button id="ui_btnRun" class="primary">▶ Run</button>
-        <button id="ui_btnStop" class="danger" style="display:none;">🛑 Stop</button>
+<!-- ZONE 3: ACTION BAR -->
+<div class="toolbar" style="border-top: 1px solid #333; border-bottom: none;">
+    <div style="display:flex; gap:0.5em;">
+        <button id="ui_btnRun" class="btn-green">▶ Run</button>
+        <button id="ui_btnStop" class="btn-red">🛑 Stop</button>
         
         <div class="split-btn">
-            <button style="pointer-events: none;">Print logs: <span id="ui_logLbl">OFF</span></button>
-            <button onclick="toggleDrop('drop_log', event)">↓</button>
-            <div id="drop_log" class="dropdown">
-                <div onclick="setLogMode('OFF')">OFF</div>
-                <div onclick="setLogMode('INT')">Every <textarea id="ui_logInt" rows="1" onclick="event.stopPropagation()">1</textarea> loop</div>
+            <button style="pointer-events:none;">Print logs:</button>
+            <div class="split-trigger drop-trigger">
+                <span id="ui_logLabel">OFF</span><span>↓</span>
+            </div>
+            <div class="drop-menu">
+                <div onclick="$('ui_logInt').value='0';$('ui_logLabel').innerText='OFF'">OFF</div>
+                <div onclick="event.stopPropagation()">Every <input type="number" id="ui_logInt" class="inline-limit" value="1" oninput="$('ui_logLabel').innerText='Every '+this.value"> loop</div>
+                <div onclick="$('ui_modDbg').style.display='flex'">Custom Breakpoints...</div>
             </div>
         </div>
-        
-        <button onclick="$('mod_debug').style.display='flex'">Set snapshot & halt</button>
-        <button onclick="viewCode('js')" style="margin-left:auto;">View full JS</button>
-        <button onclick="viewCode('arr')">View full Arrow</button>
+        <button onclick="$('ui_modDbg').style.display='flex'">Set snapshot & halt conditions</button>
     </div>
-
-    <!-- ZONE 4: TERMINAL -->
-    <div class="terminal">
-        <div class="term-header">
-            <div class="term-status" id="ui_tStat">Ready</div>
-            <div class="term-state" id="ui_tState">State: [Empty]</div>
-        </div>
-        <div class="term-feed" id="ui_tFeed"></div>
+    <div style="display:flex; gap:0.5em;">
+        <button onclick="$('ui_codeView').value=genJS($('ui_radPerLine').checked, $('ui_cHalt').value); $('ui_modCode').style.display='flex';">View JS</button>
+        <button onclick="$('ui_codeView').value=[...$('ui_lines').children].map(r=>r.children[3].innerText.replace(/\n/g,' ')).join('\n'); $('ui_modCode').style.display='flex';">View Arrow</button>
     </div>
 </div>
+
+<!-- ZONE 4: TERMINAL -->
+<div class="terminal">
+    <div class="term-head">
+        <div id="ui_tStat">Step: 0 | Reason: Idle</div>
+        <div id="ui_tState" style="color:#aaa;">Latest Log: (Waiting)</div>
+    </div>
+    <div id="ui_tFeed">
+        <div id="ui_tGhost"></div>
+        <div id="ui_tTrain"></div>
+    </div>
+</div>
+<div class="footer-txt">ask ai if it feels hard (send this html, use f12 source or put view-source: before link to copy(this resets page so doing in new page suggested))</div>
 
 <!-- ZONE 5: MODALS -->
-<div class="overlay" id="mod_debug">
-    <div class="modal">
-        <h3>Snapshot & Halt Conditions</h3>
-        <textarea id="ui_cHalt" placeholder="e.g. A[5]-A[4]==7 && logs.push('Snapshot! ' + fmt(A))"></textarea>
-        <div class="modal-actions"><button onclick="$('mod_debug').style.display='none'">Close</button></div>
+<!-- Big Int Warning -->
+<div id="ui_modBig" class="modal">
+    <div class="mod-content">
+        <p>for big values using already factorized input is suggested like 2^7 3^72 611^46 etc</p>
+        <div style="display:flex; justify-content:flex-end; gap:1em;">
+            <button onclick="$('ui_modBig').style.display='none'">exit</button>
+            <button onclick="$('ui_modBig').style.display='none'" class="btn-green">attempt to auto factorize</button>
+        </div>
     </div>
 </div>
 
-<div class="overlay" id="mod_warn">
-    <div class="modal">
-        <h3 style="color:var(--danger)">Log Limit Reached</h3>
+<!-- Prefill Overwrite Warning -->
+<div id="ui_modPrefillWarn" class="modal">
+    <div class="mod-content">
+        <p>you clicked prefill while having existing content, do you wanna proceed with older content or prefill</p>
+        <div style="display:flex; justify-content:flex-end; gap:1em;">
+            <button onclick="$('ui_modPrefillWarn').style.display='none'">older content</button>
+            <button id="ui_btnConfPrefill" class="btn-green">prefill</button>
+        </div>
+    </div>
+</div>
+
+<!-- Log Limit Warning -->
+<div id="ui_modLogWarn" class="modal">
+    <div class="mod-content">
         <p>you logged more than 1000 times in this run, if not intentional update logging parameters, if you know what you do, click continue after closing this box</p>
         <label><input type="checkbox" id="ui_ignWarn"> Don't show me again for this run</label>
-        <div class="modal-actions"><button onclick="$('mod_warn').style.display='none'" class="primary">Close</button></div>
+        <div style="display:flex; justify-content:flex-end;">
+            <button onclick="$('ui_modLogWarn').style.display='none';">Close</button>
+        </div>
     </div>
 </div>
 
-<div class="overlay" id="mod_view">
-    <div class="modal" style="max-width: 80vw;">
-        <h3 id="ui_vTitle">Compiled Code</h3>
-        <div id="ui_vCode" class="view-code"></div>
-        <div class="modal-actions">
-            <button onclick="navigator.clipboard.writeText($('ui_vCode').innerText)">Copy</button>
-            <button onclick="$('mod_view').style.display='none'">Close</button>
+<!-- Debugger Modal -->
+<div id="ui_modDbg" class="modal">
+    <div class="mod-content" style="width:600px;">
+        <h3>Snapshot & Halt Conditions</h3>
+        <textarea id="ui_cHalt" rows="4" placeholder="e.g. A[5]===1 && (logs.push('Hit!'), true)"></textarea>
+        <label style="font-size:0.8em; color:#888;">(Alias <code>userhalt()</code> halts engine natively)</label>
+        <div>
+            <label><input type="radio" name="dbgTiming" checked> halt after condition satisfied and beginning of loop</label><br>
+            <label><input type="radio" name="dbgTiming" id="ui_radPerLine"> whenever condition is satisfied including after lines(slower)</label>
+        </div>
+        <div>Max Iterations: <input type="number" id="ui_maxIter" value="1000000" style="width:10ch;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:1em;">
+            <button onclick="logs=[]; scrollTrain();">Clear Logs</button>
+            <button onclick="let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([logs.join('\n')],{type:'text/plain'}));a.download='logs.txt';a.click();">Download Logs</button>
+            <button onclick="$('ui_modDbg').style.display='none'" class="btn-green">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- Code View Modal -->
+<div id="ui_modCode" class="modal">
+    <div class="mod-content" style="width:800px;">
+        <textarea id="ui_codeView" rows="15" readonly style="font-family:monospace; background:#111; white-space:pre; overflow:auto;"></textarea>
+        <div style="display:flex; justify-content:space-between;">
+            <button onclick="navigator.clipboard.writeText($('ui_codeView').value); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy',2000);">Copy to Clipboard</button>
+            <button onclick="$('ui_modCode').style.display='none'">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Import/Export Modal -->
+<div id="ui_modImp" class="modal">
+    <div class="mod-content" style="width:700px;">
+        <h3>Custom Import / Export</h3>
+        <div style="display:flex; gap:1em;">
+            <input type="file" id="ui_iFile" accept=".txt">
+            <input type="url" id="ui_iUrl" placeholder="Paste raw URL..." style="flex-grow:1;">
+        </div>
+        <textarea id="ui_iPaste" rows="10" placeholder="Paste raw fractions or notes here..."></textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1em;">
+            <button onclick="$('ui_iPaste').value = `Start Value: ${$('ui_start').value||1}\n\nFractions:\n${[...$('ui_lines').querySelectorAll('textarea')].map(x=>x.value.trim()).filter(x=>x).join('\n')}\n\n// Notes:\n`">Fill text box with my current setup</button>
+            <div style="display:flex; gap:0.5em; align-items:center;">
+                <input type="text" id="ui_expName" style="width:15ch;">
+                <button id="ui_btnDL">Download</button>
+            </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:1em; margin-top:1em; border-top:1px solid #444; padding-top:1em;">
+            <button onclick="$('ui_modImp').style.display='none'">Cancel</button>
+            <button id="ui_btnImportAction" class="btn-green">Import to Editor</button>
         </div>
     </div>
 </div>
 
 <script>
 // ============================================================================
-// ENGINE, COMPILER & UI INTEGRATION 
+// 1. ENGINE CORE
 // ============================================================================
-let P=[1,2], initA=[], L=[], logs=[], rs=0, isP=0, _stop=0;
-let selPreType = 'fib', logMode = 'OFF';
+let primes=[1,2], initialA=[], L=[], logs=[];
+let runState=0, isPaused=0, _stop=0, activePrefill='fib', bigWarnShown=0, lastS=0;
 const $ = id => document.getElementById(id);
-const AsyncFunc = Object.getPrototypeOf(async()=>{}).constructor;
 
-const expP = () => { for(let c=0, n=P[P.length-1]; c<100; n++){ let p=1; for(let i=1; P[i]*P[i]<=n; i++) if(!(n%P[i])){p=0;break} p&&(P.push(n),c++) } };
-const F = (n,v,a) => { for(let i=1; n>1; i++){ while(!P[i]) expP(); while(!(n%P[i])) a[i]=(a[i]||0)+v, n/=P[i] } };
+const expandPrimes = () => { for(let c=0, n=primes[primes.length-1]; c<100; n++){ let p=1; for(let i=1; primes[i]*primes[i]<=n; i++) if(!(n%primes[i])){p=0;break} p&&(primes.push(n),c++) } };
+const factorize = (n, m, a) => { for(let i=1; n>1; i++){ while(!primes[i]) expandPrimes(); while(!(n%primes[i])) a[i]=(a[i]||0)+m, n/=primes[i] } };
 
-const parse = s => { initA=[]; let l=s; s.replace(/(\d+)\^(\d+)/g,(_,b,e)=>(F(+b,+e,initA),l="")); l&&F(Math.max(1,parseInt(l)||1),1,initA); };
-const comp = (s,i) => { L[i]=[]; let [n=1,d=1]=s.split('/').map(Number); n>1&&F(n,1,L[i]); d>1&&F(d,-1,L[i]); };
+const parseStartingValue = s => { 
+    initialA=[]; let l=(s||"").trim(); if(!l) return;
+    if(l.length>10 && !l.includes('^') && !bigWarnShown) { $('ui_modBig').style.display='flex'; bigWarnShown=1; }
+    let left = l.replace(/(\d+)\^(\d+)/g, (_,b,e)=>(factorize(+b,+e,initialA), ""));
+    left = left.replace(/[^\d]/g, ''); if(left) factorize(Math.max(1, parseInt(left)||1), 1, initialA); 
+};
+const compileLine = (s, i) => { L[i]=[]; let p=s.split('/'), n=parseInt(p[0])||1, d=parseInt(p[1])||1; n>1&&factorize(n,1,L[i]); d>1&&factorize(d,-1,L[i]); };
 
-const getH = l => {
-    if(!l || !Object.keys(l).length) return {j:"",a:""};
+const formatTime = ms => { let u=Math.floor((ms%1)*1e3), m=Math.floor(ms)%1e3, s=Math.floor(ms/1e3); return s>0 ? `${s}s ${String(m).padStart(3,'0')}ms ${String(u).padStart(3,'0')}μs` : m>0 ? `${m}ms ${String(u).padStart(3,'0')}μs` : `${u}μs`; };
+
+const formatState = A => { 
+    let l=0, e=1n, f=[]; 
+    A.forEach((v,i)=>v&&i&&(l+=v*Math.log10(primes[i]), f.push(`${primes[i]}^${v}`))); 
+    if(l>100) return `10^${l.toFixed(2)} = ${f.join(' * ')}`;
+    A.forEach((v,i)=>v&&i&&(e*=BigInt(primes[i])**BigInt(v))); 
+    return `10^${l.toFixed(2)} = ${e} = ${f.join(' * ')}`; 
+};
+
+const getHelpers = l => {
+    if(!l||!Object.keys(l).length) return {j:"", a:""};
     let r=[], s=[], a=[], al=[], ar=[];
-    l.forEach((v,k) => v<0 ? (r.push(`A[${k}]>=${-v}`), s.push(`A[${k}]-=${-v}`), al.push(`${P[k]}-${-v}`)) : v>0&&(a.push(`A[${k}]+=${v}`), ar.push(`${P[k]}+${v}`)));
-    return { 
-        j: r[0]?`(${r.join('&&')}&&(${s},1))?${a.join(' ')||'next'}:` : `1?${a.join(' ')}:`, 
-        a: `<div class="st-col">${al.join('<br>')}</div><div class="st-mid">=&gt;</div><div class="st-col">${ar.join('<br>')}</div>` 
-    };
+    l.forEach((v,k)=>v<0?(r.push(`A[${k}]>=${-v}`), s.push(`A[${k}]-=${-v}`), al.push(`${primes[k]}-${-v}`)):v>0&&(a.push(`A[${k}]+=${v}`), ar.push(`${primes[k]}+${v}`)));
+    let js = r[0] ? `(${r.join('&&')}&&(${s.join(',')},1))?(${a.join(',')||0}):` : `1?(${a.join(',')||0}):`;
+    return { j: js.replace(/&&([^&]*)$/,'&&<wbr>$1').replace('?','?<wbr>'), a: `<span>${al.join('<br>')}</span><span>=></span><span>${ar.join('<br>')}</span>` };
 };
 
-const genJS = () => L.map(l => {
-    if(!l) return '';
-    let r=[], s=[], a=[];
-    l.forEach((v,k) => v<0 ? (r.push(`A[${k}]>=${-v}`), s.push(`A[${k}]-=${-v}`)) : v>0&&a.push(`A[${k}]+=${v}`));
-    return r[0] ? `(${r.join('&&')}&&(${s},1))?${a.join('')||0}:` : a[0] ? `1?${a.join('')}:` : '';
-}).join('\n') + '\nA[0]--;';
-
-const fmt = A => {
-    let l=0, e=1n, s=[];
-    A.forEach((v,i) => v&&i&&(l+=v*Math.log10(P[i]), e*=BigInt(P[i])**BigInt(v), s.push(`${P[i]}^${v}`)));
-    return `${l>100 ? `10^${l.toFixed(2)}` : e} = ${s.join(' * ')}`;
+const genJS = (perLine, cstHalt) => {
+    return L.map(l => {
+        if(!l) return ''; let r=[], s=[], a=[]; 
+        l.forEach((v,k)=>v<0?(r.push(`A[${k}]>=${-v}`),s.push(`A[${k}]-=${-v}`)):v>0&&a.push(`A[${k}]+=${v}`));
+        if (perLine) {
+            let dbg = cstHalt ? `if(eval(cst)){userhalt();return;}` : '';
+            return r[0] ? `if(${r.join('&&')}){${s.join(';')};${a.join(';')};${dbg}continue;}` : a[0] ? `{${a.join(';')};${dbg}continue;}` : '';
+        }
+        return r[0] ? `(${r.join('&&')}&&(${s.join(',')},1))?(${a.join(',')||0}):` : a[0] ? `1?(${a.join(',')||0}):` : '';
+    }).join('') + 'A[0]--;';
 };
 
-const updT = (c, s, r) => {
-    $('ui_tStat').innerText = `Step: ${c} | ${r}`;
-    $('ui_tState').innerText = `State: ${s}`;
-    let f = $('ui_tFeed'); f.innerText = logs.join('\n'); f.scrollTop = f.scrollHeight;
-};
-
-const updBtn = () => {
-    $('ui_btnRun').innerText = ["▶ Run", "⏸ Pause", "▶ Cont"][rs];
-    $('ui_btnStop').style.display = rs ? "inline" : "none";
-};
-
-const runEngine = async () => {
-    let A = Array(Math.max(P.length, initA.length)+1).fill(0);
-    initA.forEach((v,i) => A[i]=v); A[0]=1; logs=[]; isP=_stop=0;
-    
-    let int = logMode === 'INT' ? +$('ui_logInt').value : 0;
-    let max = selPreType === 'fib' ? +$('ui_pF').value : +$('ui_pC').value;
-    let cst = $('ui_cHalt').value.trim();
+// ============================================================================
+// 2. JIT EXECUTION
+// ============================================================================
+const runLoop = async (int, max, cst, perLine) => {
+    let A = Array(Math.max(primes.length, initialA.length)+1).fill(0);
+    initialA.forEach((v,i)=>A[i]=v); A[0]=1; logs=[]; isPaused=_stop=0;
+    let nW = 1000, iW = $('ui_ignWarn')?.checked;
     
     let x = {
-        p: () => isP, s: () => _stop,
-        l: (a,c) => { logs.push(`S${c} => ${fmt(a)}`); if(logs.length==1e3 && !$('ui_ignWarn').checked){ $('mod_warn').style.display='flex'; isP=1; } },
-        y: async (a,c) => (updT(c, fmt(a), "Running..."), await new Promise(r => setTimeout(r, 1))),
-        f: (r,a,t) => (rs=0, updBtn(), updT(logs.length||c, fmt(a), `DONE ${t.toFixed(2)}ms | ${r}`))
+        p: () => isPaused, s: () => _stop,
+        l: (a,c) => { logs.push(`S${c} => ${formatState(a)}`); if(logs.length==nW && !iW){ $('ui_modLogWarn').style.display='flex'; isPaused=1; nW+=1000; return 1; } },
+        y: async (a,c) => (updT(c, formatState(a), "Running..."), scrollTrain(), await new Promise(r=>setTimeout(r,1))),
+        f: (r,a,t) => (runState=0, updBtn(), updT(logs.length||c, formatState(a), `DONE in ${formatTime(t)} | ${r}`), scrollTrain())
     };
     
     let code = `let c=0, t0=performance.now(), t=t0;
+    const userhalt = () => { A[0]=0; x.f("User Breakpoint",A,performance.now()-t0); return true; };
     while(A[0]){
         if(x.s()) return x.f("User Stopped",A,performance.now()-t0);
-        if(${int} && ++c%${int}==0) x.l(A,c);
-        if(c%5e3==0 && performance.now()-t>50){
-            await x.y(A,c);
-            while(x.p() && !x.s()) await new Promise(r=>setTimeout(r,100));
-            t=performance.now();
-        }
-        ${cst ? `if(${cst}) return x.f("Breakpoint",A,performance.now()-t0);` : ''}
-        ${genJS()}
-        if(c>=${max}) return x.f("Limit Reached",A,performance.now()-t0);
+        if(${int||0} && ++c%${int||1}==0) { x.l(A,c); while(x.p() && !x.s()) await new Promise(r=>setTimeout(r,100)); if(x.s()) return x.f("User Stopped",A,performance.now()-t0); }
+        if(c%5e3==0 && performance.now()-t>50){ await x.y(A,c); while(x.p() && !x.s()) await new Promise(r=>setTimeout(r,100)); if(x.s()) return x.f("User Stopped",A,performance.now()-t0); t=performance.now(); }
+        ${!perLine && cst ? `if(eval(cst)){userhalt();return;}` : ''}
+        ${genJS(perLine, cst)}
+        if(c>=${max}) return x.f("Iteration Limit",A,performance.now()-t0);
     }
     x.f("Natural Halt",A,performance.now()-t0);`;
     
-    await new AsyncFunc('A','x',code)(A,x);
+    try { await new (Object.getPrototypeOf(async()=>{}).constructor)('A','x','cst',code)(A,x,cst); } 
+    catch(e) { x.f("JIT Syntax Error",A,0); console.error(e); }
 };
 
-const syncLines = () => {
-    let c = $('ui_lines'), rows = [...c.children];
-    if(!rows.length || rows[rows.length-1].querySelector('textarea').value) {
-        c.insertAdjacentHTML('beforeend', `<div class="line-row">
-            <label>Line ${rows.length+1}:</label>
-            <textarea rows="1" oninput="syncLines()"></textarea>
-            <div class="h-js"></div><div class="h-ar"></div>
-            <div class="empty-hint">use values like 42/13 5 5/1 1/12 (1/ prevents lines below)</div>
-        </div>`);
-        rows = [...c.children];
+// ============================================================================
+// 3. UI SYNC & VIRTUAL SCROLLER
+// ============================================================================
+const updT = (c,s,r) => { $('ui_tStat').innerText=`Step: ${c} | Reason: ${r}`; $('ui_tState').innerText=`${r.includes('DONE')?'Final Result':'Latest Log'}: ${s}`; };
+const updBtn = () => { $('ui_btnRun').innerText=["▶ Run","⏸ Pause","▶ Continue"][runState]; $('ui_btnStop').style.display=runState?"inline":"none"; $('ui_lines').style.opacity=runState?"0.6":"1"; $('ui_lines').style.pointerEvents=runState?"none":"auto"; };
+
+const scrollTrain = () => {
+    let f=$('ui_tFeed'), t=$('ui_tTrain'), g=$('ui_tGhost'), rH=parseFloat(getComputedStyle(t).lineHeight)||20;
+    g.style.height = (logs.length * rH) + "px";
+    let sT = f.scrollTop, vR = Math.ceil(f.clientHeight / rH), isD = sT >= lastS; lastS = sT;
+    let bU = Math.floor(vR * (isD?0.5:1.5)), bD = Math.floor(vR * (isD?1.5:0.5));
+    let st = Math.max(0, Math.floor(sT / rH) - bU), ed = Math.min(logs.length, Math.floor(sT / rH) + vR + bD);
+    t.style.transform = `translateY(${st * rH}px)`; t.innerText = logs.slice(st, ed).join('\n');
+};
+
+const sync = () => {
+    let c=$('ui_lines'), r=[...c.children];
+    if(!r.length || r[r.length-1].querySelector('textarea').value.trim()) {
+        c.insertAdjacentHTML('beforeend', `<div class="line-row"><label>L${r.length+1}</label><div class="input-wrapper" data-value=""><textarea class="line-input" rows="1" oninput="this.parentElement.dataset.value=this.value;sync()" onkeydown="if(event.key==='Enter'){event.preventDefault();let n=this.closest('.line-row').nextElementSibling?.querySelector('textarea');if(!n){sync();n=this.closest('.line-row').nextElementSibling?.querySelector('textarea');}n?.focus();}"></textarea></div><div class="h-js"></div><div class="h-ar"></div></div>`);
+        r=[...c.children];
     }
-    rows.forEach((n,i) => {
-        let val = n.querySelector('textarea').value.trim();
-        comp(val, i); let h = getH(L[i]);
-        n.querySelector('.h-js').innerText = h.j; n.querySelector('.h-ar').innerHTML = h.a;
-        n.querySelector('label').innerText = `Line ${i+1}:`;
+    r.forEach((n,i) => {
+        let tArea=n.querySelector('textarea'); if(!tArea) return;
+        let v=tArea.value.trim(); if(!v && i<r.length-1) return;
+        compileLine(v, i); let h=getHelpers(L[i]);
+        n.querySelector('.h-js').innerHTML=h.j; n.querySelector('.h-ar').innerHTML=h.a;
     });
 };
 
-const selectPrefill = (type, e) => {
-    e.stopPropagation(); selPreType = type;
-    $('ui_preLbl').innerText = type === 'fib' ? 'Fibonacci' : 'Conway Primes';
-    $('drop_prefill').classList.remove('show');
+// ============================================================================
+// 4. PREFILL, IMPORT/EXPORT
+// ============================================================================
+const setPrefillCst = m => { $('ui_lines').innerHTML=''; m.forEach(f=>{ $('ui_lines').insertAdjacentHTML('beforeend', `<div class="line-row"><label>L</label><div class="input-wrapper" data-value="${f}"><textarea class="line-input" rows="1" oninput="this.parentElement.dataset.value=this.value;sync()">${f}</textarea></div><div class="h-js"></div><div class="h-ar"></div></div>`); }); sync(); $('ui_modImp').style.display='none'; };
+
+$('ui_btnPrefillAction').onclick = () => {
+    let fA = $('ui_lines').querySelector('textarea'), v = fA ? fA.value.trim() : '';
+    if(v && !['17/91','65/22'].includes(v)){ $('ui_modPrefillWarn').style.display='flex'; $('ui_btnConfPrefill').onclick=()=>{ $('ui_modPrefillWarn').style.display='none'; execPrefill(); }; } 
+    else execPrefill();
 };
 
-const applyPrefill = () => {
-    let t = selPreType;
-    $('ui_start').value = t=='fib' ? "6" : "2"; parse($('ui_start').value);
-    let fracs = t=='fib' ? ["65/22","11/13","17/11","190/51","17/19","23/17","87/115","23/29","11/23"] : ["17/91","78/85","19/51","23/38","29/33","77/29","95/23","77/19","1/17","11/13","13/11","15/2","1/7","55/1"];
-    $('ui_lines').innerHTML = fracs.map(v=>`<div class="line-row"><label></label><textarea rows="1" oninput="syncLines()">${v}</textarea><div class="h-js"></div><div class="h-ar"></div><div class="empty-hint"></div></div>`).join('');
-    $('ui_cHalt').value = t=='conway' ? "A[1]>1 && !A.slice(2).some(v=>v) && logs.push('Prime: '+A[1])" : "";
-    setLogMode(t=='conway' ? 'OFF' : 'INT'); syncLines();
+const execPrefill = () => {
+    let t = activePrefill; if(t=='imp') return $('ui_modImp').style.display='flex';
+    let mathLimit = +$('ui_prefillLimit').value || 1000;
+    $('ui_start').value = t=='fib' ? "66" : "2"; parseStartingValue($('ui_start').value);
+    setPrefillCst(t=='fib' ? ["65/22","11/13","17/11","190/51","17/19","23/17","87/115","23/29","11/23"] : ["17/91","78/85","19/51","23/38","29/33","77/29","95/23","77/19","1/17","11/13","13/11","15/2","1/7","55/1"]);
+    $('ui_cHalt').value = t=='conway' ? `A[1]>1 && !A.slice(2).some(v=>v) && (logs.push('Prime: '+A[1]), A[1] >= ${mathLimit})` : t=='fib' ? `A[5]===1 && (logs.push('Fib pair: '+A[1]+', '+A[2]), Math.max(A[1],A[2]) >= ${mathLimit})` : "";
+    $('ui_maxIter').value = "1000000000"; $('ui_logInt').value = "0"; $('ui_logLabel').innerText="OFF";
+    document.querySelectorAll('.drop-menu').forEach(m=>m.parentElement.classList.remove('open'));
 };
 
-const toggleDrop = (id, e) => { e.stopPropagation(); document.querySelectorAll('.dropdown').forEach(d => d.id!==id && d.classList.remove('show')); $(id).classList.toggle('show'); };
-document.onclick = () => document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
-const setLogMode = mode => { logMode = mode; $('ui_logLbl').innerText = mode === 'INT' ? `Every ${$('ui_logInt').value} loop` : 'OFF'; $('drop_log').classList.remove('show'); };
-
-const viewCode = type => {
-    $('ui_vTitle').innerText = type === 'js' ? "Runnable JS Output" : "AST Arrow Format";
-    $('ui_vCode').innerText = type === 'js' ? `var A = new Array(100).fill(0);\n${initA.map((v,i)=>v?`A[${i}]=${v};`:'').join('')}\nA[0]=1;\nwhile(A[0]) {\n${genJS().split(';').join(';\n')}\n}` : L.map((l,i) => getH(l).a ? `Line ${i+1}:\n${getH(l).a.replace(/<br>/g, ' ').replace(/<[^>]*>?/gm, '')}\n` : '').join('\n');
-    $('mod_view').style.display = 'flex';
+$('ui_btnImportAction').onclick = async () => {
+    let t="", f=$('ui_iFile').files[0], u=$('ui_iUrl').value.trim(), p=$('ui_iPaste').value.trim();
+    try { 
+        if(f) t=await f.text(); else if(u) t=await (await fetch(u)).text(); else t=p;
+        let sVal = t.match(/Start Value:\s*([^\n]+)/i); if(sVal) { $('ui_start').value=sVal[1].trim(); parseStartingValue(sVal[1]); }
+        let fText = t.split(/Fractions:/i)[1] || t, m=fText.match(/\d+(\/\d+)?/g);
+        if(!m) return alert("No valid fractions"); 
+        let fA = $('ui_lines').querySelector('textarea')?.value.trim();
+        if(fA){ $('ui_modPrefillWarn').style.display='flex'; $('ui_btnConfPrefill').onclick=()=>{ $('ui_modPrefillWarn').style.display='none'; setPrefillCst(m); }; } else setPrefillCst(m);
+    } catch(e) { alert("Import Failed"); }
 };
 
+$('ui_btnDL').onclick = () => { let t=$('ui_iPaste').value; if(!t) return; let b=new Blob([t],{type:"text/plain"}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=$('ui_expName').value||'fractran.txt'; a.click(); URL.revokeObjectURL(u); };
+
+// ============================================================================
+// 5. EVENT LISTENERS
+// ============================================================================
 window.onload = () => {
-    syncLines();
-    $('ui_start').oninput = e => parse(e.target.value);
-    $('ui_btnRun').onclick = () => { if(!rs){ rs=1; runEngine(); } else { isP = (rs==1); rs = isP?2:1; } updBtn(); };
-    $('ui_btnStop').onclick = () => (_stop=1);
+    sync(); $('ui_expName').value = `fractran${new Date().toISOString().slice(0,10).replace(/-/g,'')}.txt`;
+    $('ui_start').oninput = e => parseStartingValue(e.target.value.trim());
+    $('ui_btnRun').onclick = () => { if(!runState){ runState=1; _stop=isPaused=0; runLoop(+$('ui_logInt').value||0, +$('ui_maxIter').value||1e6, $('ui_cHalt').value, $('ui_radPerLine')?.checked); } else { isPaused=(runState==1); runState=isPaused?2:1; } updBtn(); };
+    $('ui_btnStop').onclick = () => { _stop=1; };
+    $('ui_tFeed').onscroll = scrollTrain;
+    
+    document.querySelectorAll('.drop-trigger').forEach(el => el.onclick = e => { e.stopPropagation(); el.closest('.split-btn').classList.toggle('open'); });
+    window.addEventListener('click', e => { if(!e.target.closest('.split-btn') && !e.target.classList.contains('inline-limit')) document.querySelectorAll('.split-btn').forEach(b=>b.classList.remove('open')); });
+    document.querySelectorAll('#ui_prefillMenu div').forEach(opt => opt.onclick = e => { activePrefill=e.target.dataset.type; $('ui_prefillLabel').innerText=e.target.innerText.split('till')[0]; $('ui_prefillLimit').value=activePrefill=='fib'?"1000":"10000"; });
+    
     $('ui_togJS').onchange = e => document.body.classList.toggle('show-js', e.target.checked);
-    $('ui_togArr').onchange = e => document.body.classList.toggle('show-arr', e.target.checked);
+    $('ui_togArr').onchange = e => document.body.classList.toggle('show-ar', e.target.checked);
 };
 </script>
 </body>
