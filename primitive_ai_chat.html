@@ -24,13 +24,12 @@
         @keyframes pulse { 0%,100%{ opacity: 1; } 50%{ opacity: 0.4; } }
         .token-counter { font-size: 0.7rem; color: var(--text-secondary); background: var(--border); padding: 3px 10px; border-radius: 6px; font-family: monospace; }
 
-        .btn { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 500; transition: 0.2s; }
+        .btn { background: var(--accent); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 500; transition: 0.2s; flex-shrink: 0; }
         .btn:hover:not(:disabled) { background: #6ea1ff; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .settings-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
         
-        /* Tabbed Settings Panel */
         .settings-panel { position: absolute; top: 46px; right: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; width: 300px; max-height: 75vh; overflow-y: auto; z-index: 100; display: none; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
         .settings-panel.open { display: flex; }
         
@@ -47,7 +46,11 @@
         .setting-col { display: flex; flex-direction: column; gap: 8px; }
         .setting-row input[type="number"], .setting-col input[type="password"] { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; outline: none; }
         .setting-row input[type="number"] { width: 75px; }
-        .setting-col select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px; border-radius: 6px; font-size: 0.75rem; outline: none; width: 100%; }
+        .setting-col select, .setting-row select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px; border-radius: 6px; font-size: 0.75rem; outline: none; }
+        .setting-col select { width: 100%; }
+
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: 0.2s; }
+        .btn-outline:hover { background: var(--border); color: var(--text); }
 
         .toggle { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
         .toggle input { opacity: 0; width: 0; height: 0; }
@@ -118,7 +121,7 @@
         .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%,60%,100%{ transform:translateY(0); opacity:0.4; } 30%{ transform:translateY(-7px); opacity:1; } }
 
-        .jump-btn { position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(30, 30, 50, 0.95); border: 1px solid var(--border); color: var(--text); padding: 6px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: bold; cursor: pointer; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; white-space: nowrap; }
+        .jump-btn { position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%); background: rgba(40, 40, 60, 0.95); border: 1px solid var(--border); color: var(--text); padding: 0 16px; height: 40px; min-width: 40px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; white-space: nowrap; }
         .jump-btn.visible { display: flex; }
         .jump-btn:hover { background: rgba(60, 60, 80, 0.95); }
 
@@ -159,16 +162,32 @@
         </div>
         
         <div class="tab-content active" id="tab-model">
-            <div class="setting-col">
-                <div style="display:flex; gap:8px;">
-                    <input type="password" id="apiKeyInput" placeholder="sk-..." spellcheck="false" style="flex:1;" />
-                    <button class="btn" id="saveKeyBtn">Save</button>
+            <div class="setting-row">
+                <select id="providerSelect" style="flex:1;"></select>
+                <button class="btn-outline" id="addProvBtn" style="padding: 4px 6px;" title="Clone to Custom">➕</button>
+                <button class="btn-outline" id="editProvBtn" style="padding: 4px 6px;" title="Edit Provider JSON">✏️</button>
+            </div>
+            
+            <div id="provEditorContainer" style="display:none; flex-direction:column; gap:6px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid var(--border);">
+                <span style="font-size:0.65rem; color:var(--text-secondary);">Edit Provider JSON Configuration</span>
+                <textarea id="provJsonText" rows="10" style="background:var(--code-bg); color:var(--text); font-family:monospace; font-size:0.7rem; border:1px solid var(--border); border-radius:4px; outline:none; resize:vertical; padding: 6px;"></textarea>
+                <div style="display:flex; gap:6px;">
+                    <button class="btn" id="saveProvJsonBtn" style="flex:1;">Save JSON</button>
+                    <button class="btn-outline" id="cancelProvJsonBtn">Cancel</button>
                 </div>
+            </div>
+
+            <div style="display:flex; gap:8px;">
+                <input type="password" id="apiKeyInput" placeholder="API Key..." spellcheck="false" style="flex:1;" />
+                <button class="btn" id="saveKeyBtn">Save</button>
+            </div>
+            
+            <div class="setting-col">
                 <select id="modelSelect" disabled>
-                    <option value="deepseek-v4-pro">deepseek-v4-pro</option>
-                    <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+                    <option value="">Loading...</option>
                 </select>
             </div>
+            
             <div class="setting-row" style="margin-top: 4px;">
                 <span>Max output tokens</span>
                 <input type="number" id="maxTokensInput" value="384000">
@@ -189,7 +208,7 @@
         <div class="tab-content" id="tab-other">
             <div class="setting-row"><span>Enter sends message</span><label class="toggle"><input type="checkbox" id="enterSendsToggle"><span class="slider"></span></label></div>
             <div class="setting-row"><span>Stream responses</span><label class="toggle"><input type="checkbox" id="streamToggle"><span class="slider"></span></label></div>
-            <div class="setting-row"><span>Close settings if clicked outside</span><label class="toggle"><input type="checkbox" id="closeSettingsOutsideToggle"><span class="slider"></span></label></div>
+            <div class="setting-row"><span>Close settings on outside click</span><label class="toggle"><input type="checkbox" id="closeSettingsOutsideToggle"><span class="slider"></span></label></div>
         </div>
 
         <button class="btn" id="applySettingsBtn" style="margin-top: 12px; width: 100%;">Apply Settings</button>
@@ -219,6 +238,9 @@
     const $ = id => document.getElementById(id);
     const els = {
         header: $('header'), statusDot: $('statusDot'), tokenCounter: $('tokenCounter'), 
+        providerSelect: $('providerSelect'), addProvBtn: $('addProvBtn'), editProvBtn: $('editProvBtn'),
+        provEditorContainer: $('provEditorContainer'), provJsonText: $('provJsonText'),
+        saveProvJsonBtn: $('saveProvJsonBtn'), cancelProvJsonBtn: $('cancelProvJsonBtn'),
         modelSelect: $('modelSelect'), apiKeyInput: $('apiKeyInput'), saveKeyBtn: $('saveKeyBtn'), 
         settingsBtn: $('settingsBtn'), settingsPanel: $('settingsPanel'), maxTokensInput: $('maxTokensInput'),
         enterSendsToggle: $('enterSendsToggle'), showUserToggle: $('showUserToggle'), 
@@ -233,8 +255,6 @@
         bottomBar: $('bottomBar'), pathTracker: $('pathTracker')
     };
 
-    let apiKey = '';
-    let currentModel = 'deepseek-v4-pro';
     let isLoading = false;
     let abortController = null;
     let promptTokens = 0, completionTokens = 0;
@@ -257,7 +277,167 @@
     let unreadMsgCount = 0;
     let unreadCharCount = 0;
 
-    // Tabs Logic
+    // Default Providers Matrix
+    const default_providers = {
+    custom_template: {
+        id: '',
+        name: '',
+        baseURL: '',
+        apiPath: '/chat/completions',
+        authHeader: 'Bearer',
+        fallbackModels: [],
+        defaultModel: '',
+        maxTokensParam: 'max_tokens',
+        systemRole: 'system',
+        supportsStreamUsage: false
+    },
+
+    deepseek: {
+        id: 'deepseek',
+        name: 'DeepSeek',
+        baseURL: 'https://api.deepseek.com',
+        apiPath: '/chat/completions',
+        authHeader: 'Bearer',
+        fallbackModels: [
+            'deepseek-v4-pro',
+            'deepseek-v4-flash'
+        ],
+        defaultModel: 'deepseek-v4-pro',
+        maxTokensParam: 'max_tokens',
+        systemRole: 'system',
+        supportsStreamUsage: true
+    },
+
+    openai: {
+        id: 'openai',
+        name: 'OpenAI',
+        baseURL: 'https://api.openai.com/v1',
+        apiPath: '/chat/completions',
+        authHeader: 'Bearer',
+        fallbackModels: [
+            'gpt-5.5',
+            'gpt-5.4',
+            'gpt-5.4-mini',
+            'gpt-5.4-nano',
+            'gpt-5.3-chat-latest',
+            'chat-latest'
+        ],
+        defaultModel: 'gpt-5.5',
+        maxTokensParam: 'max_completion_tokens',
+        systemRole: 'developer',
+        supportsStreamUsage: true
+    },
+
+    gemini: {
+        id: 'gemini',
+        name: 'Gemini',
+        baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiPath: '/chat/completions',
+        authHeader: 'Bearer',
+        fallbackModels: [
+            'gemini-pro-latest',
+            'gemini-3.1-pro-preview',
+            'gemini-flash-latest',
+            'gemini-3-flash-preview',
+            'gemini-3.1-flash-lite',
+            'gemini-2.5-pro'
+        ],
+        defaultModel: 'gemini-pro-latest',
+        maxTokensParam: 'max_tokens',
+        systemRole: 'system',
+        supportsStreamUsage: true
+    }
+};
+
+    let providers = JSON.parse(localStorage.getItem('dse_providers')) || {};
+    // Ensure defaults exist
+    for (const k in default_providers) { if (!providers[k]) providers[k] = default_providers[k]; }
+    let activeProviderId = localStorage.getItem('dse_active_provider') || 'deepseek';
+    if (!providers[activeProviderId]) activeProviderId = 'deepseek';
+
+    function getApiKey() {
+        return localStorage.getItem('dse_apikey_' + activeProviderId) || '';
+    }
+    function saveApiKey(val) {
+        localStorage.setItem('dse_apikey_' + activeProviderId, val);
+    }
+    function getCurrentModel() {
+        return els.modelSelect.value || providers[activeProviderId].defaultModel;
+    }
+
+    // Provider UI Setup
+    function renderProviderDropdown() {
+        els.providerSelect.innerHTML = '';
+        Object.values(providers).forEach(p => {
+            if (p.id === 'custom_template') return; // Hide template from dropdown
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name || p.id;
+            els.providerSelect.appendChild(opt);
+        });
+        els.providerSelect.value = activeProviderId;
+        els.apiKeyInput.value = getApiKey();
+    }
+
+    els.providerSelect.addEventListener('change', () => {
+        activeProviderId = els.providerSelect.value;
+        localStorage.setItem('dse_active_provider', activeProviderId);
+        els.apiKeyInput.value = getApiKey();
+        els.provEditorContainer.style.display = 'none';
+        loadModels();
+    });
+
+    els.editProvBtn.addEventListener('click', () => {
+        els.provJsonText.value = JSON.stringify(providers[activeProviderId], null, 4);
+        els.provEditorContainer.style.display = 'flex';
+    });
+
+    els.addProvBtn.addEventListener('click', () => {
+        const newId = 'custom_' + Date.now();
+        let newP = JSON.parse(JSON.stringify(providers.custom_template));
+        newP.id = newId;
+        newP.name = 'New Custom Provider';
+        providers[newId] = newP;
+        localStorage.setItem('dse_providers', JSON.stringify(providers));
+        
+        activeProviderId = newId;
+        localStorage.setItem('dse_active_provider', activeProviderId);
+        renderProviderDropdown();
+        
+        els.provJsonText.value = JSON.stringify(newP, null, 4);
+        els.provEditorContainer.style.display = 'flex';
+        els.apiKeyInput.value = '';
+        loadModels();
+    });
+
+    els.cancelProvJsonBtn.addEventListener('click', () => {
+        els.provEditorContainer.style.display = 'none';
+    });
+
+    els.saveProvJsonBtn.addEventListener('click', () => {
+        try {
+            const parsed = JSON.parse(els.provJsonText.value);
+            if (!parsed.id) throw new Error("JSON must have an 'id' field");
+            
+            if (parsed.id !== activeProviderId) {
+                delete providers[activeProviderId]; // Clean up old ID if changed
+            }
+            providers[parsed.id] = parsed;
+            activeProviderId = parsed.id;
+            
+            localStorage.setItem('dse_providers', JSON.stringify(providers));
+            localStorage.setItem('dse_active_provider', activeProviderId);
+            
+            renderProviderDropdown();
+            els.provEditorContainer.style.display = 'none';
+            showToast('Provider settings saved!');
+            loadModels();
+        } catch (e) {
+            alert("Invalid JSON: " + e.message);
+        }
+    });
+
+    // Settings & Tabs Logic
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.disabled) return;
@@ -270,7 +450,6 @@
         });
     });
 
-    // Close settings on outside click
     document.addEventListener('click', (e) => {
         if (settings.closeSettingsOutside && els.settingsPanel.classList.contains('open')) {
             if (!els.settingsBtn.contains(e.target) && !els.settingsPanel.contains(e.target)) {
@@ -302,6 +481,7 @@
         if (tabBtn && !tabBtn.disabled) tabBtn.click();
         else document.querySelector('.tab-btn[data-tab="model"]').click();
         
+        renderProviderDropdown();
         syncUI();
     }
 
@@ -453,10 +633,15 @@
         }
     });
 
+    // API Models dynamically mapped
     async function fetchModels() {
-        if (!apiKey) return null;
+        const p = providers[activeProviderId];
+        const key = getApiKey();
+        if (!key || !p.baseURL) return null;
         try {
-            const res = await fetch('https://api.deepseek.com/v1/models', { headers: { Authorization: `Bearer ${apiKey}` } });
+            // Assume /models standard (may fail for some Gemini setups)
+            let auth = (p.authHeader ? p.authHeader + ' ' : '') + key;
+            const res = await fetch(p.baseURL + '/models', { headers: { 'Authorization': auth } });
             if (!res.ok) return null;
             const data = await res.json();
             return (data.data || []).map(m => m.id).filter(Boolean);
@@ -465,26 +650,33 @@
 
     async function loadModels() {
         els.statusDot.className = 'status-dot off';
-        const models = await fetchModels();
-        const list = (models && models.length) ? models : ['deepseek-v4-pro', 'deepseek-v4-flash'];
+        const p = providers[activeProviderId];
+        els.modelSelect.disabled = true;
+        els.modelSelect.innerHTML = '<option value="">Loading...</option>';
+
+        let models = await fetchModels();
+        const list = (models && models.length) ? models : (p.fallbackModels || []);
         
         els.modelSelect.innerHTML = '';
-        list.forEach(id => { const opt = document.createElement('option'); opt.value = id; opt.textContent = id; els.modelSelect.appendChild(opt); });
-        
-        const saved = localStorage.getItem('dse_model');
-        if (saved && list.includes(saved)) {
-            els.modelSelect.value = saved;
-        } else if (list.includes('deepseek-v4-pro')) {
-            els.modelSelect.value = 'deepseek-v4-pro';
+        if (list.length === 0) {
+            const opt = document.createElement('option'); opt.value = p.defaultModel; opt.textContent = p.defaultModel; els.modelSelect.appendChild(opt);
         } else {
-            els.modelSelect.value = list[0];
+            list.forEach(id => { const opt = document.createElement('option'); opt.value = id; opt.textContent = id; els.modelSelect.appendChild(opt); });
         }
         
-        currentModel = els.modelSelect.value;
+        const saved = localStorage.getItem('dse_model_' + activeProviderId);
+        if (saved && list.includes(saved)) els.modelSelect.value = saved;
+        else if (list.includes(p.defaultModel)) els.modelSelect.value = p.defaultModel;
+        else els.modelSelect.value = list[0] || p.defaultModel;
+        
         els.modelSelect.disabled = false;
-        els.statusDot.className = apiKey ? 'status-dot' : 'status-dot off';
+        els.statusDot.className = getApiKey() ? 'status-dot' : 'status-dot off';
         updateSendBtn();
     }
+
+    els.modelSelect.addEventListener('change', () => {
+        localStorage.setItem('dse_model_' + activeProviderId, els.modelSelect.value);
+    });
 
     function formatMarkdown(rawText) {
         const lines = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
@@ -812,7 +1004,8 @@
                         
                         const path = getActivePath();
                         const parentIdx = path.findIndex(n => n.id === node.parentId);
-                        const messages = [{ role: 'system', content: 'You are a helpful assistant.' }];
+                        const p = providers[activeProviderId];
+                        const messages = [{ role: p.systemRole || 'system', content: 'You are a helpful assistant.' }];
                         for (let i = 1; i <= parentIdx; i++) {
                             if (path[i].role !== 'system-msg') messages.push({ role: path[i].role, content: path[i].versions[path[i].activeVersion].rawContent });
                         }
@@ -932,10 +1125,17 @@
     }
 
     async function streamAPI(messages, node) {
-        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-            body: JSON.stringify({ model: currentModel, messages, temperature: 0.7, max_tokens: settings.maxTokens, stream: true, stream_options: { include_usage: true } }),
-            signal: abortController.signal
+        const p = providers[activeProviderId];
+        const key = getApiKey();
+        let auth = (p.authHeader ? p.authHeader + ' ' : '') + key;
+        
+        const payload = { model: getCurrentModel(), messages: messages, temperature: 0.7, stream: true };
+        payload[p.maxTokensParam || 'max_tokens'] = settings.maxTokens;
+        if (p.supportsStreamUsage) payload.stream_options = { include_usage: true };
+
+        const res = await fetch(p.baseURL + p.apiPath, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': auth },
+            body: JSON.stringify(payload), signal: abortController.signal
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         
@@ -973,12 +1173,10 @@
 
                     if (!isFirstChunk && (deltaC.length + deltaT.length > 0)) {
                         handleNewContent(deltaC.length + deltaT.length, false);
-                        
                         const el = document.querySelector(`[data-msg-id="${node.id}"]`);
                         if (el) {
                             const bubble = el.querySelector('.bubble');
                             const charCnt = el.querySelector('.char-count');
-                            
                             bubble.innerHTML = buildThinkingSection(fullThinking, node.id) + formatMarkdown(fullContent);
                             wrapCodeBlocks(bubble);
                             if (charCnt) charCnt.textContent = (fullContent.length + fullThinking.length) + ' chars';
@@ -1003,10 +1201,16 @@
     }
 
     async function fetchNonStream(messages, node) {
-        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-            body: JSON.stringify({ model: currentModel, messages, temperature: 0.7, max_tokens: settings.maxTokens, stream: false }),
-            signal: abortController.signal
+        const p = providers[activeProviderId];
+        const key = getApiKey();
+        let auth = (p.authHeader ? p.authHeader + ' ' : '') + key;
+
+        const payload = { model: getCurrentModel(), messages: messages, temperature: 0.7, stream: false };
+        payload[p.maxTokensParam || 'max_tokens'] = settings.maxTokens;
+
+        const res = await fetch(p.baseURL + p.apiPath, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': auth },
+            body: JSON.stringify(payload), signal: abortController.signal
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -1044,10 +1248,12 @@
         } else {
             els.chatContainer.appendChild(createMessageDOM(asstNode, true));
             updatePathTracker();
+            if (isAtBottom) els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
         }
 
         const activePath = getActivePath();
-        const messages = [{ role: 'system', content: 'You are a helpful assistant.' }];
+        const p = providers[activeProviderId];
+        const messages = [{ role: p.systemRole || 'system', content: 'You are a helpful assistant.' }];
         activePath.forEach(n => {
             if(n.id !== 'root' && n.id !== asstNode.id && n.role !== 'system' && n.role !== 'system-msg') {
                 messages.push({ role: n.role, content: n.versions[n.activeVersion].rawContent });
@@ -1099,7 +1305,7 @@
         }
     }
 
-    function updateSendBtn() { els.sendBtn.disabled = !(apiKey.length > 10 && els.messageInput.value.trim().length > 0 && !isLoading && !els.modelSelect.disabled); }
+    function updateSendBtn() { els.sendBtn.disabled = !(getApiKey().length > 2 && els.messageInput.value.trim().length > 0 && !isLoading && !els.modelSelect.disabled); }
 
     els.applySettingsBtn.addEventListener('click', () => {
         settings.maxTokens = parseInt(els.maxTokensInput.value) || 384000;
@@ -1119,7 +1325,7 @@
 
     els.saveKeyBtn.addEventListener('click', () => {
         const key = els.apiKeyInput.value.trim();
-        if (key.startsWith('sk-')) { apiKey = key; localStorage.setItem('dse_apikey', key); showToast('Saved'); els.modelSelect.disabled = false; loadModels(); }
+        if (key.length > 2) { saveApiKey(key); showToast('Key saved'); loadModels(); }
     });
 
     els.settingsBtn.addEventListener('click', () => els.settingsPanel.classList.toggle('open'));
@@ -1128,9 +1334,7 @@
     els.messageInput.addEventListener('input', () => { els.messageInput.style.height = 'auto'; els.messageInput.style.height = Math.min(els.messageInput.scrollHeight, 100) + 'px'; updateSendBtn(); adjustLayout(); });
 
     loadSettings(); loadHistory();
-    const savedKey = localStorage.getItem('dse_apikey');
-    if (savedKey) { apiKey = savedKey; els.apiKeyInput.value = savedKey; loadModels(); }
-    updateSendBtn();
+    loadModels();
 })();
 </script>
 </body>
