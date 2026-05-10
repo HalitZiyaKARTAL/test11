@@ -368,8 +368,8 @@
     // Provider UI Setup
     function renderProviderDropdown() {
         els.providerSelect.innerHTML = '';
-        Object.values(providers).forEach(p => {
-            if (p.id === 'custom_template') return; // Hide template from dropdown
+        Object.entries(providers).forEach(([key, p]) => {
+    if (key === 'custom_template') return; // Hide template from dropdown
             const opt = document.createElement('option');
             opt.value = p.id;
             opt.textContent = p.name || p.id;
@@ -1336,6 +1336,13 @@
     loadSettings(); loadHistory();
     loadModels();
 })();
+/*note its made with help of ai, 
+so its not fully optimized and can contain bugs and ve extra verbose,
+i only written small parts by hand i mostly ordered ai to handle it 
+so it can be suboptimal put i tried to ship fast 
+since deepseek api was a lot cheaper and i needed a fast interface that i could scale later
+for record price gap is around 50x for similar performance 
+(app was made around a day)*/
 </script>
 </body>
 </html>
