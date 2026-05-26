@@ -287,7 +287,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				</div>
 			</div>
 			<div class="tab-content" id="tab-ui">
-				<div class="setting-row"><span>Show stats as Tokens (default Chars)</span><label class="toggle"><input type="checkbox" id="displayTokensToggle"><span class="slider"></span></label></div>
+				<div class="setting-row"><span>Stats display</span><select id="statsDisplaySelect"><option value="tokens">tokens</option><option value="characters">characters</option><option value="+tokens/s">+tokens/s</option><option value="+characters/s">+characters/s</option></select></div>
 				<div class="setting-row"><span>Show user msgs</span><label class="toggle"><input type="checkbox" id="showUserToggle" checked><span class="slider"></span></label></div>
 				<div class="setting-row"><span>Show assistant msgs</span><label class="toggle"><input type="checkbox" id="showAssistantToggle" checked><span class="slider"></span></label></div>
 				<div class="setting-row"><span>Auto‑collapse msg &gt;</span><input type="number" id="msgCollapseSize" value="20000" min="0" step="100"></div>
@@ -322,6 +322,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				<div class="setting-row"><span>Stream responses</span><label class="toggle"><input type="checkbox" id="streamToggle"><span class="slider"></span></label></div>
 				<div class="setting-row"><span>Close settings on outside click</span><label class="toggle"><input type="checkbox" id="closeSettingsOutsideToggle"><span class="slider"></span></label></div>
 				<div class="setting-row"><span>Use browser back/forward to<br>jump to earlier chat states like branch selection</span><label class="toggle"><input type="checkbox" id="browserHistoryToggle" checked><span class="slider"></span></label></div>
+				<div class="setting-row"><span>Show pricing</span><select id="pricingDisplaySelect"><option value="off">Off</option><option value="$/¢">$/¢</option><option value="$">$</option><option value="¢">¢</option></select></div>
 			</div>
 			<button class="btn" id="applySettingsBtn" style="margin-top: 12px; width: 100%;">Apply Settings</button>
 		</div>
@@ -447,7 +448,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 
 
 
-	const defaultSettings = { maxTokens: 384000, enterSends: false, showUser: true, showAssistant: true, streaming: true, msgAutoCollapse: false, msgCollapseSize: 20000, blockAutoCollapse: false, blockCollapseSize: 5000, autoCollapseThinking: true, fontScale: 0.5, closeSettingsOutside: true, displayTokens: false, useBrowserHistory: true };
+	const defaultSettings = { maxTokens: 384000, enterSends: false, showUser: true, showAssistant: true, streaming: true, msgAutoCollapse: false, msgCollapseSize: 20000, blockAutoCollapse: false, blockCollapseSize: 5000, autoCollapseThinking: true, fontScale: 0.5, closeSettingsOutside: true, displayTokens: false, useBrowserHistory: true, pricingDisplay: '$/¢', statsDisplay: '+tokens/s' };
 	let settings = { ...defaultSettings };
 
 	const boolSettings = [
@@ -459,7 +460,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		{id: 'blockCollapseToggle', key: 'blockAutoCollapse'},
 		{id: 'autoCollapseThinkingToggle', key: 'autoCollapseThinking'},
 		{id: 'closeSettingsOutsideToggle', key: 'closeSettingsOutside'},
-		{id: 'displayTokensToggle', key: 'displayTokens'}, {id: 'browserHistoryToggle', key: 'useBrowserHistory'}
+		{id: 'browserHistoryToggle', key: 'useBrowserHistory'}
 	];
 	const numSettings = [
 		['maxTokens','maxTokensInput'], ['msgCollapseSize'], ['blockCollapseSize'],
@@ -490,14 +491,26 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 
 	const default_providers = {
 		custom_template: { id: '', name: '', baseURL: '', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: [], defaultModel: '', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: false },
-		deepseek: { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['deepseek-v4-pro', 'deepseek-v4-flash'], defaultModel: 'deepseek-v4-pro', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true },
+		deepseek: { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: { 'deepseek-v4-pro': { pricing: { inputCacheHit: 3.625e-9, inputCacheMiss: 4.35e-7, output: 8.7e-7 } }, 'deepseek-v4-flash': { pricing: { inputCacheHit: 2.8e-9, inputCacheMiss: 1.4e-7, output: 2.8e-7 } } }, defaultModel: 'deepseek-v4-pro', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true },
 		openai: { id: 'openai', name: 'OpenAI', baseURL: 'https://api.openai.com/v1', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini'], defaultModel: 'gpt-5.5', maxTokensParam: 'max_completion_tokens', systemRole: 'developer', supportsStreamUsage: true },
-		gemini: { id: 'gemini', name: 'Gemini', baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['gemini-pro-latest', 'gemini-3.1-pro-preview', 'gemini-flash-latest'], defaultModel: 'gemini-pro-latest', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true }
+		gemini: { id: 'gemini', name: 'Gemini', baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-flash-latest'], defaultModel: 'gemini-pro-latest', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true }
 	};
 	let providers = JSON.parse(localStorage.getItem('dse_providers')) || {};
 	for (const k in default_providers) { if (!providers[k]) providers[k] = default_providers[k]; }
 	let activeProviderId = localStorage.getItem('dse_active_provider') || 'deepseek';
 	if (!providers[activeProviderId]) activeProviderId = 'deepseek';
+
+	const isObj=x=>x&&typeof x=='object'&&!Array.isArray(x), asArr=x=>Array.isArray(x)?x:x?[x]:[];
+
+	const modelEntries=p=>asArr(p?.fallbackModels).flatMap(x=>
+		typeof x=='string'?[[x,{}]]:
+		isObj(x)?(x.id||x.name?[[x.id||x.name,x]]:Object.entries(x).map(([k,v])=>[k,isObj(v)?v:{}])):
+		[]
+	);
+
+	const modelIds=p=>modelEntries(p).map(x=>x[0]).filter(Boolean);
+	const modelDef=(p,id)=>modelEntries(p).find(x=>x[0]===id)?.[1]||{};
+	const modelPricing=(p,id)=>modelDef(p,id).pricing||modelDef(default_providers[p?.id],id).pricing||null;
 
 	function getApiKey() { return getMetadata().apiKeys?.[activeProviderId] || ''; }
 
@@ -571,6 +584,8 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	function syncUI() {
 		numSettings.forEach(([k,id]) => els[id||k].value = settings[k]);
 		boolSettings.forEach(s => els[s.id].checked = settings[s.key]);
+		if (els.statsDisplaySelect) els.statsDisplaySelect.value = settings.statsDisplay || defaultSettings.statsDisplay;
+		if (els.pricingDisplaySelect) els.pricingDisplaySelect.value = settings.pricingDisplay || defaultSettings.pricingDisplay;
 		updateTokenDisplay();
 	}
 
@@ -617,16 +632,17 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	const P=3000,z=n=>"0".repeat(String(Math.max(1,n|0)).length);
 	function drawTokenDisplay(r=0,tg=0){
 		const b=cb??=buildCounterBase(),e=els.tokenCounter;if(!e)return;
-		const k=settings.displayTokens&&b[6],q=k&&b[7]?'~':'';
+		const k=statsUseTokens()&&b[6],q=k&&b[7]?'~':'';
 		r=k?Math.ceil(r/4):r;tg=k?Math.ceil(tg/4):tg;
 		const a=(k?b[3]:b[0])+r,h=(k?b[4]:b[1])+tg,u=k?b[5]:b[2],s=r+tg;
 		const base=`${q}${a}${h?`(+${h})`:''}\u200B+${u}`,ss=s?` \u200B(+${k?'~':''}${s} streaming)`:'';
-		const full=base+(k?' tokens':' characters')+ss,short=base+(k?'t':'c')+ss;
-		const A=z(a+P),H=h?z(h+P):'',S=s?z(s+P):'',K=`${k}|${!!s}|${A}|${H}|${S}|${cw||(cw=e.parentElement?.clientWidth||innerWidth)}`;
+		const vc=getVisibleCost(),co=vc.total||vc.unknown?` · ${formatCost(vc.total,vc.unknown)}`:'';
+		const full=base+(k?' tokens':' characters')+ss+co,short=base+(k?'t':'c')+ss+co;
+		const A=z(a+P),H=h?z(h+P):'',S=s?z(s+P):'',K=`${k}|${!!s}|${A}|${H}|${S}|${co}|${cw||(cw=e.parentElement?.clientWidth||innerWidth)}`;
 		if(!cf||cf.K!==K){
 			const B=`${q}${A}${H?`(+${H})`:''}\u200B+${u}`,SS=S?` \u200B(+${k?'~':''}${S} streaming)`:'';
-			e.textContent=B+(k?' tokens':' characters')+SS;const lh=e.scrollHeight;
-			e.textContent=B+(k?'t':'c')+SS;cf={K,S:lh>e.scrollHeight};
+			e.textContent=B+(k?' tokens':' characters')+SS+co;const lh=e.scrollHeight;
+			e.textContent=B+(k?'t':'c')+SS+co;cf={K,S:lh>e.scrollHeight};
 		}
 		e.textContent=cf.S?short:full;e.title=cf.S?full.replace(/\u200B/g,''):'';
 	}
@@ -637,7 +653,33 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	window.addEventListener('resize', invalidateTokenCounterFit);
 	window.visualViewport?.addEventListener('resize', invalidateTokenCounterFit);
 
-	function getMessageStatString(node, ver) { return settings.displayTokens && hasKnownCompletionTokens(node, ver) ? `${ver.tokens}t` : charStat((ver.rawContent || '').length, (ver.thinking || '').length); }
+	function getMessageStatString(node, ver) { return statsUseTokens() && hasKnownCompletionTokens(node, ver) ? `${ver.tokens}t` : charStat((ver.rawContent || '').length, (ver.thinking || '').length); }
+	const statsMode=()=>settings.statsDisplay||defaultSettings.statsDisplay, statsUseTokens=()=>statsMode().includes('tokens'), statsShowRate=()=>statsMode()[0]==='+';
+	const showPricing=()=>settings.pricingDisplay&&settings.pricingDisplay!=='off';
+	const versionCost=v=>v?.metadata?.cost?.calculated;
+
+	function formatCost(x,unknown=false){
+		if(!showPricing())return '';
+		const m=settings.pricingDisplay,p=unknown?'+':'';
+		if(!Number.isFinite(x)||x<=0)return m==='¢'?'0¢'+p:'$0'+p;
+		if(m==='¢'||(m==='$/¢'&&x<1)){const c=x*100;return (c<.01?c.toFixed(4):c<1?c.toFixed(3):c<10?c.toFixed(2):c.toFixed(1))+'¢'+p;}
+		return '$'+(x<10?x.toFixed(2):x<100?x.toFixed(1):Math.round(x).toLocaleString())+p;
+	}
+
+	function getVisibleCost(){
+		let total=0,unknown=false;
+		if(!showPricing())return {total,unknown};
+		getViewNodes().forEach(n=>{const v=n.versions[n.activeVersion]||{},c=versionCost(v);if(n.role==='assistant'){if(Number.isFinite(c))total+=c;else if((v.rawContent||v.thinking||'').length)unknown=true;}});
+		return {total,unknown};
+	}
+
+	function applyResponseMetadata(v,u,p,model,provider){
+		if(!u)return;
+		const input=u.prompt_tokens||0,hit=u.prompt_cache_hit_tokens||0,miss=u.prompt_cache_miss_tokens??Math.max(0,input-hit),output=u.completion_tokens||0,reasoning=u.completion_tokens_details?.reasoning_tokens||0,r=modelPricing(p,model);
+		if(input)v.promptTokens=input;if(output)v.tokens=output;if(reasoning)v.reasoningTokens=reasoning;
+		v.metadata={...(v.metadata||{}),provider,model,usage:{input,cacheHit:hit,cacheMiss:miss,output,total:u.total_tokens||(input+output),reasoning}};
+		if(r)v.metadata.cost={calculated:hit*(r.inputCacheHit||0)+miss*(r.inputCacheMiss??r.input??0)+output*(r.output||0)};
+	}
 	let toastTimer; function showToast(msg) { clearTimeout(toastTimer); els.toast.textContent = msg; els.toast.className = 'toast show'; toastTimer = setTimeout(() => els.toast.classList.remove('show'), 3000); }
 
 	function escapeHtml(str) { return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
@@ -777,7 +819,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		async function fetchModels() { const p = providers[activeProviderId]; const key = getApiKey(); if (!key || !p.baseURL) return null; try { const res = await fetch(p.baseURL + '/models', { headers: { 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key } }); return res.ok ? (await res.json()).data?.map(m => m.id).filter(Boolean) || [] : null; } catch { return null; } }
 		async function loadModels() {
 			els.statusDot.className = 'status-dot off'; const p = providers[activeProviderId]; els.modelSelect.disabled = true; els.modelSelect.innerHTML = '<option value="">Loading...</option>';
-			let models = await fetchModels(); const list = (models && models.length) ? models : (p.fallbackModels || []); els.modelSelect.innerHTML = '';
+			let models = await fetchModels(); const list = (models && models.length) ? models : modelIds(p); els.modelSelect.innerHTML = '';
 			if (list.length === 0) { const opt = document.createElement('option'); opt.value = p.defaultModel; opt.textContent = p.defaultModel; els.modelSelect.appendChild(opt); }
 			else { list.forEach(id => { const opt = document.createElement('option'); opt.value = id; opt.textContent = id; els.modelSelect.appendChild(opt); }); }
 			const saved = getMetadata().models?.[activeProviderId]; els.modelSelect.value = (saved && list.includes(saved)) ? saved : (list.includes(p.defaultModel) ? p.defaultModel : list[0] || p.defaultModel);
@@ -904,9 +946,10 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 			if (parent && parent.children && parent.children.length > 1) { ctrls += `<div class="branch-ctrl"><button data-action="b-prev" class="b-prev">◀</button> branch ${parent.children.indexOf(node.id) + 1}/${parent.children.length} <button data-action="b-next" class="b-next">▶</button></div>`; }
 			let actionBtns = '';
 			if (!isSystem && !node.isGenerating) {
-				const useTokenStats = settings.displayTokens && hasKnownCompletionTokens(node, ver);
+				const useTokenStats = statsUseTokens() && hasKnownCompletionTokens(node, ver);
 				let statsHtml = `<span class="msg-stats"><span>${useTokenStats ? `${ver.tokens}t` : `${totalChars}c`}</span>`;
-				if (ver.startTime && ver.endTime && ver.endTime > ver.startTime) { const secs = (ver.endTime - ver.startTime) / 1000; statsHtml += `<span>${secs.toFixed(3)}s</span><span>${useTokenStats ? (ver.tokens / secs).toFixed(1) + 't/s' : (totalChars / secs).toFixed(1) + 'c/s'}</span>`; }
+				if (ver.startTime && ver.endTime && ver.endTime > ver.startTime) { const secs = (ver.endTime - ver.startTime) / 1000; statsHtml += `<span>${secs.toFixed(3)}s</span>`; if (statsShowRate()) statsHtml += `<span>${useTokenStats ? (ver.tokens / secs).toFixed(1) + 't/s' : (totalChars / secs).toFixed(1) + 'c/s'}</span>`; }
+				if (showPricing()&&Number.isFinite(versionCost(ver))) statsHtml += `<span>${formatCost(versionCost(ver))}</span>`;
 				actionBtns = `${statsHtml}</span> <button data-action="edit" class="edit-btn">✏️ Edit</button> <button data-action="copy">📋 Copy</button>`;
 				if (node.role === 'assistant' || node.role === 'user') actionBtns += `<button data-action="refresh" class="refresh-btn" title="Regenerate">🔄</button>`;
 				actionBtns += `<button data-action="toggle-msg" class="footer-toggle-btn"></button>`;
@@ -945,12 +988,12 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 			if (controller) activeControllers.delete(controller); resetStopBtn(); updateSendBtn(); updateTokenDisplay();
 		}
 		async function executeAPI(messages, node, vIndex, controller) {
-			const p = providers[activeProviderId]; const key = getApiKey(); const isStream = settings.streaming;
-			const payload = { model: getCurrentModel(), messages: messages, temperature: 0.7, stream: isStream }; payload[p.maxTokensParam || 'max_tokens'] = settings.maxTokens; if (isStream && p.supportsStreamUsage) payload.stream_options = { include_usage: true };
+			const providerId=activeProviderId,p=providers[providerId],key=getApiKey(),isStream=settings.streaming,modelId=getCurrentModel();
+			const payload = { model: modelId, messages: messages, temperature: 0.7, stream: isStream }; payload[p.maxTokensParam || 'max_tokens'] = settings.maxTokens; if (isStream && p.supportsStreamUsage) payload.stream_options = { include_usage: true };
 			node.versions[vIndex].startTime = Date.now();
 			const res = await fetch(p.baseURL + p.apiPath, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key }, body: JSON.stringify(payload), signal: controller.signal });
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const applyUsage = (u) => { if (u?.prompt_tokens) node.versions[vIndex].promptTokens = u.prompt_tokens; if (u?.completion_tokens) node.versions[vIndex].tokens = u.completion_tokens; if (u?.completion_tokens_details?.reasoning_tokens) node.versions[vIndex].reasoningTokens = u.completion_tokens_details.reasoning_tokens; };
+			const applyUsage = u => applyResponseMetadata(node.versions[vIndex],u,p,modelId,providerId);
 			if (!isStream) {
 				const data = await res.json(); applyUsage(data.usage); node.versions[vIndex].rawContent = data.choices[0].message.content || ''; node.versions[vIndex].thinking = data.choices[0].message.reasoning_content || '';
 				handleNewContent(node.versions[vIndex].rawContent.length + node.versions[vIndex].thinking.length, true);
@@ -1209,6 +1252,8 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		els.applySettingsBtn.addEventListener('click', () => {
 			numSettings.forEach(([k,id,p=parseInt,min,max]) => { let v = p(els[id||k].value); if(!Number.isFinite(v)) v = defaultSettings[k]; settings[k] = min == null ? v : Math.max(min, Math.min(max, v)); });
 			boolSettings.forEach(s => settings[s.key] = els[s.id].checked);
+			settings.statsDisplay = els.statsDisplaySelect?.value || defaultSettings.statsDisplay;
+			settings.pricingDisplay = els.pricingDisplaySelect?.value || defaultSettings.pricingDisplay;
 			saveSettings(); showToast('Settings applied'); renderFullChat(); els.settingsPanel.classList.remove('open');
 	});
 		els.saveKeyBtn.addEventListener('click', () => { const key = els.apiKeyInput.value.trim(); if (key.length > 2) { saveApiKey(key); showToast('Key saved'); loadModels(); } });
@@ -1254,6 +1299,7 @@ const todo = JSON.parse(`{
 "hands off mode via voice recognition":"can include tts via native API too",
 "cross user coordination":"capability of common work location and access sharing and simultaneous work at same thing including potentially iframe boxes maybe, could be extended to device access later",
 "browser extension capability":"multiple filters and capability flags so model can handle tasks for user or play games or read pages etc, read only part can be under API too",
+"costs":"budget control, time based control, swarm pricing, task based budget, run indefinitely till budget mode etc",
 "todo space for ai models":{"openai":{"placeholder":"","space1":{"placeholder":""}}}
 }`);
 </script>
