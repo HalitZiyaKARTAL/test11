@@ -321,6 +321,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				<div class="setting-row"><span>Enter sends message</span><label class="toggle"><input type="checkbox" id="enterSendsToggle"><span class="slider"></span></label></div>
 				<div class="setting-row"><span>Stream responses</span><label class="toggle"><input type="checkbox" id="streamToggle"><span class="slider"></span></label></div>
 				<div class="setting-row"><span>Close settings on outside click</span><label class="toggle"><input type="checkbox" id="closeSettingsOutsideToggle"><span class="slider"></span></label></div>
+				<div class="setting-row"><span>Use browser back/forward to<br>jump to earlier chat states like branch selection</span><label class="toggle"><input type="checkbox" id="browserHistoryToggle" checked><span class="slider"></span></label></div>
 			</div>
 			<button class="btn" id="applySettingsBtn" style="margin-top: 12px; width: 100%;">Apply Settings</button>
 		</div>
@@ -380,6 +381,9 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	const genKey=(id,i)=>id+'|'+i,gens={},tabBC=globalThis.BroadcastChannel&&new BroadcastChannel('dse_tab_beat'),tabSeen={},tabGen={},tabBorn=Date.now(),liveGen=(p,k)=>p===TAB_PID?!!gens[k]:Date.now()-(tabSeen[p]||0)<2500&&(tabGen[p]||[]).includes(k),tabBeat=q=>tabBC?.postMessage([CHAT_ID,TAB_PID,Date.now(),q,Object.keys(gens)]);
 	tabBC&&(tabBC.onmessage=e=>{const m=e.data||[],p=m[1],n=!tabSeen[p];if(m[0]===CHAT_ID&&p!==TAB_PID){tabSeen[p]=m[2];tabGen[p]=m[4]||[];if(n&&Date.now()-(tabSeen._||0)>20)tabSeen._=Date.now(),tabBeat(1)}},tabBeat(1),setInterval(tabBeat,1000));
 	let waitingToSave = {}; let isSaving = false; let isWaitScheduled = false; let isClashModalOpen = false;
+	let pushHistoryNext = 0, histScrollTmr = 0;
+	const streamOps = {}; const streamOp = (k, fn) => { const p = (streamOps[k] || Promise.resolve()).then(fn, fn).finally(() => { if (streamOps[k] === p) delete streamOps[k]; }); return streamOps[k] = p; };
+	const ownStreamKey = (id,i) => `${CHAT_ID}|${TAB_PID}|${id}|${i}`;
 	let activeControllers = new Set(); const userToggledThinkings = new Map(); let lastBufferWrite = {};
 	let globalMsgCounter = parseInt(localStorage.getItem('dse_globalMsgCounter')) || 0;
 
@@ -416,11 +420,13 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		localStorage.setItem('dse_metadata_migrated', 'true');
 	}
 	const DB_NAME = 'AIChatDB'; const STORE_NAME = 'chatTrees';
-	const initDB = () => new Promise((resolve, reject) => {
+	let dbPromise;
+	const initDB = () => dbPromise ||= new Promise((resolve, reject) => {
 		const request = indexedDB.open(DB_NAME, 1);
 		request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
-		request.onsuccess = () => resolve(request.result);
-		request.onerror = () => reject(request.error);
+		request.onsuccess = () => { const db = request.result; db.onversionchange = () => { db.close(); dbPromise = null; }; db.onclose = () => { dbPromise = null; }; resolve(db); };
+		request.onerror = () => { dbPromise = null; reject(request.error); };
+		request.onblocked = () => { dbPromise = null; reject(new Error('DB Blocked')); };
 });
 
 	async function saveToIndexedDB(key, data) {
@@ -435,13 +441,13 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 
 	const SB='dse_sb',ST=864e5,sKey=(n,i)=>`${CHAT_ID}|${TAB_PID}|${n.id}|${i}`,foreignSB=new Set,recoveredSB=new Set;
 	const streamReg=fn=>initDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(STORE_NAME,'readwrite'),st=tx.objectStore(STORE_NAME),r=st.get(SB);let out;r.onsuccess=()=>{const b=r.result||{},now=Date.now();for(const k in b)if(now-b[k][0]>ST)delete b[k];out=fn(b);st.put(b,SB);};tx.oncomplete=()=>res(out);tx.onerror=()=>rej(tx.error);})).catch(()=>{});
-	function saveStreamBuffer(n,i){const v=n.versions[i];if(!v||v.endTime)return;const nv=[Date.now(),n.lastUpdateTime,v.rawContent||'',v.thinking||''];streamReg(b=>{const o=b[sKey(n,i)]||[];if((nv[2]+nv[3]).length>=(o[2]+o[3]||'').length)b[sKey(n,i)]=nv;});}
-	function clearStreamBuffer(id,i){return streamReg(b=>{const now=Date.now();for(const k in b){const [c,p,n,v]=k.split('|'),own=p===TAB_PID,hit=c===CHAT_ID&&(!id?own:n===id&&(i==null||+v===i));if(hit&&(own||recoveredSB.has(k)&&now-b[k][0]>6e4&&now-(tabSeen[p]||tabBorn)>2000&&!liveGen(p,genKey(n,v))))delete b[k],recoveredSB.delete(k),foreignSB.delete(k);}});}
+	function saveStreamBuffer(n,i){const v=n.versions[i];if(!v||v.endTime)return Promise.resolve();const k=sKey(n,i),nv=[Date.now(),n.lastUpdateTime,v.rawContent||'',v.thinking||''];return streamOp(k,()=>streamReg(b=>{const o=b[k]||[];if((nv[2]+nv[3]).length>=((o[2]||'')+(o[3]||'')).length)b[k]=nv;}))}
+	function clearStreamBuffer(id,i){const run=()=>streamReg(b=>{const now=Date.now();for(const k in b){const [c,p,n,v]=k.split('|'),own=p===TAB_PID,hit=c===CHAT_ID&&(!id?own:n===id&&(i==null||+v===i));if(hit&&(own||recoveredSB.has(k)&&now-b[k][0]>6e4&&now-(tabSeen[p]||tabBorn)>2000&&!liveGen(p,genKey(n,v))))delete b[k],recoveredSB.delete(k),foreignSB.delete(k);}}); if(id&&i!=null)return streamOp(ownStreamKey(id,i),run); return run();}
 	async function applyStreamBuffer(){let changed=false,wait=false;await streamReg(b=>{for(const k in b){const [c,p]=k.split('|');if(c===CHAT_ID&&p!==TAB_PID)wait=true,foreignSB.add(k);}});if(wait&&tabBC)await new Promise(r=>setTimeout(r,2000));await streamReg(b=>{for(const k in b){const [c,p,id,i]=k.split('|'),g=genKey(id,i);if(c!==CHAT_ID||p!==TAB_PID&&liveGen(p,g))continue;const [e,u,rc,th]=b[k],n=chatTree.nodes[id],v=n?.versions?.[+i],bl=(rc||'').length+(th||'').length,vl=(v?.rawContent||'').length+(v?.thinking||'').length;if(!n||!v)continue;if(bl>vl){Object.assign(v,{rawContent:rc||'',thinking:th||'',isDead:true,errorIcon:'☠️',errorText:'Stream interrupted',endTime:u||e});v.e??=u||e;if(p!==n.p)v.p??=p;n.lastUpdateTime=u||e;n.isGenerating=false;changed=true;if(p!==TAB_PID)recoveredSB.add(k);}}});return changed;}
 
 
 
-	const defaultSettings = { maxTokens: 384000, enterSends: false, showUser: true, showAssistant: true, streaming: true, msgAutoCollapse: false, msgCollapseSize: 20000, blockAutoCollapse: false, blockCollapseSize: 5000, autoCollapseThinking: true, fontScale: 0.5, closeSettingsOutside: true, displayTokens: false };
+	const defaultSettings = { maxTokens: 384000, enterSends: false, showUser: true, showAssistant: true, streaming: true, msgAutoCollapse: false, msgCollapseSize: 20000, blockAutoCollapse: false, blockCollapseSize: 5000, autoCollapseThinking: true, fontScale: 0.5, closeSettingsOutside: true, displayTokens: false, useBrowserHistory: true };
 	let settings = { ...defaultSettings };
 
 	const boolSettings = [
@@ -453,7 +459,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		{id: 'blockCollapseToggle', key: 'blockAutoCollapse'},
 		{id: 'autoCollapseThinkingToggle', key: 'autoCollapseThinking'},
 		{id: 'closeSettingsOutsideToggle', key: 'closeSettingsOutside'},
-		{id: 'displayTokensToggle', key: 'displayTokens'}
+		{id: 'displayTokensToggle', key: 'displayTokens'}, {id: 'browserHistoryToggle', key: 'useBrowserHistory'}
 	];
 	const numSettings = [
 		['maxTokens','maxTokensInput'], ['msgCollapseSize'], ['blockCollapseSize'],
@@ -573,7 +579,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		document.body.classList.toggle('hide-assistant', !settings.showAssistant);
 	}
 
-	function saveActiveView() { if (activeViewList.length > 1) updateMetadata(meta => { meta.chatStates[CHAT_ID] ??= {}; meta.chatStates[CHAT_ID].tabs ??= {}; meta.chatStates[CHAT_ID].tabs[TAB_PID] = { list: activeViewList.map((s,i)=>{if(!i)return s;const n=chatTree.nodes[s.id],v=n?.versions?.[s.v??n.activeVersion];return n?{id:s.id,v:s.v,e:ve(n,v),p:vp(n,v)}:s;}), epoch: Date.now() }; }); }
+	function saveActiveView() { if (activeViewList.length > 1) updateMetadata(meta => { meta.chatStates[CHAT_ID] ??= {}; meta.chatStates[CHAT_ID].tabs ??= {}; meta.chatStates[CHAT_ID].tabs[TAB_PID] = { list: activeViewList.map((s,i)=>{if(!i)return s;const n=chatTree.nodes[s.id],v=n?.versions?.[s.v??n.activeVersion];return n?{id:s.id,v:s.v,e:ve(n,v),p:vp(n,v)}:s;}), epoch: Date.now() }; }); if (activeViewList.length > 1 && settings.useBrowserHistory) { history[pushHistoryNext?'pushState':'replaceState']({list:JSON.parse(JSON.stringify(activeViewList)), chatId:CHAT_ID, scroll:els.chatContainer.scrollTop},''); pushHistoryNext=0; } }
 
 	function restoreActiveView() {
 		const tabs = getMetadata().chatStates?.[CHAT_ID]?.tabs || {};
@@ -586,6 +592,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		}
 		activeViewList.slice(1).forEach(step => { const n = chatTree.nodes[step.id]; if (n && typeof step.v === 'number') n.activeVersion = Math.min(Math.max(step.v, 0), Math.max(0, n.versions.length - 1)); });
 		updateMetadata(m => { const mT = m.chatStates?.[CHAT_ID]?.tabs; if (mT) { const now = Date.now(); for (const pid in mT) { if (now - mT[pid].epoch > 86400000) delete mT[pid]; } } });
+		
 	}
 
 	function charStat(cLen, tLen = 0) { return tLen > 0 ? `${cLen}(+${tLen})c` : `${cLen}c`; }
@@ -742,6 +749,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 					else { isAtBottom = false; els.jumpBtn.classList.add('visible'); updateJumpBtnText(); } scrollTicking = false;
 			}); scrollTicking = true;
 			}
+			if(settings.useBrowserHistory&&history.state?.chatId===CHAT_ID){ clearTimeout(histScrollTmr); histScrollTmr=setTimeout(()=>{ const s=history.state; if(s?.chatId===CHAT_ID) history.replaceState({...s,scroll:els.chatContainer.scrollTop},''); }, 300); }
 	});
 		els.jumpBtn.addEventListener('click', () => els.chatContainer.scrollTop = els.chatContainer.scrollHeight);
 		function updateJumpBtnText() { els.jumpBtn.textContent = `(${unreadMsgCount > 0 && unreadCharCount > 0 ? `${unreadMsgCount} ⤓ ${unreadCharCount}` : unreadCharCount > 0 ? `⤓ ${unreadCharCount}` : unreadMsgCount > 0 ? `${unreadMsgCount} ⤓` : '⤓'})`; }
@@ -932,7 +940,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		}
 		function finalizeGeneration(node, vIndex, controller) {
 			if (!node.versions.some(v => v.startTime && !v.endTime && !v.isDead)) node.isGenerating = false;
-			delete gens[genKey(node.id,vIndex)];tabBeat(1);clearStreamBuffer(node.id,vIndex);delete lastBufferWrite[node.id+'|'+vIndex]; waitingToSave[node.id] = node; saveHistory();
+			delete gens[genKey(node.id,vIndex)];tabBeat(1);delete lastBufferWrite[node.id+'|'+vIndex]; waitingToSave[node.id] = node; saveHistory();
 			if (node.activeVersion === vIndex) { if (!softFinalizeNodeDOM(node, vIndex)) updateNodeDOM(node); autoCollapseThinkingBlocks(); } else updateVersionDots(node);
 			if (controller) activeControllers.delete(controller); resetStopBtn(); updateSendBtn(); updateTokenDisplay();
 		}
@@ -970,6 +978,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				while (true) { const { done, value } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); const lines = buffer.split('\n'); buffer = lines.pop(); for (let line of lines) processLine(line); }
 				if (buffer.trim()) processLine(buffer.trim());
 			}
+			await saveStreamBuffer(node, vIndex);
 			node.versions[vIndex].endTime = node.lastUpdateTime || Date.now(); finalizeGeneration(node, vIndex, controller);
 		}
 		function buildAPIMessages(targetPath) {
@@ -1032,7 +1041,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				if (lock && lock.pid !== TAB_PID && Date.now() - lock.epoch < 1000) { Object.assign(waitingToSave, currentQueue); return; }
 				updateMetadata(m => { m.chatStates[CHAT_ID] ??= {}; m.chatStates[CHAT_ID].writeLock = { pid: TAB_PID, epoch: Date.now() }; });
 				if (getMetadata().chatStates?.[CHAT_ID]?.writeLock?.pid !== TAB_PID) { Object.assign(waitingToSave, currentQueue); return; }
-				if (state.lastWriter === TAB_PID || !state.lastWriter) { await saveToIndexedDB(CHAT_ID, chatTree); updateMetadata(m => { m.chatStates[CHAT_ID].lastWriter = TAB_PID; }); }
+				if (state.lastWriter === TAB_PID || !state.lastWriter) { await saveToIndexedDB(CHAT_ID, chatTree); updateMetadata(m => { m.chatStates[CHAT_ID].lastWriter = TAB_PID; }); for(let k in currentQueue){const n=currentQueue[k];if(n.role==='assistant')n.versions.forEach((v,i)=>{if(v.endTime||v.isDead)clearStreamBuffer(k,i);});} }
 				else {
 					saveEmergencyBackup(chatTree);
 					const groupedByChat = {};
@@ -1061,7 +1070,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 								}
 							}
 							if (hasClash) { showClashPopup(clashQueue, diskTree, targetChatId); Object.assign(waitingToSave, chatQueue); continue; }
-							await saveToIndexedDB(targetChatId, diskTree); if (targetChatId === CHAT_ID) { chatTree = diskTree; renderFullChat(); updateMetadata(m => { m.chatStates[CHAT_ID].lastWriter = TAB_PID; }); }
+							await saveToIndexedDB(targetChatId, diskTree); for(let k in chatQueue){const n=chatQueue[k];if(n.role==='assistant')n.versions.forEach((v,i)=>{if(v.endTime||v.isDead)clearStreamBuffer(k,i);});} if (targetChatId === CHAT_ID) { chatTree = diskTree; renderFullChat(); updateMetadata(m => { m.chatStates[CHAT_ID].lastWriter = TAB_PID; }); }
 						} catch (e) { console.error(`🚨 ERROR IN CHAT [${targetChatId}]`, e); }
 					}
 				}
@@ -1108,22 +1117,21 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				let saved = await loadFromIndexedDB(CHAT_ID);
 				if (!saved) { const oldLocal = localStorage.getItem('dse_chatTree'); if (oldLocal) { saved = JSON.parse(oldLocal); await saveToIndexedDB(CHAT_ID, saved); } else { renderFullChat(); updateTokenDisplay(); updateSendBtn(); return; } }
 				if (isTreeCorrupted(saved)) await promptRepairBackup(saved);
-				const healed = healTree(saved); chatTree = healed.tree; let treeModified = await applyStreamBuffer() || healed.modified;
+				const healed = healTree(saved); chatTree = healed.tree; let treeModified = healed.modified;
 				let maxNum = 0; Object.values(chatTree.nodes).forEach(n => { if (n.msgNum > maxNum) maxNum = n.msgNum; });
 				if (maxNum > globalMsgCounter) { globalMsgCounter = maxNum; localStorage.setItem('dse_globalMsgCounter', globalMsgCounter); }
 				restoreActiveView();
-				const lock = getMetadata().chatStates?.[CHAT_ID]?.writeLock; const isAnotherTabActive = lock && lock.pid !== TAB_PID && (Date.now() - lock.epoch < 1500);
-				Object.values(chatTree.nodes).forEach(n => {
-					const vi = n.activeVersion || 0, ver = n.versions[vi];
+				renderFullChat(); const path = getViewNodes(); autoCollapseThinkingBlocks(path[path.length-1]?.id); updateTokenDisplay(); updateSendBtn();
+				(async () => { try { treeModified = await applyStreamBuffer() || treeModified;
+				const lock = getMetadata().chatStates?.[CHAT_ID]?.writeLock, isAnotherTabActive = lock && lock.pid !== TAB_PID && (Date.now() - lock.epoch < 1500);
+				for (const k in chatTree.nodes) {
+					const n = chatTree.nodes[k], vi = n.activeVersion || 0, ver = n.versions[vi];
 					if (n.isGenerating && !liveGen(vp(n, ver), genKey(n.id, vi)) && (!isAnotherTabActive && Date.now() - (n.lastUpdateTime || 0) > 10000)) {
-						n.isGenerating = false;
-						if (ver) { ver.isDead = true; ver.errorIcon = '☠️'; ver.errorText = 'Stream interrupted'; ver.endTime = Date.now(); }
+						n.isGenerating = false; if (ver) { ver.isDead = true; ver.errorIcon = '☠️'; ver.errorText = 'Stream interrupted'; ver.endTime = Date.now(); }
 						treeModified = true; waitingToSave[n.id] = n;
 					}
-			});
-				if (treeModified) { await saveToIndexedDB(CHAT_ID, chatTree); saveHistory(); }
-				renderFullChat(); const path = getViewNodes(); const lastNode = path[path.length - 1]; if (lastNode) autoCollapseThinkingBlocks(lastNode.id);
-				updateTokenDisplay(); updateSendBtn();
+				}
+				if (treeModified) { await saveToIndexedDB(CHAT_ID, chatTree); saveHistory(); preserveScrollDuring(()=>renderPathTopoAware()); updateTokenDisplay(); } } catch(e){ console.error('Background recovery failed:', e); } })();
 			} catch(e) { console.error('🚨 Critical database load error:', e); showToast('⚠️ Could not load history from database.'); renderFullChat(); updateSendBtn(); }
 		}
 		function commitNode(node) { saveActiveView(); waitingToSave[node.id] = node; saveHistory(); updateNodeDOM(node); updateTokenDisplay(); }
@@ -1161,8 +1169,8 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				case 'copy': navigator.clipboard.writeText(node.versions[node.activeVersion].rawContent); showToast('Copied!'); break;
 				case 'edit': msgDiv.querySelector('.bubble').style.display = 'none'; msgDiv.querySelector('.edit-ui').style.display = 'flex'; msgDiv.querySelector('textarea').value = node.versions[node.activeVersion].rawContent || ''; msgDiv.querySelector('textarea').focus(); break;
 				case 'cancel-edit': msgDiv.querySelector('.edit-ui').style.display = 'none'; msgDiv.querySelector('.bubble').style.display = 'block'; break;
-				case 'update': node.versions.push(ver(node,{ rawContent: msgDiv.querySelector('textarea').value, thinking: node.versions[node.activeVersion].thinking, isDead: false })); node.activeVersion = node.versions.length - 1; if(listIdx > -1) activeViewList[listIdx].v = node.activeVersion; commitNode(node); break;
-				case 'branch': const newNode = createNode(node.role, msgDiv.querySelector('textarea').value, node.versions[node.activeVersion].thinking, node.parentId); if(listIdx > -1) rebuildViewArrayFrom(listIdx); renderPathFrom(newNode.id); if (newNode.role === 'user') generateAIResponse(); break;
+				case 'update': pushHistoryNext=1; node.versions.push(ver(node,{ rawContent: msgDiv.querySelector('textarea').value, thinking: node.versions[node.activeVersion].thinking, isDead: false })); node.activeVersion = node.versions.length - 1; if(listIdx > -1) activeViewList[listIdx].v = node.activeVersion; commitNode(node); break;
+				case 'branch': pushHistoryNext=1; const newNode = createNode(node.role, msgDiv.querySelector('textarea').value, node.versions[node.activeVersion].thinking, node.parentId); if(listIdx > -1) rebuildViewArrayFrom(listIdx); renderPathFrom(newNode.id); if (newNode.role === 'user') generateAIResponse(); break;
 				case 'refresh': {
 					let targetNode = node;
 					let path = getViewNodes();
@@ -1183,19 +1191,19 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 					const targetListIdx = activeViewList.findIndex(step => step.id === targetNode.id);
 					if (targetListIdx > -1) {
 						activeViewList[targetListIdx].v = targetNode.activeVersion;
-						saveActiveView();
+						pushHistoryNext=1;saveActiveView();
 					}
 					waitingToSave[targetNode.id] = targetNode;
 					updateNodeDOM(targetNode);
 					triggerAI(buildAPIMessages(path.slice(0, sliceIdx + 1)), targetNode, targetNode.activeVersion);
 					break;
 				}
-				case 'v-prev': if (listIdx > 0 && activeViewList[listIdx].v > 0) { activeViewList[listIdx].v--; node.activeVersion = activeViewList[listIdx].v; node.versions[node.activeVersion].unread = false; commitNode(node); } break;
-				case 'v-next': if (listIdx > 0 && activeViewList[listIdx].v < node.versions.length - 1) { activeViewList[listIdx].v++; node.activeVersion = activeViewList[listIdx].v; node.versions[node.activeVersion].unread = false; commitNode(node); } break;
-				case 'v-unread-left': let tIdx = -1; for (let i = node.activeVersion - 1; i >= 0; i--) { if (node.versions[i].unread) { tIdx = i; break; } } if (tIdx > -1 && listIdx > -1) { activeViewList[listIdx].v = tIdx; node.activeVersion = tIdx; node.versions[tIdx].unread = false; commitNode(node); } break;
-				case 'v-unread-right': let rIdx = -1; for (let i = node.activeVersion + 1; i < node.versions.length; i++) { if (node.versions[i].unread) { rIdx = i; break; } } if (rIdx > -1 && listIdx > -1) { activeViewList[listIdx].v = rIdx; node.activeVersion = rIdx; node.versions[rIdx].unread = false; commitNode(node); } break;
-				case 'b-prev': if (parent && listIdx > 0 && parent.children.indexOf(node.id) > 0) { parent.activeChild = parent.children.indexOf(node.id) - 1; rebuildViewArrayFrom(listIdx); commitBranch(parent, parent.children[parent.activeChild]); } break;
-				case 'b-next': if (parent && listIdx > 0 && parent.children.indexOf(node.id) < parent.children.length - 1) { parent.activeChild = parent.children.indexOf(node.id) + 1; rebuildViewArrayFrom(listIdx); commitBranch(parent, parent.children[parent.activeChild]); } break;
+				case 'v-prev': if (listIdx > 0 && activeViewList[listIdx].v > 0) { activeViewList[listIdx].v--; node.activeVersion = activeViewList[listIdx].v; node.versions[node.activeVersion].unread = false; pushHistoryNext=1; commitNode(node); } break;
+				case 'v-next': if (listIdx > 0 && activeViewList[listIdx].v < node.versions.length - 1) { activeViewList[listIdx].v++; node.activeVersion = activeViewList[listIdx].v; node.versions[node.activeVersion].unread = false; pushHistoryNext=1; commitNode(node); } break;
+				case 'v-unread-left': let tIdx = -1; for (let i = node.activeVersion - 1; i >= 0; i--) { if (node.versions[i].unread) { tIdx = i; break; } } if (tIdx > -1 && listIdx > -1) { activeViewList[listIdx].v = tIdx; node.activeVersion = tIdx; node.versions[tIdx].unread = false; pushHistoryNext=1; commitNode(node); } break;
+				case 'v-unread-right': let rIdx = -1; for (let i = node.activeVersion + 1; i < node.versions.length; i++) { if (node.versions[i].unread) { rIdx = i; break; } } if (rIdx > -1 && listIdx > -1) { activeViewList[listIdx].v = rIdx; node.activeVersion = rIdx; node.versions[rIdx].unread = false; pushHistoryNext=1; commitNode(node); } break;
+				case 'b-prev': if (parent && listIdx > 0 && parent.children.indexOf(node.id) > 0) { parent.activeChild = parent.children.indexOf(node.id) - 1; pushHistoryNext=1; rebuildViewArrayFrom(listIdx); commitBranch(parent, parent.children[parent.activeChild]); } break;
+				case 'b-next': if (parent && listIdx > 0 && parent.children.indexOf(node.id) < parent.children.length - 1) { parent.activeChild = parent.children.indexOf(node.id) + 1; pushHistoryNext=1; rebuildViewArrayFrom(listIdx); commitBranch(parent, parent.children[parent.activeChild]); } break;
 			}
 	});
 		els.applySettingsBtn.addEventListener('click', () => {
@@ -1214,6 +1222,19 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		});
 		};
 		els.messageInput.addEventListener('input', handleInput);
+		window.addEventListener('popstate', e => {
+			const s = e.state; if(!settings.useBrowserHistory||!s?.list||s.chatId!==CHAT_ID) return;
+			pushHistoryNext = 0;
+			activeViewList = JSON.parse(JSON.stringify(s.list));
+			activeViewList.slice(1).forEach(x => { const n=chatTree.nodes[x.id]; if(n&&x.v!=null) n.activeVersion=Math.max(0,Math.min(x.v,n.versions.length-1)); });
+			let n, l=activeViewList[activeViewList.length-1];
+			while((n=chatTree.nodes[l.id])?.children?.length){
+				const cid=n.children[n.activeChild], cn=chatTree.nodes[cid];
+				if(cn) activeViewList.push(l={id:cid, v:cn.activeVersion=Math.max(0,Math.min(cn.activeVersion,cn.versions.length-1))}); else break;
+			}
+			renderFullChat(); if(s.scroll!=null) els.chatContainer.scrollTop=s.scroll; requestAnimationFrame(saveActiveView);
+		});
+		window.addEventListener('beforeunload',e=>{if(isSaving||Object.keys(waitingToSave).length)e.preventDefault(),e.returnValue='';});
 		loadSettings(); await loadHistory(); loadModels();
 })();
 const todo = JSON.parse(`{
