@@ -138,6 +138,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 .msg-footer { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; font-size: 0.62rem; color: var(--text-secondary); padding: 3px 0 0 0; }
 
 .msg-stats { margin-left:auto; font-family:monospace; font-size:0.56rem; color:var(--text-secondary); opacity:0.65; padding-right:4px; display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }
+.top-active{position:relative;z-index:1024}.cost-pill{cursor:pointer}.cost-info{position:fixed;right:12px;bottom:70px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px;max-width:min(96vw,620px);overflow:auto;box-shadow:0 6px 20px #0008}.cost-info button{float:right;margin-left:4px}.costtbl{border-collapse:collapse;font-size:.68rem}.costtbl td,.costtbl th{border:1px solid var(--border);padding:3px 5px;white-space:nowrap}.costtbl td:first-child,.costtbl th:first-child{text-align:left}
 
 .msg-footer button { background: none; border: 1px solid var(--border); color: var(--text-secondary); padding: 1px 5px; border-radius: 4px; cursor: pointer; font-size: 0.6rem; }
 
@@ -281,22 +282,8 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				<div class="setting-col">
 					<select id="modelSelect" disabled><option value="">Loading...</option></select>
 				</div>
-				<div class="setting-row" style="margin-top: 4px;">
-					<span>Max output tokens</span>
-					<input type="number" id="maxTokensInput" value="384000">
-				</div>
 			</div>
-			<div class="tab-content" id="tab-ui">
-				<div class="setting-row"><span>Stats display</span><select id="statsDisplaySelect"><option value="tokens">tokens</option><option value="characters">characters</option><option value="+tokens/s">+tokens/s</option><option value="+characters/s">+characters/s</option></select></div>
-				<div class="setting-row"><span>Show user msgs</span><label class="toggle"><input type="checkbox" id="showUserToggle" checked><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Show assistant msgs</span><label class="toggle"><input type="checkbox" id="showAssistantToggle" checked><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Auto‑collapse msg &gt;</span><input type="number" id="msgCollapseSize" value="20000" min="0" step="100"></div>
-				<div class="setting-row"><span>Msg auto‑collapse ON</span><label class="toggle"><input type="checkbox" id="msgCollapseToggle"><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Auto‑collapse block &gt;</span><input type="number" id="blockCollapseSize" value="5000" min="0" step="100"></div>
-				<div class="setting-row"><span>Block auto‑collapse ON</span><label class="toggle"><input type="checkbox" id="blockCollapseToggle"><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Auto‑collapse thinking</span><label class="toggle"><input type="checkbox" id="autoCollapseThinkingToggle"><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Code font scale</span><input type="number" id="fontScale" value="0.5" min="0.01" max="2" step="0.01"></div>
-			</div>
+			<div class="tab-content" id="tab-ui"></div>
 			<div class="tab-content" id="tab-io">
 				<div class="setting-col">
 					<span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: bold;">Export / Import Options</span>
@@ -317,13 +304,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 					<button class="btn-outline" id="restoreBackupBtn" style="border-color: var(--danger); color: var(--danger);">Restore from Collision Backup</button>
 				</div>
 			</div>
-			<div class="tab-content" id="tab-other">
-				<div class="setting-row"><span>Enter sends message</span><label class="toggle"><input type="checkbox" id="enterSendsToggle"><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Stream responses</span><label class="toggle"><input type="checkbox" id="streamToggle"><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Close settings on outside click</span><label class="toggle"><input type="checkbox" id="closeSettingsOutsideToggle"><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Use browser back/forward to<br>jump to earlier chat states like branch selection</span><label class="toggle"><input type="checkbox" id="browserHistoryToggle" checked><span class="slider"></span></label></div>
-				<div class="setting-row"><span>Show pricing</span><select id="pricingDisplaySelect"><option value="off">Off</option><option value="$/¢">$/¢</option><option value="$">$</option><option value="¢">¢</option></select></div>
-			</div>
+			<div class="tab-content" id="tab-other"></div>
 			<button class="btn" id="applySettingsBtn" style="margin-top: 12px; width: 100%;">Apply Settings</button>
 		</div>
 	</div>
@@ -371,7 +352,30 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	const $ = id => document.getElementById(id), $q = s => document.querySelectorAll(s);
 	const els = {};
 
-	$q('[id]').forEach(el => els[el.id] = el);
+	const SG=[
+['tab-model','maxTokens','Max output tokens','n','maxTokensInput',384000],
+['tab-ui','statsDisplay','Stats display','s','statsDisplaySelect','+tokens/s',['tokens','characters','+tokens/s','+characters/s']],
+['tab-ui','showUser','Show user msgs','b','showUserToggle',1],
+['tab-ui','showAssistant','Show assistant msgs','b','showAssistantToggle',1],
+['tab-ui','msgCollapseSize','Auto-collapse msg >','n','msgCollapseSize',20000],
+['tab-ui','msgAutoCollapse','Msg auto-collapse ON','b','msgCollapseToggle',0],
+['tab-ui','blockCollapseSize','Auto-collapse block >','n','blockCollapseSize',5000],
+['tab-ui','blockAutoCollapse','Block auto-collapse ON','b','blockCollapseToggle',0],
+['tab-ui','autoCollapseThinking','Auto-collapse thinking','b','autoCollapseThinkingToggle',1],
+['tab-ui','fontScale','Code font scale','n','fontScale',.5,[.01,2]],
+['tab-other','enterSends','Enter sends message','b','enterSendsToggle',0],
+['tab-other','streaming','Stream responses','b','streamToggle',1],
+['tab-other','closeSettingsOutside','Close settings on outside click','b','closeSettingsOutsideToggle',1],
+['tab-other','useBrowserHistory','Use browser back/forward to<br>jump to earlier chat states like branch selection','b','browserHistoryToggle',1],
+['tab-other','pricingDisplay','Show pricing','s','pricingDisplaySelect','$/¢',['off','$/¢','$','¢']],
+['tab-other','forceInfoBoxesClickOnly','Force info boxes to be open/closed by clicks only','b','forceInfoBoxesClickOnlyToggle',0],
+['tab-other','evalLock','Eval console','b','evalLockToggle',0,0,[[1,['openEval','open console','a','openEvalBtn',0]]]]
+],defaultSettings={displayTokens:false};SG.map(r=>{defaultSettings[r[1]]=r[5];(r[7]||[]).map(x=>{let e=x[1];e&&!/[ax]/.test(e[2])&&(defaultSettings[e[0]]=e[4])})});
+	let settings = { ...defaultSettings };
+
+	const SGT=t=>$(t.split('/')[0]),SC=([k,l,t,id,d,o])=>t=='b'?`<label class=toggle><input type=checkbox id=${id}><span class=slider></span></label>`:t=='s'?`<select id=${id}>${o.map(x=>`<option value="${x}">${x}</option>`).join('')}</select>`:t=='a'?`<span id=${id} class=eval-open>${l}</span>`:t=='x'?`<button id=${id}>${l}</button>`:`<input type=number id=${id} value="${d}">`;SG.map(([tab,k,l,t,id,d,o,x])=>SGT(tab).insertAdjacentHTML('beforeend',`<div class=setting-row><span>${l}</span>${SC([k,l,t,id,d,o])}${(x||[]).map(y=>`<span id=${y[1][3]}X style="display:none">${SC(y[1])}</span>`).join('')}</div>`));
+$q('[id]').forEach(el => els[el.id] = el);
+	els.tokenCounter.dataset.cost='global';
 	const CHAT_ID = 'default';
 	let TAB_PID = sessionStorage.getItem('TAB_PID');
 	if (!TAB_PID) {
@@ -432,7 +436,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 
 	async function saveToIndexedDB(key, data) {
 		const db = await initDB();
-		return new Promise((res, rej) => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put(data, key); tx.oncomplete = res; tx.onerror = rej; });
+		return new Promise((res, rej) => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put(data, key); tx.oncomplete = () => { if(data?.nodes)updateMetadata(m=>{m.chatStates[key]??={};m.chatStates[key].chatTreeMetadata=chatTreeMetadata(data,m.chatStates[key].chatTreeMetadata);}); res(); }; tx.onerror = rej; });
 	}
 
 	async function loadFromIndexedDB(key) {
@@ -446,26 +450,6 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	function clearStreamBuffer(id,i){const run=()=>streamReg(b=>{const now=Date.now();for(const k in b){const [c,p,n,v]=k.split('|'),own=p===TAB_PID,hit=c===CHAT_ID&&(!id?own:n===id&&(i==null||+v===i));if(hit&&(own||recoveredSB.has(k)&&now-b[k][0]>6e4&&now-(tabSeen[p]||tabBorn)>2000&&!liveGen(p,genKey(n,v))))delete b[k],recoveredSB.delete(k),foreignSB.delete(k);}}); if(id&&i!=null)return streamOp(ownStreamKey(id,i),run); return run();}
 	async function applyStreamBuffer(){let changed=false,wait=false;await streamReg(b=>{for(const k in b){const [c,p]=k.split('|');if(c===CHAT_ID&&p!==TAB_PID)wait=true,foreignSB.add(k);}});if(wait&&tabBC)await new Promise(r=>setTimeout(r,2000));await streamReg(b=>{for(const k in b){const [c,p,id,i]=k.split('|'),g=genKey(id,i);if(c!==CHAT_ID||p!==TAB_PID&&liveGen(p,g))continue;const [e,u,rc,th]=b[k],n=chatTree.nodes[id],v=n?.versions?.[+i],bl=(rc||'').length+(th||'').length,vl=(v?.rawContent||'').length+(v?.thinking||'').length;if(!n||!v)continue;if(bl>vl){Object.assign(v,{rawContent:rc||'',thinking:th||'',isDead:true,errorIcon:'☠️',errorText:'Stream interrupted',endTime:u||e});v.e??=u||e;if(p!==n.p)v.p??=p;n.lastUpdateTime=u||e;n.isGenerating=false;changed=true;if(p!==TAB_PID)recoveredSB.add(k);}}});return changed;}
 
-
-
-	const defaultSettings = { maxTokens: 384000, enterSends: false, showUser: true, showAssistant: true, streaming: true, msgAutoCollapse: false, msgCollapseSize: 20000, blockAutoCollapse: false, blockCollapseSize: 5000, autoCollapseThinking: true, fontScale: 0.5, closeSettingsOutside: true, displayTokens: false, useBrowserHistory: true, pricingDisplay: '$/¢', statsDisplay: '+tokens/s' };
-	let settings = { ...defaultSettings };
-
-	const boolSettings = [
-		{id: 'enterSendsToggle', key: 'enterSends'},
-		{id: 'showUserToggle', key: 'showUser'},
-		{id: 'showAssistantToggle', key: 'showAssistant'},
-		{id: 'streamToggle', key: 'streaming'},
-		{id: 'msgCollapseToggle', key: 'msgAutoCollapse'},
-		{id: 'blockCollapseToggle', key: 'blockAutoCollapse'},
-		{id: 'autoCollapseThinkingToggle', key: 'autoCollapseThinking'},
-		{id: 'closeSettingsOutsideToggle', key: 'closeSettingsOutside'},
-		{id: 'browserHistoryToggle', key: 'useBrowserHistory'}
-	];
-	const numSettings = [
-		['maxTokens','maxTokensInput'], ['msgCollapseSize'], ['blockCollapseSize'],
-		['fontScale',null,parseFloat,.01,2]
-	];
 
 	const ve=(n,v=n?.versions?.[n.activeVersion])=>v?.e??n?.e??v?.startTime??v?.endTime??n?.lastUpdateTime??getNodeEpochMs(n);
 	const vp=(n,v=n?.versions?.[n.activeVersion])=>v?.p??n?.p??TAB_PID;
@@ -579,15 +563,10 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		renderProviderDropdown(); syncUI(); applyVisibility();
 	}
 
-	function saveSettings() { updateMetadata(m => m.settings = settings); document.documentElement.style.setProperty('--block-font-scale', settings.fontScale); applyVisibility(); updateTokenDisplay(); }
-
-	function syncUI() {
-		numSettings.forEach(([k,id]) => els[id||k].value = settings[k]);
-		boolSettings.forEach(s => els[s.id].checked = settings[s.key]);
-		if (els.statsDisplaySelect) els.statsDisplaySelect.value = settings.statsDisplay || defaultSettings.statsDisplay;
-		if (els.pricingDisplaySelect) els.pricingDisplaySelect.value = settings.pricingDisplay || defaultSettings.pricingDisplay;
-		updateTokenDisplay();
-	}
+	let CL=[],CP=()=>window.EO&&(EO.value=CL.join('\n'),EO.scrollTop=1e9);['log','warn','error'].map(k=>{let f=console[k].bind(console);console[k]=(...a)=>(f(...a),CL.push(a.join(' ')),CP())});
+	function EC(){if(!settings.evalLock)return window.evalConsole?.remove();if(window.evalConsole)return;document.body.insertAdjacentHTML('beforeend','<div id=evalConsole style="position:fixed;inset:10%;z-index:9e3;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:6px"><button onclick=this.parentNode.remove()>×</button><button id=ECopy>copy</button><textarea id=EO style="width:100%;height:45%;background:#111;color:var(--text)"></textarea><textarea id=EI style="width:100%;height:45%;background:#111;color:var(--text)"></textarea><button id=ERun>run</button></div>');ERun.onclick=()=>{try{CL.push(eval(EI.value))}catch(e){CL.push(e.stack||e)}CP()};EI.onkeydown=e=>e.ctrlKey&&e.key=='Enter'&&ERun.onclick();ECopy.onclick=()=>navigator.clipboard.writeText(EO.value);CP()}
+	function saveSettings() { updateMetadata(m => m.settings = settings); document.documentElement.style.setProperty('--block-font-scale', settings.fontScale); applyVisibility(); updateTokenDisplay(); settings.evalLock||window.evalConsole?.remove(); }
+	const GV=([k,,t,id])=>t=='b'?els[id].checked:t=='n'?parseFloat(els[id].value):els[id].value,SU=([k,,t,id])=>{let e=els[id];t=='b'?e.checked=!!settings[k]:'ax'.includes(t)||(e.value=settings[k])},SX=r=>{let v=GV([r[1],r[2],r[3],r[4]]);(r[7]||[]).map(y=>{let c=y[0],e=y[1];els[e[3]+'X'].style.display=(c==null||Array.isArray(c)?c==null||c.includes(v):v==c)?'inline':'none'})};function syncUI() { SG.map(r=>{SU([r[1],r[2],r[3],r[4]]);(r[7]||[]).map(y=>SU(y[1]));SX(r)}); updateTokenDisplay(); }
 
 	function applyVisibility() {
 		document.body.classList.toggle('hide-user', !settings.showUser);
@@ -656,7 +635,8 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	function getMessageStatString(node, ver) { return statsUseTokens() && hasKnownCompletionTokens(node, ver) ? `${ver.tokens}t` : charStat((ver.rawContent || '').length, (ver.thinking || '').length); }
 	const statsMode=()=>settings.statsDisplay||defaultSettings.statsDisplay, statsUseTokens=()=>statsMode().includes('tokens'), statsShowRate=()=>statsMode()[0]==='+';
 	const showPricing=()=>settings.pricingDisplay&&settings.pricingDisplay!=='off';
-	const versionCost=v=>v?.metadata?.cost?.calculated;
+	const cn=(n,d=6)=>Number.isFinite(n)?Number((Math.round(n*10**d)/10**d).toFixed(d)).toString():'0',cs=n=>Math.abs(n)<1?cn(n*100,4)+'¢':'$'+cn(n);
+	const qv=s=>{const m=String(s??'').match(/^(~?)([^0-9+\-.]*)(-?)([0-9]*\.?[0-9]+(?:e[+-]?\d+)?)([^+\-]*)([+-]?)$/i);return m?(m[3]?-1:1)*+m[4]/(m[5]==='¢'?100:1):0},versionCost=v=>typeof v?.metadata?.cost?.calculated==='number'?v.metadata.cost.calculated:qv(v?.metadata?.cost?.exact?.total||v?.metadata?.cost?.calculated?.total);
 
 	function formatCost(x,unknown=false){
 		if(!showPricing())return '';
@@ -675,11 +655,32 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 
 	function applyResponseMetadata(v,u,p,model,provider){
 		if(!u)return;
-		const input=u.prompt_tokens||0,hit=u.prompt_cache_hit_tokens||0,miss=u.prompt_cache_miss_tokens??Math.max(0,input-hit),output=u.completion_tokens||0,reasoning=u.completion_tokens_details?.reasoning_tokens||0,r=modelPricing(p,model);
+		const input=u.prompt_tokens||0,hit=u.prompt_cache_hit_tokens??u.prompt_tokens_details?.cached_tokens??0,miss=u.prompt_cache_miss_tokens??Math.max(0,input-hit),output=u.completion_tokens||0,reasoning=u.completion_tokens_details?.reasoning_tokens||0,r=modelPricing(p,model);
 		if(input)v.promptTokens=input;if(output)v.tokens=output;if(reasoning)v.reasoningTokens=reasoning;
-		v.metadata={...(v.metadata||{}),provider,model,usage:{input,cacheHit:hit,cacheMiss:miss,output,total:u.total_tokens||(input+output),reasoning}};
-		if(r)v.metadata.cost={calculated:hit*(r.inputCacheHit||0)+miss*(r.inputCacheMiss??r.input??0)+output*(r.output||0)};
+		const usage={input,cacheHit:hit,cacheMiss:miss,output,total:u.total_tokens||(input+output),reasoning};
+		v.metadata={...(v.metadata||{}),provider,model,usage};
+		const out=output*(r?.output||0),hi=hit*(r?.inputCacheHit||0),mi=miss*(r?.inputCacheMiss??r?.input??0),tot=out+hi+mi;
+		v.metadata.cost={...(v.metadata.cost||{}),calculated:{out:cs(out),hit:cs(hi),miss:cs(mi),unk:'$0',total:cs(tot)}};
+		const ex=u.cost??u.cost_usd??u.billing?.cost??u.billing?.cost_usd;if(Number.isFinite(ex))v.metadata.cost.exact={total:cs(ex)};
 	}
+	const top=e=>(document.querySelector('.top-active')?.classList.remove('top-active'),e?.classList.add('top-active')),untop=()=>document.querySelector('.top-active')?.classList.remove('top-active');
+	let ib={m:0,t:null,n:null}; // 1 hover, 2 pinned, 3 locked
+	const vs=n=>n?.versions||[],av=n=>vs(n)[n?.activeVersion||0]||{},asn=n=>n?.role==='assistant',nodes=()=>Object.values(chatTree.nodes||{});
+	const msgVs=n=>[av(n)],nodeVs=n=>(chatTree.nodes[n?.parentId]?.children||[n?.id]).map(id=>chatTree.nodes[id]).filter(asn).flatMap(vs),visVs=()=>getViewNodes().filter(asn).map(av);
+	const pq=s=>{s=String(s||'').trim().replace(/,/g,'');const m=s.match(/^(~?)([^0-9+\-.]*)(-?)([0-9]*\.?[0-9]+(?:e[+-]?\d+)?)([^+\-]*)([+-]?)$/i);return m?{a:!!m[1],pre:m[2],v:(m[3]?-1:1)*+m[4],post:m[5],b:m[6],u:m[2]||m[5]}:{a:0,pre:'',v:0,post:'',b:'',u:''}};
+	const money=s=>{const q=pq(s),x=q.post==='¢'?q.v/100:q.v;return(q.a?'~':'')+formatCost(x)+(q.b||'')},qadd=(a,b)=>{let x=pq(a),y=pq(b),z=(x.post==='¢'?x.v/100:x.v)+(y.post==='¢'?y.v/100:y.v);return`${x.a||y.a?'~':''}${cs(z)}${x.b||y.b||''}`};
+	const meta0=()=>({cost:{calculated:{out:'$0',hit:'$0',miss:'$0',unk:'$0',total:'$0'}},usage:{output:0,cacheHit:0,cacheMiss:0,total:0},unknown:0,chars:0,msgs:0,nodes:0,versions:0,objectChars:0});
+	function addMeta(s,v,role='assistant'){s.versions++;const ch=(v?.rawContent||'').length+(v?.thinking||'').length;s.chars+=ch;const u=v?.metadata?.usage,c=typeof v?.metadata?.cost?.calculated==='number'?{total:`$${v.metadata.cost.calculated}`}:v?.metadata?.cost?.calculated,ex=v?.metadata?.cost?.exact?.total;if(u){['output','cacheHit','cacheMiss','total'].forEach(k=>s.usage[k]+=u[k]||0)}if(c){['out','hit','miss','unk'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],c[k]||'$0'));const known=qv(c.out)+qv(c.hit)+qv(c.miss)+qv(c.unk),T=ex||c.total||`$${known}`;if(ex&&qv(T)>known)s.cost.calculated.unk=qadd(s.cost.calculated.unk,`$${qv(T)-known}+`);s.cost.calculated.total=qadd(s.cost.calculated.total,T)}else if(role==='assistant'&&ch)s.unknown=1;return s}
+	const metaVs=a=>a.reduce((s,v)=>addMeta(s,v),meta0());
+	function chatTreeMetadata(tree,old={}){const s=meta0();s.created=old.created||Date.now();s.epoch=Date.now();Object.values(tree.nodes||{}).forEach(n=>{s.nodes++;if(n.id!=='root')s.msgs++;vs(n).forEach(v=>addMeta(s,v,n.role))});try{s.objectChars=JSON.stringify(tree).length}catch{}return s}
+	function sumChatTreeMetadata(a){const s=meta0();a.forEach(t=>{if(!t){s.unknown=1;return}['unknown','chars','msgs','nodes','versions','objectChars'].forEach(k=>s[k]+=t[k]||0);['output','cacheHit','cacheMiss','total'].forEach(k=>s.usage[k]+=t.usage?.[k]||0);['out','hit','miss','unk','total'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],t.cost?.calculated?.[k]||'$0'))});return s}
+	const rowT=(m,k)=>k==='out'?m.usage.output:k==='hit'?m.usage.cacheHit:k==='miss'?m.usage.cacheMiss:k==='unk'?0:m.usage.total,cr=[['output','out'],['input hit','hit'],['input miss','miss'],['unknown','unk']];
+	function costTable(cols){return `<table class="costtbl"><tr><th>category</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr><tr><td>description</td>${cols.map(c=>`<td>${c.desc}</td>`).join('')}</tr>${cr.map(([r,k])=>`<tr><td>${r}</td>${cols.map(c=>`<td>+${money(c.meta.cost.calculated[k])}(${rowT(c.meta,k).toLocaleString()}t${c.meta.unknown?'+':''})</td>`).join('')}</tr>`).join('')}<tr><td>────</td>${cols.map(()=>'<td>────</td>').join('')}</tr><tr><td>total</td>${cols.map(c=>`<td>${money(c.meta.cost.calculated.total)}(${rowT(c.meta,'total').toLocaleString()}t${c.meta.unknown?'+':''})</td>`).join('')}</tr></table>`}
+	const chatMeta=()=>getMetadata().chatStates?.[CHAT_ID]?.chatTreeMetadata||chatTreeMetadata(chatTree),uniMeta=()=>sumChatTreeMetadata(Object.values(getMetadata().chatStates||{}).map(x=>x.chatTreeMetadata));
+	const msgCols=n=>[{label:'message',desc:'this message',meta:metaVs(msgVs(n))},{label:'node',desc:'all messages<wbr> in this bubble',meta:metaVs(nodeVs(n))}],globalCols=()=>[{label:'visible messages',desc:'self explanatory',meta:metaVs(visVs())},{label:'whole chat ID',desc:'everything made under<wbr> current chat id',meta:chatMeta()},{label:'universal',desc:'everything this<wbr> app sees',meta:uniMeta()}];
+	function closeCostInfo(){ib={m:0,t:null,n:null};untop();$('costInfo')?.remove()}
+	function openCostInfo(t,mode){if(!showPricing())return;const n=chatTree.nodes[t.dataset.nodeId],same=ib.t===t;if(ib.m===2&&same&&mode===2)return closeCostInfo();if(ib.m===3)return;ib={m:mode,t,n};top(t);$('costInfo')?.remove();document.body.insertAdjacentHTML('beforeend',`<div id="costInfo" class="cost-info"><button data-costx>×</button><button data-costlock>${mode===3?'🔒':'🔓'}</button>${costTable(t.dataset.cost==='global'?globalCols():msgCols(n))}</div>`)}
+
 	let toastTimer; function showToast(msg) { clearTimeout(toastTimer); els.toast.textContent = msg; els.toast.className = 'toast show'; toastTimer = setTimeout(() => els.toast.classList.remove('show'), 3000); }
 
 	function escapeHtml(str) { return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
@@ -949,7 +950,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				const useTokenStats = statsUseTokens() && hasKnownCompletionTokens(node, ver);
 				let statsHtml = `<span class="msg-stats"><span>${useTokenStats ? `${ver.tokens}t` : `${totalChars}c`}</span>`;
 				if (ver.startTime && ver.endTime && ver.endTime > ver.startTime) { const secs = (ver.endTime - ver.startTime) / 1000; statsHtml += `<span>${secs.toFixed(3)}s</span>`; if (statsShowRate()) statsHtml += `<span>${useTokenStats ? (ver.tokens / secs).toFixed(1) + 't/s' : (totalChars / secs).toFixed(1) + 'c/s'}</span>`; }
-				if (showPricing()&&Number.isFinite(versionCost(ver))) statsHtml += `<span>${formatCost(versionCost(ver))}</span>`;
+				if (showPricing()&&Number.isFinite(versionCost(ver))) statsHtml += `<span class="cost-pill" data-cost="msg" data-node-id="${node.id}">${formatCost(versionCost(ver))}</span>`;
 				actionBtns = `${statsHtml}</span> <button data-action="edit" class="edit-btn">✏️ Edit</button> <button data-action="copy">📋 Copy</button>`;
 				if (node.role === 'assistant' || node.role === 'user') actionBtns += `<button data-action="refresh" class="refresh-btn" title="Regenerate">🔄</button>`;
 				actionBtns += `<button data-action="toggle-msg" class="footer-toggle-btn"></button>`;
@@ -1249,12 +1250,10 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				case 'b-next': if (parent && listIdx > 0 && parent.children.indexOf(node.id) < parent.children.length - 1) { parent.activeChild = parent.children.indexOf(node.id) + 1; pushHistoryNext=1; rebuildViewArrayFrom(listIdx); commitBranch(parent, parent.children[parent.activeChild]); } break;
 			}
 	});
+		els.settingsPanel.oninput=()=>SG.map(SX);
 		els.applySettingsBtn.addEventListener('click', () => {
-			numSettings.forEach(([k,id,p=parseInt,min,max]) => { let v = p(els[id||k].value); if(!Number.isFinite(v)) v = defaultSettings[k]; settings[k] = min == null ? v : Math.max(min, Math.min(max, v)); });
-			boolSettings.forEach(s => settings[s.key] = els[s.id].checked);
-			settings.statsDisplay = els.statsDisplaySelect?.value || defaultSettings.statsDisplay;
-			settings.pricingDisplay = els.pricingDisplaySelect?.value || defaultSettings.pricingDisplay;
-			saveSettings(); showToast('Settings applied'); renderFullChat(); els.settingsPanel.classList.remove('open');
+			const SA=([k,,t,id,d,o])=>{if('ax'.includes(t))return;let e=els[id],v=t=='b'?e.checked:t=='n'?parseFloat(e.value):e.value;if(t=='n'){if(!Number.isFinite(v))v=d;if(o)v=Math.max(o[0],Math.min(o[1],v))}settings[k]=v};SG.map(r=>{SA([r[1],r[2],r[3],r[4],r[5],r[6]]);(r[7]||[]).map(y=>SA(y[1]))});
+			saveSettings(); syncUI(); showToast('Settings applied'); renderFullChat(); els.settingsPanel.classList.remove('open');
 	});
 		els.saveKeyBtn.addEventListener('click', () => { const key = els.apiKeyInput.value.trim(); if (key.length > 2) { saveApiKey(key); showToast('Key saved'); loadModels(); } });
 		els.sendBtn.addEventListener('click', sendMessage); els.messageInput.addEventListener('keydown', e => { if(e.isComposing||e.keyCode===229)return; if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || (settings.enterSends && !e.shiftKey))) { e.preventDefault(); sendMessage(); } });
@@ -1267,6 +1266,10 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 		});
 		};
 		els.messageInput.addEventListener('input', handleInput);
+		els.openEvalBtn.onclick=EC;
+		document.body.addEventListener('pointerover',e=>{const t=e.target.closest('[data-cost]');if(t&&!settings.forceInfoBoxesClickOnly&&!ib.m)openCostInfo(t,1);});
+		document.body.addEventListener('pointerout',e=>{const t=e.target.closest('[data-cost]');if(t&&ib.m===1&&!t.contains(e.relatedTarget))closeCostInfo();});
+		document.body.addEventListener('click',e=>{if(e.target.closest('[data-costx]'))return closeCostInfo();const l=e.target.closest('[data-costlock]');if(l){ib.m=ib.m===3?2:3;l.textContent=ib.m===3?'🔒':'🔓';return}const t=e.target.closest('[data-cost]');if(t){e.preventDefault();e.stopPropagation();return openCostInfo(t,2)}if(ib.m&&ib.m!==3&&!e.target.closest('#costInfo'))closeCostInfo();});
 		window.addEventListener('popstate', e => {
 			const s = e.state; if(!settings.useBrowserHistory||!s?.list||s.chatId!==CHAT_ID) return;
 			pushHistoryNext = 0;
