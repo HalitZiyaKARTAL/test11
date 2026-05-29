@@ -436,7 +436,19 @@ $q('[id]').forEach(el => els[el.id] = el);
 
 	async function saveToIndexedDB(key, data) {
 		const db = await initDB();
-		return new Promise((res, rej) => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put(data, key); tx.oncomplete = () => { if(data?.nodes)updateMetadata(m=>{m.chatStates[key]??={};m.chatStates[key].chatTreeMetadata=chatTreeMetadata(data,m.chatStates[key].chatTreeMetadata);}); res(); }; tx.onerror = rej; });
+		return new Promise((res, rej) => { 
+			const tx = db.transaction(STORE_NAME, 'readwrite'); 
+			tx.objectStore(STORE_NAME).put(data, key); 
+			tx.oncomplete = () => { 
+				if(data?.nodes) updateMetadata(m => {
+					m.chatStates[key] ??= {};
+					m.chatStates[key].chatTreeMetadata = chatTreeMetadata(data, m.chatStates[key].chatTreeMetadata);
+				}); 
+				res(); 
+			}; 
+			tx.onerror = () => rej(tx.error); 
+			tx.onabort = () => rej(new Error('Browser Aborted Transaction')); 
+		});
 	}
 
 	async function loadFromIndexedDB(key) {
@@ -577,16 +589,25 @@ $q('[id]').forEach(el => els[el.id] = el);
 
 	function restoreActiveView() {
 		const tabs = getMetadata().chatStates?.[CHAT_ID]?.tabs || {};
-		if (tabs[TAB_PID]?.list?.[0] === CHAT_ID) activeViewList = tabs[TAB_PID].list;
-		else {
-			let latestEpoch = 0; let inheritedList = null;
-			for (const pid in tabs) { if (tabs[pid].epoch > latestEpoch) { latestEpoch = tabs[pid].epoch; inheritedList = tabs[pid].list; } }
-			if (inheritedList?.[0] === CHAT_ID) activeViewList = inheritedList;
-			else { activeViewList = [CHAT_ID, { id: 'root', v: chatTree.nodes['root'].activeVersion }]; rebuildViewArrayFrom(2); }
+		let baseList = tabs[TAB_PID]?.list?.[0] === CHAT_ID ? tabs[TAB_PID].list : null;
+		if (!baseList) {
+			let latest = 0;
+			for (const pid in tabs) if (tabs[pid].epoch > latest) { latest = tabs[pid].epoch; baseList = tabs[pid].list; }
 		}
-		activeViewList.slice(1).forEach(step => { const n = chatTree.nodes[step.id]; if (n && typeof step.v === 'number') n.activeVersion = Math.min(Math.max(step.v, 0), Math.max(0, n.versions.length - 1)); });
-		updateMetadata(m => { const mT = m.chatStates?.[CHAT_ID]?.tabs; if (mT) { const now = Date.now(); for (const pid in mT) { if (now - mT[pid].epoch > 86400000) delete mT[pid]; } } });
-		
+
+		let vList = [CHAT_ID]; 
+		(baseList || []).slice(1).every((step, i) => {
+			let n = chatTree.nodes[step.id];
+			return (n && (n.id === 'root' || n.parentId === vList[i]?.id)) ? vList.push(step) : false;
+		});
+
+		const rNode = chatTree.nodes.root;
+		activeViewList = vList.length > 1 ? vList : [CHAT_ID, { id: 'root', v: rNode?.activeVersion || 0 }];
+		rebuildViewArrayFrom(activeViewList.length);
+
+		activeViewList.slice(1).forEach(step => { const n = chatTree.nodes[step.id]; if (n && typeof step.v === 'number') n.activeVersion = Math.max(0, Math.min(step.v, n.versions.length - 1)); });
+
+		updateMetadata(m => { const mT = m.chatStates?.[CHAT_ID]?.tabs; if (mT) { const now = Date.now(); for (const pid in mT) if (now - mT[pid].epoch > 86400000) delete mT[pid]; } });
 	}
 
 	function charStat(cLen, tLen = 0) { return tLen > 0 ? `${cLen}(+${tLen})c` : `${cLen}c`; }
@@ -737,15 +758,18 @@ $q('[id]').forEach(el => els[el.id] = el);
 			reader.readAsText(file);
 	});
 		function isTreeCorrupted(tree) {
-			if (!tree || typeof tree !== 'object' || Array.isArray(tree)) return true; if (!tree.rootId || !tree.nodes || typeof tree.nodes !== 'object' || !tree.nodes['root']) return true;
-			const existingIds = new Set(Object.keys(tree.nodes)); const reachableIds = new Set(); const queue = ['root']; reachableIds.add('root'); let head = 0;
-			while(head < queue.length) {
-				const currId = queue[head++]; const node = tree.nodes[currId]; if (!node.children || !Array.isArray(node.children)) return true;
-				for (const childId of node.children) { if (!existingIds.has(childId)) return true; if (reachableIds.has(childId)) return true; reachableIds.add(childId); queue.push(childId); }
-				if (!node.role || !node.versions || !Array.isArray(node.versions) || node.versions.length === 0 || typeof node.activeVersion !== 'number' || node.activeVersion < 0 || node.activeVersion >= node.versions.length) return true;
-			}
-			return reachableIds.size !== existingIds.size;
+		if (!tree || typeof tree !== 'object' || Array.isArray(tree)) return true; 
+		if (!tree.rootId || !tree.nodes || typeof tree.nodes !== 'object' || !tree.nodes['root']) return true;
+		const existingIds = new Set(Object.keys(tree.nodes)); const reachableIds = new Set(); const queue = ['root']; reachableIds.add('root'); let head = 0;
+		while(head < queue.length) {
+			const currId = queue[head++]; const node = tree.nodes[currId]; 
+			if (!node || typeof node !== 'object' || Array.isArray(node)) return true;
+			if (!node.children || !Array.isArray(node.children)) return true;
+			for (const childId of node.children) { if (!existingIds.has(childId)) return true; if (reachableIds.has(childId)) return true; reachableIds.add(childId); queue.push(childId); }
+			if (!node.role || !node.versions || !Array.isArray(node.versions) || node.versions.length === 0 || typeof node.activeVersion !== 'number' || node.activeVersion < 0 || node.activeVersion >= node.versions.length) return true;
 		}
+		return reachableIds.size !== existingIds.size;
+	}
 		function promptRepairBackup(rawTreeData) {
 			return new Promise(resolve => {
 				const modal = $('repairModal'); const btnDl = $('repairBtnDownload'); const btnSkip = $('repairBtnSkip'); const statsBox = $('repairStats');
@@ -989,42 +1013,48 @@ $q('[id]').forEach(el => els[el.id] = el);
 			if (controller) activeControllers.delete(controller); resetStopBtn(); updateSendBtn(); updateTokenDisplay();
 		}
 		async function executeAPI(messages, node, vIndex, controller) {
-			const providerId=activeProviderId,p=providers[providerId],key=getApiKey(),isStream=settings.streaming,modelId=getCurrentModel();
-			const payload = { model: modelId, messages: messages, temperature: 0.7, stream: isStream }; payload[p.maxTokensParam || 'max_tokens'] = settings.maxTokens; if (isStream && p.supportsStreamUsage) payload.stream_options = { include_usage: true };
-			node.versions[vIndex].startTime = Date.now();
-			const res = await fetch(p.baseURL + p.apiPath, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key }, body: JSON.stringify(payload), signal: controller.signal });
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const applyUsage = u => applyResponseMetadata(node.versions[vIndex],u,p,modelId,providerId);
-			if (!isStream) {
-				const data = await res.json(); applyUsage(data.usage); node.versions[vIndex].rawContent = data.choices[0].message.content || ''; node.versions[vIndex].thinking = data.choices[0].message.reasoning_content || '';
-				handleNewContent(node.versions[vIndex].rawContent.length + node.versions[vIndex].thinking.length, true);
-			} else {
-				const reader = res.body.getReader(); const decoder = new TextDecoder(); let fullC = '', fullT = '', buffer = '', isFirstChunk = true, lastRenderedLen = 0;
-				const processLine = (line) => {
-					if (!line.startsWith('data: ')) return; const jsonStr = line.slice(6).trim(); if (!jsonStr || jsonStr === '[DONE]') return;
-					try {
-						const parsed = JSON.parse(jsonStr); fullC += parsed.choices?.[0]?.delta?.content || ''; fullT += parsed.choices?.[0]?.delta?.reasoning_content || '';
-						node.lastUpdateTime = Date.now(); node.versions[vIndex].rawContent = fullC; node.versions[vIndex].thinking = fullT;
-						if (isFirstChunk && (fullC || fullT)) { if(node.activeVersion===vIndex) updateNodeDOM(node); isFirstChunk = false; }
-						if (!isFirstChunk && (fullC.length + fullT.length > 0)) {
-							if (node.activeVersion !== vIndex) { if (!node.versions[vIndex].unread) { node.versions[vIndex].unread = true; updateVersionDots(node); } }
-							else {
-								node.versions[vIndex].unread = false; const currentLen = fullC.length + fullT.length; handleNewContent(currentLen - lastRenderedLen, false); lastRenderedLen = currentLen;
-								const el = getMessageEl(node.id);
-								if (el) { const bubble = el.querySelector('.bubble'); const charCnt = el.closest('.message').querySelector('.char-count'); const nextHTML = buildThinkingSection(fullT, node.id, true) + formatMarkdown(fullC); if (bubble && bubble.innerHTML !== nextHTML) bubble.innerHTML = nextHTML; if (charCnt) charCnt.textContent = getMessageStatString(node, node.versions[vIndex]); }
-							}
-							if (node.activeVersion === vIndex) scheduleTokenDisplayUpdate(fullC.length, fullT.length);
-							const swKey=node.id+'|'+vIndex,now=Date.now();if(now-(lastBufferWrite[swKey]||0)>500){saveStreamBuffer(node,vIndex);lastBufferWrite[swKey]=now;}
+		const providerId=activeProviderId,p=providers[providerId],key=getApiKey(),isStream=settings.streaming,modelId=getCurrentModel();
+		const payload = { model: modelId, messages: messages, temperature: 0.7, stream: isStream }; payload[p.maxTokensParam || 'max_tokens'] = settings.maxTokens; if (isStream && p.supportsStreamUsage) payload.stream_options = { include_usage: true };
+		node.versions[vIndex].startTime = Date.now();
+		const res = await fetch(p.baseURL + p.apiPath, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key }, body: JSON.stringify(payload), signal: controller.signal });
+		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+		const applyUsage = u => applyResponseMetadata(node.versions[vIndex],u,p,modelId,providerId);
+		if (!isStream) {
+			const data = await res.json(); applyUsage(data.usage); node.versions[vIndex].rawContent = data.choices[0].message.content || ''; node.versions[vIndex].thinking = data.choices[0].message.reasoning_content || '';
+			handleNewContent(node.versions[vIndex].rawContent.length + node.versions[vIndex].thinking.length, true);
+		} else {
+			const reader = res.body.getReader(); const decoder = new TextDecoder(); let fullC = '', fullT = '', buffer = '', isFirstChunk = true, lastRenderedLen = 0;
+			const processLine = (line) => {
+				if (!line.startsWith('data: ')) return; const jsonStr = line.slice(6).trim(); if (!jsonStr || jsonStr === '[DONE]') return;
+				try {
+					const parsed = JSON.parse(jsonStr); fullC += parsed.choices?.[0]?.delta?.content || ''; fullT += parsed.choices?.[0]?.delta?.reasoning_content || '';
+					node.lastUpdateTime = Date.now(); node.versions[vIndex].rawContent = fullC; node.versions[vIndex].thinking = fullT;
+
+					if (isFirstChunk && (fullC || fullT)) { 
+						if(node.activeVersion===vIndex) updateNodeDOM(node); 
+						isFirstChunk = false; 
+						handleNewContent(0, true); 
+					}
+
+					if (!isFirstChunk && (fullC.length + fullT.length > 0)) {
+						if (node.activeVersion !== vIndex) { if (!node.versions[vIndex].unread) { node.versions[vIndex].unread = true; updateVersionDots(node); } }
+						else {
+							node.versions[vIndex].unread = false; const currentLen = fullC.length + fullT.length; handleNewContent(currentLen - lastRenderedLen, false); lastRenderedLen = currentLen;
+							const el = getMessageEl(node.id);
+							if (el) { const bubble = el.querySelector('.bubble'); const charCnt = el.closest('.message').querySelector('.char-count'); const nextHTML = buildThinkingSection(fullT, node.id, true) + formatMarkdown(fullC); if (bubble && bubble.innerHTML !== nextHTML) bubble.innerHTML = nextHTML; if (charCnt) charCnt.textContent = getMessageStatString(node, node.versions[vIndex]); }
 						}
-						applyUsage(parsed.usage);
-					} catch (e) {}
-				};
-				while (true) { const { done, value } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); const lines = buffer.split('\n'); buffer = lines.pop(); for (let line of lines) processLine(line); }
-				if (buffer.trim()) processLine(buffer.trim());
-			}
-			await saveStreamBuffer(node, vIndex);
-			node.versions[vIndex].endTime = node.lastUpdateTime || Date.now(); finalizeGeneration(node, vIndex, controller);
+						if (node.activeVersion === vIndex) scheduleTokenDisplayUpdate(fullC.length, fullT.length);
+						const swKey=node.id+'|'+vIndex,now=Date.now();if(now-(lastBufferWrite[swKey]||0)>500){saveStreamBuffer(node,vIndex);lastBufferWrite[swKey]=now;}
+					}
+					applyUsage(parsed.usage);
+				} catch (e) {}
+			};
+			while (true) { const { done, value } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); const lines = buffer.split('\n'); buffer = lines.pop(); for (let line of lines) processLine(line); }
+			if (buffer.trim()) processLine(buffer.trim());
 		}
+		await saveStreamBuffer(node, vIndex);
+		node.versions[vIndex].endTime = node.lastUpdateTime || Date.now(); finalizeGeneration(node, vIndex, controller);
+	}
 		function buildAPIMessages(targetPath) {
 			const p = providers[activeProviderId]; const messages = [{ role: p.systemRole || 'system', content: 'You are a helpful assistant.' }];
 			targetPath.forEach(n => { if (n.id !== 'root' && n.role !== 'system' && n.role !== 'system-msg' && n.versions[n.activeVersion || 0].rawContent) messages.push({ role: n.role, content: n.versions[n.activeVersion].rawContent }); }); return messages;
@@ -1122,40 +1152,114 @@ $q('[id]').forEach(el => els[el.id] = el);
 			finally { isSaving = false; if (Object.keys(waitingToSave).length > 0 && !isWaitScheduled) { isWaitScheduled = true; setTimeout(() => { isWaitScheduled = false; saveHistory(); }, 50); } }
 		}
 		function makeFreshTree() { return { rootId: 'root', nodes: { 'root': { id: 'root', role: 'system', depth: 0, parentId: null, children: [], activeChild: -1, versions: [{rawContent: '', thinking: '', isDead: false}], activeVersion: 0 } } }; }
-		function healTree(tree) {
-			let modified = false;
-			if (!tree?.nodes?.['root']) return { tree: makeFreshTree(), modified: true };
-			const existingIds = new Set(Object.keys(tree.nodes)); const reachableIds = new Set();
-			function mapReachability(startId) {
-				const queue = [startId]; let head = 0; reachableIds.add(startId);
-				while(head < queue.length) {
-					const currId = queue[head++]; const node = tree.nodes[currId];
-					if (currId === 'root') { if (node.depth !== 0) { node.depth = 0; modified = true; } }
-					else if (typeof node.depth !== 'number') { node.depth = (tree.nodes[node.parentId]?.depth || 0) + 1; modified = true; }
-					if (!Array.isArray(node.children)) { node.children = []; modified = true; }
-					const validChildren = [];
-					for (const childId of node.children) {
-						if (existingIds.has(childId) && !reachableIds.has(childId)) { validChildren.push(childId); reachableIds.add(childId); queue.push(childId); }
-						else if (!existingIds.has(childId) || reachableIds.has(childId)) modified = true;
-					}
-					if (validChildren.length !== node.children.length) { node.children = validChildren; modified = true; }
-				}
-			}
-			mapReachability('root');
-			let orphans = Object.keys(tree.nodes).filter(id => !reachableIds.has(id));
-			while (orphans.length > 0) {
-				const orphanId = orphans[0]; tree.nodes[orphanId].parentId = 'root'; tree.nodes['root'].children.push(orphanId); modified = true;
-				console.warn(`🚑 ORPHAN RESCUED: ${orphanId}`); mapReachability(orphanId); orphans = Object.keys(tree.nodes).filter(id => !reachableIds.has(id));
-			}
-			for (const id in tree.nodes) {
-				const node = tree.nodes[id]; if (!node.role) { node.role = 'assistant'; modified = true; }
-				if (!Array.isArray(node.versions) || node.versions.length === 0) { node.versions = [{ rawContent: '', thinking: '', isDead: true, errorIcon: '⚠️', errorText: 'Recovered' }]; modified = true; }
-				else { node.versions = node.versions.map(v => { if (!v || typeof v !== 'object' || Array.isArray(v)) { modified = true; return { rawContent: '', thinking: '', isDead: true, errorIcon: '⚠️', errorText: 'Recovered' }; } if (typeof v.rawContent !== 'string') { v.rawContent = String(v.rawContent || ''); modified = true; } if (typeof v.thinking !== 'string') { v.thinking = String(v.thinking || ''); modified = true; } return v; }); }
-				if (typeof node.activeVersion !== 'number' || node.activeVersion < 0 || node.activeVersion >= node.versions.length) { node.activeVersion = Math.max(0, node.versions.length - 1); modified = true; }
-				if (node.children.length === 0 && node.activeChild !== -1) { node.activeChild = -1; modified = true; } else if (node.children.length > 0 && (node.activeChild < 0 || node.activeChild >= node.children.length)) { node.activeChild = node.children.length - 1; modified = true; }
-			}
-			return { tree, modified };
+
+	function healTree(t) {
+		let mod = false;
+
+		if (!t || typeof t !== 'object' || Array.isArray(t) || !t.nodes || typeof t.nodes !== 'object' || Array.isArray(t.nodes))
+			return { tree: makeFreshTree(), modified: true };
+
+		const nodes = t.nodes;
+		let root = 'root'; 
+
+		if (!nodes[root] || typeof nodes[root] !== 'object' || Array.isArray(nodes[root])) {
+			nodes[root] = makeFreshTree().nodes.root; mod = true;
 		}
+		if (t.rootId !== root) { t.rootId = root; mod = true; }
+
+		const mut = (o, k, v) => o[k] !== v ? (o[k] = v, mod = true) : 0;
+		const errV = () => ({rawContent:'', thinking:'', isDead:true, errorIcon:'⚠️', errorText:'Recovered'});
+		const truth = {};
+
+		const N = (x, d=0) => Number.isFinite(+x) ? +x : d;
+		const T = x => { let v = Number.isFinite(+x) ? +x : new Date(x).getTime(); return Number.isFinite(v) ? v : 0; };
+
+		Object.keys(nodes).forEach(id => {
+			let n = nodes[id];
+			if (!n || typeof n !== 'object' || Array.isArray(n)) { n = nodes[id] = {}; mod = true; }
+
+			let m = String(id).match(/^(\d+)(?:\.(\d+))?(?:v\d+)?\((.*?)\)_(\d{10,})/);
+			let origE = T(n.e) || T(n.timestamp);
+
+			// THE FIX: Corrected indexes. m[3] is History, m[4] is Epoch
+			truth[id] = m ? { L: 0, d: N(m[1]), b: N(m[2], 1) || 1, h: m[3], e: N(m[4]) } 
+						  : { L: N(n.msgNum || n.num), d: N(n.depth, N(n.msgNum || n.num)), b: N(n.branch, 1) || 1, e: origE };
+
+			mut(n, 'role', n.role || 'assistant');
+			mut(n, 'e', origE || truth[id].e || Date.now());
+			mut(n, 'p', n.p || (typeof TAB_PID !== 'undefined' ? TAB_PID : 'recovered'));
+
+			if (!Array.isArray(n.versions)) mut(n, 'versions', n.versions && typeof n.versions === 'object' ? Object.values(n.versions) : []);
+			if (!n.versions.length) { n.versions.push(errV()); mod = true; }
+
+			n.versions.forEach((v, i) => {
+				if (!v || typeof v !== 'object' || Array.isArray(v)) { n.versions[i] = errV(); mod = true; }
+				else { mut(v, 'rawContent', String(v.rawContent||'')); mut(v, 'thinking', String(v.thinking||'')); mut(v, 'isDead', !!v.isDead); }
+			});
+
+			let av = parseInt(n.activeVersion, 10);
+			mut(n, 'activeVersion', isNaN(av) || av < 0 || av >= n.versions.length ? Math.max(0, n.versions.length - 1) : av);
+
+			n._oldC = Array.isArray(n.children) ? n.children.join(',') : '';
+			n.children = []; 
+		});
+
+		let rn = nodes[root];
+		mut(rn, 'parentId', null); mut(rn, 'depth', 0); mut(rn, 'role', 'system');
+
+		const sorted = Object.keys(nodes).filter(k => k !== root).sort((a,b) => (truth[a].e - truth[b].e) || (truth[a].L - truth[b].L));
+		const byL = {}, byD = {}, byH = {};
+		sorted.forEach(id => {
+			let tr = truth[id];
+			if (tr.L) (byL[tr.L] ??= []).push(id);
+			((byD[tr.d] ??= {})[nodes[id].p] ??= []).push(id);
+			byH[`${tr.d}.${tr.b}`] = id;
+			if (tr.b === 1) byH[`${tr.d}`] = id;
+		});
+
+		sorted.forEach(id => {
+			let n = nodes[id], tr = truth[id], p = n.parentId;
+			if (!p || !nodes[p]) {
+				if (tr.L > 1) { let arr = byL[tr.L - 1]; p = arr?.[arr.length - 1]; }
+				else if (!tr.L && tr.h) p = byH[tr.h.split(',,')[1]?.split(',').pop()]; 
+				if (!p && tr.d > 1) {
+					let dMap = byD[tr.d - 1];
+					if (dMap) { let arr = dMap[n.p], fall = Object.values(dMap)[0]; p = arr ? arr[arr.length - 1] : (fall ? fall[fall.length - 1] : null); }
+				}
+				mut(n, 'parentId', p || root);
+			}
+			nodes[n.parentId].children.push(id);
+		});
+
+		let safeNum = 0, vis = new Set([root]), q = [root], head = 0;
+		const drainQ = () => {
+			while(head < q.length) {
+				let id = q[head++], n = nodes[id];
+				mut(n, 'msgNum', safeNum++);
+				mut(n, 'depth', id === root ? 0 : (nodes[n.parentId]?.depth || 0) + 1);
+
+				n.children.sort((a,b) => (truth[a].e - truth[b].e) || (truth[a].L - truth[b].L) || (a < b ? -1 : (a > b ? 1 : 0))); 
+				n.children = n.children.filter(c => !vis.has(c) ? (vis.add(c) && q.push(c)) : (mod = true, false)); 
+
+				let len = n.children.length, ac = parseInt(n.activeChild, 10);
+				mut(n, 'activeChild', !len ? -1 : (isNaN(ac) || ac < 0 || ac >= len ? len - 1 : ac));
+
+				if (n.children.join(',') !== n._oldC) mod = true;
+				delete n._oldC;
+			}
+		};
+		drainQ(); 
+
+		sorted.forEach(id => {
+			if (!vis.has(id)) { mut(nodes[id], 'parentId', root); nodes[root].children.push(id); vis.add(id); q.push(id); drainQ(); }
+		});
+
+		let rLen = rn.children.length, rAc = parseInt(rn.activeChild, 10);
+		mut(rn, 'activeChild', !rLen ? -1 : (isNaN(rAc) || rAc < 0 || rAc >= rLen ? rLen - 1 : rAc));
+
+		if (typeof globalMsgCounter !== 'undefined' && globalMsgCounter < safeNum - 1) globalMsgCounter = safeNum - 1;
+		return { tree: t, modified: mod };
+	}
 		async function loadHistory() {
 			try {
 				let saved = await loadFromIndexedDB(CHAT_ID);
