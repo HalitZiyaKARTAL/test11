@@ -1,0 +1,1360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>Device-Drive Searcher</title>
+<style>
+:root{
+ --bg:#09111e;--panel:#101b30;--deep:#0b1427;--line:#263a58;--text:#e7eefb;--muted:#91a4bf;
+ --accent:#60a5fa;--violet:#a78bfa;--pink:#f472b6;--good:#4adea3;--warn:#facc55;--bad:#fb7185;
+ --rad:14px;--rowh:88px;--resh:190px;--safe-t:env(safe-area-inset-top,0px);--safe-r:env(safe-area-inset-right,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px)
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{min-block-size:100dvh;max-inline-size:100dvw;overflow-x:hidden;padding-bottom:calc(68px + var(--safe-b))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:#172641;border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;touch-action:manipulation}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.42;cursor:not-allowed}
+button.main{background:linear-gradient(135deg,#377de4,#7761e8);border:0;font-weight:700}
+button.ghost{background:transparent}
+input,select,textarea{width:100%;background:#07101f;border:1px solid var(--line);border-radius:10px;padding:10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input[type=checkbox]{width:auto;accent-color:var(--accent)}
+h1{font-size:clamp(22px,5dvw,28px);line-height:1.12;margin:0;color:#abd0ff;font-weight:650;letter-spacing:-.025em;display:flex;align-items:center;gap:9px}h1:before{content:'';inline-size:4px;block-size:1.04em;border-radius:9px;background:var(--accent);box-shadow:0 0 0 1px #60a5fa26}
+h2{font-size:15px;margin:0}
+.wrap{inline-size:min(1110px,100dvw);max-inline-size:100%;margin:auto;padding:max(12px,var(--safe-t)) max(12px,var(--safe-r)) 12px max(12px,var(--safe-l))}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 16px;padding:4px 2px 12px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.hero p,.tiny{color:var(--muted);font-size:12px;margin:0}
+.hero p{grid-column:1}
+.badges,.buttons,.chips{display:flex;gap:7px;flex-wrap:wrap}
+.badges{justify-content:flex-start}
+.hero .badges{grid-column:2;grid-row:1/3;justify-content:flex-end;align-self:center;max-inline-size:470px}
+.badge{font-size:12px;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:4px 9px;color:var(--muted);white-space:nowrap}
+.badge.ok{color:var(--good);border-color:#245f48}
+.badge.warn{color:var(--warn);border-color:#654d22}
+.badge.bad{color:var(--bad);border-color:#6e3041}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);margin:10px 0;padding:12px}.panel[id]{scroll-margin-top:max(8px,var(--safe-t))}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.grid.single{grid-template-columns:minmax(0,1fr)}.grid>.field{min-width:0}.grid>.field input,.grid>.field select{min-width:0;max-width:100%}
+.field{margin:7px 0}
+.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+.row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.row>*{flex:1}
+.row>button,.row>.badge{flex:none}
+.note{font-size:12px;color:var(--muted);background:var(--deep);border-radius:10px;padding:8px 10px;margin-top:9px;line-height:1.45}
+.groupbox{position:relative;border:1px solid #253952;border-radius:12px;padding:12px 10px 8px;margin:15px 0 9px;background:#101d33}
+.gtitle{position:absolute;top:-9px;left:9px;padding:0 6px;background:var(--panel);color:#a9bfdf;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+#driveFields.groupbox,#localFields.groupbox{margin-top:17px;padding-top:14px}
+.note.warn{color:var(--warn)}
+.note.bad{color:var(--bad)}
+.hide{display:none!important}
+details.panel{padding:0}
+summary{padding:12px;cursor:pointer;list-style:none;font-weight:650;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"＋";color:var(--muted)}
+details[open]>summary:after{content:"−"}
+details>.body{padding:0 12px 12px}
+.browser{padding:0;overflow:hidden}
+.bar{padding:12px;border-bottom:1px solid var(--line)}
+.path{font-weight:600;color:#d2e4ff;margin-bottom:9px;word-break:break-word}
+.browse-grid{display:grid;grid-template-columns:1fr 106px 1fr;gap:7px;margin-top:10px}
+.checkline{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.chip{display:inline-flex;gap:5px;align-items:center;font-size:12px;border:1px solid #344c73;background:#172641;border-radius:99px;padding:5px 8px;margin-top:8px}
+.chip button{padding:0 3px;border:0;background:none;color:var(--muted)}
+.entries{block-size:min(62dvh,670px);overflow:auto;position:relative;background:#0d172b}
+.space{position:relative;min-height:100%}
+.vrow{position:absolute;left:8px;right:8px;height:calc(var(--rowh) - 7px);display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:9px;background:#142139;border:1px solid #263954;border-radius:13px;padding:10px}
+.vrow.folder{background:linear-gradient(90deg,#182946,#142139);border-color:#334e77;cursor:pointer}
+.vrow.more{display:block;text-align:center;padding:27px 8px;color:var(--muted);border-style:dashed}
+.num{width:32px;text-align:right;color:var(--muted);font-size:12px}
+.icon{font-size:20px}
+.vrow>div{min-width:0}.nameLine{display:flex;align-items:center;gap:6px;min-width:0}
+.ename{min-width:0;font-size:15px;font-weight:650;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.folder .ename{color:var(--warn)}
+.childbtn{flex:none;padding:2px 6px;border-radius:99px;font-size:11px;line-height:18px;min-height:22px;color:var(--muted);background:#0d182d}
+.childbtn.known{color:var(--good);border-color:#245f48}.childbtn.busy{color:var(--warn)}
+.meta,.status{font-size:12px;color:var(--muted);margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.status.ok{color:var(--good)}
+.status.bad{color:var(--bad)}
+.status.warn{color:var(--warn)}
+.smallbtn{padding:7px 9px;font-size:12px}
+.selectbar{padding:11px 12px;border-top:1px solid var(--line);background:#0d182d}
+.progress{height:7px;border-radius:8px;background:#07101e;overflow:hidden;margin:9px 0}
+.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--accent),var(--violet));transition:width .12s linear}
+.progress i.run{width:36%;animation:run 1s ease-in-out infinite alternate}
+@keyframes run{from{transform:translateX(-70%)}to{transform:translateX(260%)}}
+.options{font-size:12px;color:var(--muted);line-height:2;background:var(--deep);padding:7px 9px;border-radius:10px;margin:8px 0}
+.results-viewport{block-size:min(58dvh,610px);overflow:auto;position:relative;background:#0d172b;border-radius:11px;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;contain:layout paint style}
+.results-space{position:relative;min-height:100%}
+.result{position:absolute;left:7px;right:7px;height:calc(var(--resh) - 8px);background:#142139;border:1px solid var(--line);border-radius:12px;padding:10px;overflow:hidden}
+.result-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.result-top>div{flex:1;min-width:0}.result-top>.badge{flex:none}
+.result-title{font-weight:650;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.snip{white-space:pre-wrap;word-break:break-word;background:#0a1324;border-radius:9px;margin-top:7px;padding:8px;font-size:13px;line-height:1.32;height:59px;overflow:hidden}
+.snip mark{background:#594616;color:#ffed9b;border-radius:3px}
+.empty{text-align:center;color:var(--muted);padding:23px 12px}
+.rail{position:fixed;right:max(3px,var(--safe-r));top:50%;transform:translateY(-50%);z-index:4;display:flex;flex-direction:column;gap:9px;padding:6px 3px;width:28px}
+.railLine{position:absolute;inset:-30px 0 -30px 0;width:28px;padding:0;border:0;background:transparent;z-index:0}
+.railLine:before{content:"";position:absolute;top:0;bottom:0;right:12px;width:2px;background:var(--line);border-radius:2px;transition:.15s}
+.railDot{position:relative;z-index:1;display:block;width:22px;height:22px;padding:0;border:0;background:transparent}
+.railDot i{position:absolute;right:5px;top:5px;width:12px;height:12px;border-radius:50%;background:#12243d;border:2px solid #6683af;transition:.15s}
+.railDot.active i,.railDot:hover i,.railDot:focus-visible i{background:var(--accent);border-color:#bfddff;transform:scale(1.15)}
+.railDot span{position:absolute;right:26px;top:1px;opacity:0;pointer-events:none;white-space:nowrap;padding:3px 7px;border-radius:99px;border:1px solid var(--line);background:#0d182df2;color:var(--text);font-size:11px;transition:.15s}
+.rail.peek .railDot span,.railDot:focus-visible span{opacity:1}
+.rail.peek .railLine:before{background:#5479a9}
+@media(hover:hover){.rail:hover .railDot span{opacity:1}.rail:hover .railLine:before{background:#5479a9}}
+@media(max-width:909px){#resultsPanel.landable{margin-bottom:calc(100dvh - 88px - var(--safe-b))}}
+.sticky{display:none;position:fixed;inset-inline:0;bottom:0;max-inline-size:100dvw;z-index:5;padding:9px max(12px,var(--safe-r)) calc(9px + var(--safe-b)) max(12px,var(--safe-l));background:#0c1527f5;border-top:1px solid var(--line);align-items:center;justify-content:space-between;gap:8px}
+.sticky.show{display:flex}
+.modal{display:none;position:fixed;inset:0;inline-size:100dvw;block-size:100dvh;background:#040912e5;z-index:9;padding:max(8px,var(--safe-t)) max(8px,var(--safe-r)) max(8px,var(--safe-b)) max(8px,var(--safe-l))}
+.modal.show{display:flex}
+.dialog{inline-size:min(920px,calc(100dvw - 16px));max-inline-size:100%;block-size:min(96dvh,calc(100dvh - 16px));max-block-size:100%;margin:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;overflow:hidden}
+.dhead,.tabs{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:7px}
+.dhead{justify-content:space-between}
+.inspectTools{padding:8px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.modeTabs,.hitNav{display:flex;align-items:center;gap:6px}.modeTabs .on{border-color:var(--accent);color:#cde4ff;background:#142a48}
+.extractPanel{border-bottom:1px solid var(--line);margin:0;padding:0}.extractPanel summary{padding:8px 12px}.extractBody{padding:0 12px 9px}
+.view{padding:12px;overflow:auto;white-space:pre-wrap;word-break:break-word;line-height:1.5;scroll-behavior:smooth}
+.msg{background:var(--deep);border-left:3px solid var(--accent);border-radius:11px;padding:10px;margin-bottom:10px}
+.msg.assistant{border-color:var(--good)}
+.msg.thought{border-color:var(--warn)}
+.msg.system,.msg.settings{border-color:var(--violet)}
+.who{font-size:11px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.msgActions{display:flex;align-items:center;gap:5px;flex:none}.msgActions button{padding:3px 7px;min-height:26px;font-size:11px}.msgPick{inline-size:18px;block-size:18px;margin:0 2px 0 0}
+.msgbody{white-space:pre-wrap}.loc.active,.hitrow.active mark{outline:2px solid #fff1a8}
+.hitrow{background:var(--deep);border:1px solid var(--line);border-radius:11px;padding:9px;margin-bottom:8px}
+.hithead{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;margin-bottom:5px}
+.moreInspect{display:block;margin:10px auto;padding:8px 14px}
+.extractPreview{background:#0b1427;border:1px dashed var(--line);border-radius:10px;padding:8px;margin:8px 0;color:var(--muted);font-size:12px}
+.datasetPanel{margin-top:11px;border:1px solid var(--line);border-radius:12px;padding:0}.datasetPanel summary{padding:10px 11px}.datasetBody{padding:0 10px 10px}.datasetPreview{max-height:180px;overflow:auto;background:#0b1427;border:1px dashed var(--line);border-radius:10px;padding:8px;margin:8px 0;color:var(--muted);font-size:12px;white-space:pre-wrap;word-break:break-word}.jsCode{display:block;min-block-size:178px;resize:vertical;line-height:1.45;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;tab-size:2}.jsOut{max-block-size:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#cae0ff}.jsWarn{border-left:3px solid var(--warn)}.apiTokens{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;color:#aac7ed;word-break:break-word}
+@media(min-width:910px){.work{display:grid;grid-template-columns:minmax(525px,1fr) 445px;gap:10px;align-items:start}.left{position:sticky;top:max(8px,var(--safe-t));align-self:start;display:flex;flex-direction:column;block-size:calc(100dvh - max(20px, calc(var(--safe-t) + 12px)));min-block-size:0}.left>#filtersPanel{flex:none;max-block-size:42dvh;overflow:auto}.browser{position:static;display:flex;flex-direction:column;flex:1;min-block-size:260px;block-size:auto;overflow:hidden}.browser>.bar,.browser>.selectbar{flex:none}.browser>.entries{flex:1;block-size:auto;min-block-size:160px}.right{min-width:0}.sticky.show{display:none}}
+@media(max-width:720px){.hero{grid-template-columns:1fr;gap:6px;padding:2px 0 10px}.hero .badges{grid-column:1;grid-row:auto;justify-content:flex-start;max-inline-size:none}}
+@media(max-width:909px){.wrap{padding:max(10px,var(--safe-t)) max(10px,var(--safe-r)) 10px max(10px,var(--safe-l))}.browse-grid{grid-template-columns:1fr 102px 1fr}.vrow{left:5px;right:5px}.results-viewport{block-size:60dvh}}@media(max-width:560px){.wrap{padding-right:max(38px,var(--safe-r))}.browse-grid{grid-template-columns:1fr 1fr}.browse-grid .field:last-child{grid-column:1/-1}}@media(max-width:420px){:root{--resh:208px}}
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+ <h1>Device-Drive Searcher</h1>
+ <p>Search Google Drive and device folders · inspect and export matched content</p>
+ <div class="badges"><span id="connB" class="badge">Disconnected</span><span id="metaB" class="badge">0 metadata</span><span id="memB" class="badge">cache idle</span><span id="scanB" class="badge">idle</span></div>
+</header>
+
+<details id="connection" class="panel" open><summary>Connection <span id="scopeB" class="badge ok">READ ONLY</span></summary><div class="body">
+ <div class="field"><label>Source</label><select id="source"><option value="drive">Google Drive</option><option value="local">Device / Local files</option></select></div>
+ <form id="auth" autocomplete="on">
+  <div id="driveFields" class="groupbox"><div class="gtitle">Google Drive access</div>
+   <div class="field"><label>OAuth Client ID</label><input id="clientId" name="google-drive-client-id" placeholder="…apps.googleusercontent.com" autocomplete="on" autocapitalize="none" spellcheck="false"></div>
+   <div class="field"><label>Scope</label><input id="scope" value="https://www.googleapis.com/auth/drive.readonly" autocomplete="off"></div>
+   <div id="corpusGrid" class="grid single">
+    <div class="field"><label>Search corpus</label><select id="corpus"><option value="user">My Drive / user corpus</option><option value="allDrives">All accessible drives</option><option value="drive">Specific shared drive</option></select></div>
+    <div class="field" id="driveIdField"><label>Shared Drive ID</label><input id="driveId" placeholder="required for specific drive"></div>
+   </div>
+   <label class="tiny"><input id="remember" type="checkbox"> Remember Client ID locally</label><br>
+   <label class="tiny"><input id="rememberConnection" type="checkbox" checked> Keep connected on this browser until token expiry or Disconnect</label>
+   <div class="buttons"><button class="main" type="submit">Connect Drive</button><button id="disconnect" type="button" disabled>Disconnect</button></div>
+   <div id="scopeMsg" class="note">Read-only; tokens and downloaded content stay in page memory.</div>
+   <p class="tiny">How to: Send source code of this html to an ai and tell what you wanna use it for and how.</p>
+  </div>
+ </form>
+ <div id="localFields" class="hide groupbox"><div class="gtitle">Device / local access</div>
+  <div class="buttons"><button id="deviceFolder" class="main">Open Device Folder · live</button><button id="pickFolder">Import Folder Snapshot</button><button id="pickFiles">Choose Files</button></div>
+  <div id="deviceNote" class="note">Live mode reads the selected folder lazily when supported. Snapshot fallback rebuilds navigation from selected file paths.</div>
+  <input id="fileInput" class="hide" type="file" multiple><input id="folderInput" class="hide" type="file" webkitdirectory directory multiple>
+ </div>
+</div></details>
+
+<div class="work"><div class="left">
+<details id="filtersPanel" class="panel"><summary>Candidate filters · listing request <span id="filterB" class="badge">none</span></summary><div class="body">
+ <div class="groupbox">
+  <div class="gtitle">Listing / request filters</div>
+  <div class="field"><label>Name contains · Drive query / device filter</label><input id="fName" placeholder="chat, architecture…" autocomplete="off"></div>
+  <div class="grid"><div class="field"><label>MIME equals · Drive query / device filter</label><input id="fMime" placeholder="application/json" autocomplete="off"></div><div class="field"><label>Drive orderBy</label><select id="order"><option value="">Unspecified</option><option value="name_natural">Name natural</option><option value="modifiedTime desc">Modified newest</option><option value="createdTime desc">Created newest</option><option value="recency desc">Recent activity</option><option value="viewedByMeTime desc">Viewed newest</option></select></div></div>
+  <div class="field"><label>Modified date · Drive query / device filter</label><div class="row"><input id="fFrom" type="date" autocomplete="off"><input id="fTo" type="date" autocomplete="off"></div></div>
+  <div class="field"><label>Drive-indexed fullText prefilter · can miss content not indexed by Drive</label><input id="fullText" placeholder="leave empty for direct content scan" autocomplete="off"></div>
+  <label class="tiny"><input id="trash" type="checkbox"> Include trash in Drive listing / count requests</label>
+ </div>
+ <div class="groupbox">
+  <div class="gtitle">Visible candidate filtering</div>
+  <div class="grid"><div class="field"><label>Extensions · post-filter</label><input id="fExt" placeholder="json, txt, noext" autocomplete="off"></div><div class="field"><label>Items shown</label><select id="itemType"><option value="all">Files and folders</option><option value="files">Files only</option><option value="folders">Folders only</option></select></div></div>
+  <div class="grid"><div class="field"><label>Min MB · post-filter</label><input id="fMin" type="number" min="0" step=".1" autocomplete="off"></div><div class="field"><label>Max MB · post-filter</label><input id="fMax" type="number" min="0" step=".1" autocomplete="off"></div></div>
+  <div class="field"><label>Filtered-demand candidate cap · blank all</label><input id="demandLimit" type="number" min="0" placeholder="all · e.g. 100000" autocomplete="off"></div>
+  <div class="note">No listing filters: browse progressively as you move. Any listing filter: <b>Apply</b> aggressively retrieves matching candidates. Leave the cap blank for all matches, or type a cap such as 100000.</div>
+ </div>
+ <div class="groupbox">
+  <div class="gtitle">Browser performance & layout</div>
+  <div class="grid"><div class="field"><label>Presentation</label><select id="arrange"><option value="api">API returned order</option><option value="folders">Folders first · optional</option><option value="files">Files first · optional</option></select></div><div class="field"><label>Inactive views cache cap · blank keep all</label><input id="cacheViews" type="number" min="1" max="30" placeholder="no cap" autocomplete="off"></div></div>
+  <div class="grid"><div class="field"><label>Inactive metadata rows cap · blank keep all</label><input id="cacheRows" type="number" min="1000" placeholder="no cap" autocomplete="off"></div><div class="field"><label>Fetch page size · Drive API max 1000</label><input id="apiPage" type="number" min="1" max="1000" value="1000"></div></div>
+  <div class="buttons"><button id="apply" class="main">Apply / demand candidates</button><button id="clearFilters">Clear filters</button><button id="clearCache">Clear inactive cache</button></div>
+ </div>
+ <div class="groupbox">
+  <div class="gtitle">Saved setup</div>
+  <div class="field"><label>Stores filters/search settings only, never OAuth credentials</label><select id="preset"><option value="">— none —</option></select></div>
+  <div class="buttons"><button id="savePreset">Save setup</button><button id="loadPreset">Load</button><button id="deletePreset">Delete</button><button id="exportSetup">Export JSON</button><button id="importSetup">Import JSON</button></div>
+  <input id="setupFile" class="hide" type="file" accept="application/json,.json">
+ </div>
+</div></details>
+
+<section id="candidatesPanel" class="panel browser">
+ <div class="bar">
+  <div id="path" class="path">My Drive</div>
+  <div class="buttons"><button id="back" disabled>‹ Back</button><button id="root">Root</button><button id="target">+ Target folder</button><button id="jumpResults">Results ↓</button></div>
+  <div id="targets" class="chips"></div>
+  <div class="browse-grid">
+   <div class="field"><label>Browse area</label><select id="browseArea"><option value="folder">Looking folder</option><option value="corpus">Selected corpus</option></select></div>
+   <div class="field"><label>Browse buffering</label><select id="prefetch"><option value="smooth">Keep one page ahead · smooth</option><option value="low">Near end only · low data</option><option value="off">Manual fetch only</option></select></div>
+   <div class="field"><label>Low-data rows before fetch · blank default 100</label><input id="ahead" type="number" min="0" placeholder="100" autocomplete="off"></div>
+  </div>
+  <div class="checkline"><label><input id="folders" type="checkbox" checked> Show folder rows</label><span id="networkNote">First page waits for Drive; later pages are prefetched ahead of scrolling.</span></div>
+  <div class="buttons"><button id="restart" class="main" disabled>Browse</button><button id="more" disabled>Fetch next page</button><button id="allMeta" disabled>Enumerate all metadata</button><button id="cancelMeta" disabled>Stop</button></div>
+  <div id="listNote" class="note">API page defaults to 1000; only visible rows enter the DOM.</div>
+ </div>
+ <div id="entries" class="entries"><div id="space" class="space"><div class="empty">Connect Drive or choose local files.</div></div></div>
+ <div class="selectbar"><div class="row"><span id="chosen" class="badge">0 selected</span><button id="selectLoaded">Select visible files</button><button id="clearChosen">Clear</button></div><div class="tiny">Visible = file rows already fetched into this folder view and available in its scroll zone if the connection drops. Uncached file bodies may still require their source.</div></div>
+</section>
+</div>
+
+<div class="right">
+<details id="searchPanel" class="panel" open><summary>Search filters <span id="resultB" class="badge">0 retained</span></summary><div class="body">
+ <div class="field"><label>Find content</label><input id="query" placeholder='swarm or "system prompt"' autocomplete="off"></div>
+ <div class="field"><label>Exclude terms; quote phrases</label><input id="exclude" placeholder='TODO "irrelevant output"' autocomplete="off"></div>
+ <div class="grid">
+  <div class="field"><label>Scan area</label><select id="scanArea"><option value="loaded">Visible candidates · fetched in this view</option><option value="viewport" hidden>Visible candidates · legacy setting</option><option value="selected">Selected files</option><option value="folder">Looking folder · streamed</option><option value="targets">Target folders · streamed</option><option value="corpus">Selected corpus · streamed</option></select></div>
+  <div class="field"><label>Max files scanned · blank all</label><input id="scanLimit" type="number" min="0" placeholder="all" autocomplete="off"></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Search goal</label><select id="goal"><option value="complete" selected>Complete selected scope</option><option value="enough">Stop after retained limit · optional</option></select></div>
+  <div class="field"><label>Retain matching files · blank all</label><input id="keepLimit" type="number" min="0" placeholder="all" autocomplete="off"></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Concurrent downloads</label><select id="concurrency"><option>2</option><option selected>6</option><option>10</option></select></div>
+  <div class="field"><label>Skip body over MB · blank no skip</label><input id="maxBody" type="number" min="0" placeholder="no limit" autocomplete="off"></div>
+ </div>
+ <div class="groupbox">
+  <div class="gtitle">Fetched content reuse <span id="contentCacheB" class="badge">0 cached</span></div>
+  <div class="options">
+   <label><input id="reuseContent" type="checkbox" checked> Reuse fetched file contents in later searches, inspection and dataset builds</label><br>
+   <label><input id="keepOutsideContent" type="checkbox" checked> Keep cached contents not touched by the latest completed content job</label>
+  </div>
+  <div class="tiny">Uncheck the second option to retain only overlapping/current-job bodies after each completed scan or dataset build. Session-memory only; clear the cache to force a new source fetch.</div>
+  <div class="buttons"><button id="clearContentCache">Clear fetched contents</button></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Query mode</label><select id="searchMode"><option value="literal">Literal / phrase</option><option value="all">All terms</option><option value="any">Any terms</option><option value="near">Near terms</option><option value="regex">Regex</option></select></div>
+  <div class="field"><label>Case</label><select id="caseMode"><option value="smart">Smart case</option><option value="ignore">Ignore case</option><option value="match">Match case</option></select></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Minimum hits per file · blank 1</label><input id="minHits" type="number" min="1" placeholder="1" autocomplete="off"></div>
+  <div class="field"><label>Hit-count work cap per file · blank all</label><input id="hitCap" type="number" min="0" placeholder="all" autocomplete="off"></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Any mode: minimum distinct terms · blank 1</label><input id="minTerms" type="number" min="1" placeholder="1" autocomplete="off"></div>
+  <div class="field"><label>Near max character span · blank 120</label><input id="nearSpan" type="number" min="1" placeholder="120" autocomplete="off"></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Decoder</label><select id="decoder"><option value="">Any readable</option><option value="ai-studio-chat">AI Studio chat</option><option value="json">JSON</option><option value="text">Text</option></select></div>
+  <div class="field"><label>Retained detail</label><select id="retainMode"><option value="snippets">Snippets only</option><option value="sections">Matching sections</option><option value="full">Full matched files</option></select></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Snippets shown per file · blank 3</label><input id="maxSnippets" type="number" min="1" placeholder="3" autocomplete="off"></div>
+  <div class="field"><label>Snippet context characters · blank 100</label><input id="contextChars" type="number" min="20" placeholder="100" autocomplete="off"></div>
+ </div>
+ <div class="grid">
+  <div class="field"><label>Result order</label><select id="resultSort"><option value="hits">Most hits</option><option value="scan">Scan order</option><option value="modified">Modified newest</option><option value="name">Name</option></select></div>
+  <label class="tiny"><input id="whole" type="checkbox"> Whole-word boundaries</label>
+ </div>
+ <div class="field"><label>Internal message date; generic files use modified date</label><div class="row"><input id="sFrom" type="date" autocomplete="off"><input id="sTo" type="date" autocomplete="off"></div></div>
+ <div class="options">
+  <label><input id="useFilter" type="checkbox" checked> Apply metadata filters in streamed scan</label>　
+  <label><input id="recursive" type="checkbox"> Recurse into target folders</label><br>
+  <label><input id="user" type="checkbox" checked> User</label>　<label><input id="assistant" type="checkbox" checked> Assistant</label>　<label><input id="thought" type="checkbox" checked> Thoughts</label><br>
+  <label><input id="content" type="checkbox" checked> Text/JSON</label>　<label><input id="system" type="checkbox"> System</label>　<label><input id="settings" type="checkbox"> Settings</label>　<label><input id="raw" type="checkbox"> Raw source</label>
+ </div>
+ <div class="buttons"><button id="scan" class="main" disabled>Scan + Search</button><button id="stopScan" disabled>Stop</button><button id="exportTxt">TXT</button><button id="exportJson">JSON</button><button id="clearResults">Clear</button></div>
+ <div class="progress"><i id="bar"></i></div>
+ <div id="scanStats" class="badges"><span class="badge">No scan yet</span></div>
+</div></details>
+<section id="resultsPanel" class="panel"><div class="phead"><h2>Search results</h2><div class="buttons"><button id="jumpCandidates" class="smallbtn">Candidates ↑</button><span id="hitsB" class="badge">0 results</span></div></div><div id="results" class="results-viewport"><div id="resultSpace" class="results-space"><div class="empty">Search selected or streamed content.</div></div></div>
+ <details id="datasetPanel" class="datasetPanel"><summary>Dataset / semantic handoff export <span id="datasetB" class="badge">not built</span></summary><div class="datasetBody">
+  <div class="note">Extract messages across files without requiring an exact keyword. <b>Current candidate scope</b> obeys the candidate folder/selection and file filters above; clear Drive fullText before a broad semantic handoff export.</div>
+  <div class="groupbox">
+   <div class="gtitle">Messages to include</div>
+   <div class="options"><label><input id="dUser" type="checkbox" checked> User prompts</label> <label><input id="dAssistant" type="checkbox"> Assistant</label> <label><input id="dThought" type="checkbox"> Thoughts</label> <label><input id="dSystem" type="checkbox"> System</label> <label><input id="dSettings" type="checkbox"> Settings</label> <label><input id="dContent" type="checkbox"> Text/JSON</label></div>
+   <div class="grid"><div class="field"><label>Message date from · falls back to file modified date when absent</label><input id="dFrom" type="date" autocomplete="off"></div><div class="field"><label>Message date to</label><input id="dTo" type="date" autocomplete="off"></div></div>
+   <div class="grid"><div class="field"><label>Minimum message characters · blank none</label><input id="dMin" type="number" min="0" placeholder="none" autocomplete="off"></div><div class="field"><label>Maximum message characters · blank none</label><input id="dMax" type="number" min="0" placeholder="none" autocomplete="off"></div></div>
+   <div class="grid"><div class="field"><label>Chat characters min · blank none</label><input id="dChatMin" type="number" min="0" placeholder="none" autocomplete="off"></div><div class="field"><label>Chat characters max · blank none</label><input id="dChatMax" type="number" min="0" placeholder="none" autocomplete="off"></div></div>
+   <div class="grid"><div class="field"><label>Chat message count min · blank none</label><input id="dCountMin" type="number" min="0" placeholder="none" autocomplete="off"></div><div class="field"><label>Chat message count max · blank none</label><input id="dCountMax" type="number" min="0" placeholder="none" autocomplete="off"></div></div>
+   <div class="grid"><div class="field"><label>Search hits in file min · matched results only · blank none</label><input id="dHitsMin" type="number" min="0" placeholder="none" autocomplete="off"></div><div class="field"><label>Search hits in file max · blank none</label><input id="dHitsMax" type="number" min="0" placeholder="none" autocomplete="off"></div></div>
+  </div>
+  <div class="groupbox">
+   <div class="gtitle">Code-block filtering & output</div>
+   <div class="grid"><div class="field"><label>Message code condition</label><select id="dCodeFilter"><option value="any">Any message</option><option value="has">Contains fenced code</option><option value="min">Fenced-code chars ≥ threshold</option><option value="none">No fenced code</option></select></div><div class="field"><label>Code-character threshold override · blank default 2000</label><input id="dCodeMin" type="number" min="0" placeholder="default 2000" autocomplete="off"></div></div>
+   <div class="field"><label>Exported message text</label><select id="dCodeOutput"><option value="large" selected>Replace code ≥ threshold with metadata</option><option value="keep">Keep full code blocks</option><option value="meta">Replace all code bodies with metadata</option><option value="strip">Remove all fenced code blocks</option></select></div>
+  </div>
+  <div class="groupbox">
+   <div class="gtitle">Dataset limits & build</div>
+   <div class="grid"><div class="field"><label>Retain at most messages · blank unlimited</label><input id="dLimitMessages" type="number" min="0" placeholder="unlimited" autocomplete="off"></div><div class="field"><label>Retain at most output characters · blank unlimited</label><input id="dLimitChars" type="number" min="0" placeholder="unlimited" autocomplete="off"></div></div>
+   <div class="field"><label>Export record order</label><select id="dOrder"><option value="time">Message time · oldest first</option><option value="file">File then message order</option><option value="build">Build/read completion order</option></select></div>
+   <div class="buttons"><button id="dBuildScope" class="main">Build from current candidate scope</button><button id="dBuildResults">Build from retained search results</button><button id="dStop" disabled>Stop</button><button id="dClear">Clear dataset</button></div>
+   <div id="datasetStats" class="note">No dataset built. Candidate-scope build can export all qualifying prompts without a search query.</div>
+  </div>
+  <div class="groupbox">
+   <div class="gtitle">Copy / download handoff</div>
+   <div class="buttons"><button id="dCopyJson" disabled>Copy JSON</button><button id="dCopyJsonl" disabled>Copy JSONL</button><button id="dCopyTxt" disabled>Copy TXT</button><button id="dDownloadJson" disabled>Download JSON</button><button id="dDownloadJsonl" disabled>Download JSONL</button><button id="dDownloadTxt" disabled>Download TXT</button></div>
+   <div id="datasetPreview" class="datasetPreview">Records include file/chat metadata, message role/order/time/length, code-block statistics, and search match count when a source file came from retained results.</div>
+  </div>
+ </div></details>
+ <details id="jsPanel" class="datasetPanel"><summary>Advanced JavaScript workspace <span id="jsB" class="badge">idle</span></summary><div class="datasetBody">
+  <div class="note jsWarn"><b>Direct page-context execution.</b> Runs only code you type and can read or modify loaded results, dataset records, and active Drive connection state. Do not paste untrusted code.</div>
+  <div class="field"><label>JavaScript body · use <code>return</code> to display/copy a result</label><textarea id="jsCode" class="jsCode" spellcheck="false" autocapitalize="none">return records
+  .filter(r => r.message.role === 'user')
+  .map(r => r.message.text)
+  .join('\n\n---\n\n');</textarea></div>
+  <div class="apiTokens">Available: files, visibleFiles/listedFiles (fetched in current scroll view), screenFiles (raw viewport helper), selected, results, records, dataset, openedFile, inspection, state, ui, helpers, copy(text), save(name, text, type).</div>
+  <div class="note">For body tests such as <code>/&lt;!doctype\s+html/i</code> over dataset records, build the dataset with <b>Keep full code blocks</b>; metadata-compacted output intentionally no longer contains large code bodies.</div>
+  <div class="buttons"><button id="jsRun" class="main">Run JavaScript</button><button id="jsCopy" disabled>Copy output</button><button id="jsDownload" disabled>Download output</button><button id="jsExample">Load HTML-block example</button><button id="jsClear">Clear output</button></div>
+  <pre id="jsOut" class="datasetPreview jsOut">Run a script to view its returned output.</pre>
+ </div></details>
+</section>
+</div></div></div>
+
+<nav id="rail" class="rail" aria-label="Page navigation">
+ <button id="railLine" class="railLine" type="button" aria-label="Show section names"></button>
+ <button class="railDot" data-to="connection" aria-label="Connection"><i></i><span>Connect</span></button>
+ <button class="railDot" data-to="filtersPanel" aria-label="Candidate listing filters"><i></i><span>Listing</span></button>
+ <button class="railDot" data-to="candidatesPanel" aria-label="Candidates"><i></i><span>Files</span></button>
+ <button class="railDot" data-to="searchPanel" aria-label="Search filters"><i></i><span>Search</span></button>
+ <button class="railDot" data-to="resultsPanel" aria-label="Results"><i></i><span>Results</span></button>
+</nav>
+
+<div id="sticky" class="sticky"><span id="stickText">0 selected</span><button id="stickScan" class="main">Search Selected</button></div>
+<div id="modal" class="modal"><div class="dialog">
+ <div class="dhead"><div><strong id="mTitle"></strong><div id="mSub" class="tiny"></div></div><button id="mClose">Close</button></div>
+ <div class="tabs"><button data-tab="content">Inspect</button><button data-tab="info">Info</button><button data-tab="raw">Raw</button></div>
+ <div id="inspectTools" class="inspectTools">
+  <div class="modeTabs"><button id="modeFlow" class="on">Full flow</button><button id="modeMatches">Matching messages</button><button id="modeHits">Hit list</button></div>
+  <div class="hitNav"><button id="prevHit">‹ Hit</button><span id="hitStatus" class="badge">0 locations</span><button id="nextHit">Hit ›</button></div>
+ </div>
+ <details id="extractPanel" class="extractPanel"><summary>Extract / copy messages from opened file <span id="extractB" class="badge">ready</span></summary><div class="extractBody">
+  <div class="options"><label><input id="xUser" type="checkbox" checked> User</label> <label><input id="xAssistant" type="checkbox" checked> Assistant</label> <label><input id="xThought" type="checkbox"> Thoughts</label> <label><input id="xSystem" type="checkbox"> System</label> <label><input id="xSettings" type="checkbox"> Settings</label> <label><input id="xContent" type="checkbox" checked> Text/JSON</label></div>
+  <div class="grid"><div class="field"><label>Message scope</label><select id="xScope"><option value="all">All messages in opened file</option><option value="matching">Matching messages only</option><option value="picked">Picked messages only</option></select></div><div class="field"><label>Message code condition</label><select id="xCodeFilter"><option value="any">Any message</option><option value="has">Contains fenced code</option><option value="min">Fenced-code chars ≥ threshold</option><option value="none">No fenced code</option></select></div></div>
+  <div class="grid"><div class="field"><label>Code-character threshold override · blank default 2000</label><input id="xCodeMin" type="number" min="0" placeholder="default 2000" autocomplete="off"></div><div class="field"><label>Copied message text</label><select id="xCodeOutput"><option value="large" selected>Replace code ≥ threshold with metadata</option><option value="keep">Keep full code blocks</option><option value="meta">Replace all code bodies with metadata</option><option value="strip">Remove all fenced code blocks</option></select></div></div>
+  <div class="grid"><div class="field"><label>Minimum message characters · blank none</label><input id="xMin" type="number" min="0" placeholder="none" autocomplete="off"></div><div class="field"><label>Maximum message characters · blank none</label><input id="xMax" type="number" min="0" placeholder="none" autocomplete="off"></div></div>
+  <div class="note">Preview shows the exact transformed messages that Copy all will copy. Use <b>Picked messages only</b> with the checkboxes in the message flow for a manual set.</div>
+  <div class="buttons"><button id="xPreview">Show exact copy preview</button><button id="xCopy" class="main">Copy all previewed text</button><button id="xDownload">Download TXT</button><button id="xClearPick">Clear picked</button></div>
+ </div></details>
+ <div id="view" class="view"></div>
+</div></div>
+
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), G='application/vnd.google-apps.', DIR=G+'folder', SHORT=G+'shortcut', RO='https://www.googleapis.com/auth/drive.readonly', OVER=6;
+const STORE={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,v);return true}catch{return false}},del:k=>{try{localStorage.removeItem(k);return true}catch{return false}}};
+let RH=88,RRH=190;
+function syncGeometry(){let c=window.getComputedStyle?.(document.documentElement);RH=parseFloat(c?.getPropertyValue('--rowh'))||88;RRH=parseFloat(c?.getPropertyValue('--resh'))||190}
+const idList='connB metaB memB scanB scopeB connection source auth driveFields localFields clientId scope corpus driveId corpusGrid driveIdField remember rememberConnection disconnect scopeMsg deviceFolder deviceNote pickFiles pickFolder fileInput folderInput filterB fName fExt fMime fFrom fTo fMin fMax demandLimit fullText itemType arrange order cacheViews cacheRows apiPage trash apply clearFilters clearCache preset savePreset loadPreset deletePreset exportSetup importSetup setupFile filtersPanel candidatesPanel searchPanel resultsPanel rail railLine path back root target jumpResults jumpCandidates targets browseArea prefetch ahead folders networkNote restart more allMeta cancelMeta listNote entries space chosen selectLoaded clearChosen resultB query exclude scanArea scanLimit goal keepLimit concurrency maxBody contentCacheB reuseContent keepOutsideContent clearContentCache searchMode caseMode minHits hitCap minTerms nearSpan decoder retainMode maxSnippets contextChars resultSort whole sFrom sTo useFilter recursive user assistant thought content system settings raw scan stopScan exportTxt exportJson clearResults bar scanStats hitsB results resultSpace datasetPanel datasetB datasetStats datasetPreview dUser dAssistant dThought dSystem dSettings dContent dFrom dTo dMin dMax dChatMin dChatMax dCountMin dCountMax dHitsMin dHitsMax dCodeFilter dCodeMin dCodeOutput dLimitMessages dLimitChars dOrder dBuildScope dBuildResults dStop dClear dCopyJson dCopyJsonl dCopyTxt dDownloadJson dDownloadJsonl dDownloadTxt jsPanel jsB jsCode jsRun jsCopy jsDownload jsExample jsClear jsOut sticky stickText stickScan modal mTitle mSub mClose inspectTools modeFlow modeMatches modeHits prevHit hitStatus nextHit extractPanel extractB xUser xAssistant xThought xSystem xSettings xContent xScope xCodeFilter xCodeMin xCodeOutput xMin xMax xCopy xDownload xPreview xClearPick view'.split(' '), E={};
+idList.forEach(id=>E[id]=$(id));
+const S={
+ token:'', connected:false, tc:null, source:'drive', root:{id:'root',name:'My Drive',origin:'drive'}, path:[], paths:{}, browse:{drive:'folder',local:'folder'}, targetSets:{drive:new Map(),local:new Map()}, views:new Map(), view:null, local:[], localMode:'', localRoot:null, localTree:new Map(), localSeq:0, selected:new Map(), result:[],
+ layout:'api', listAbort:null, resolveCache:new Map(), childCounts:new Map(), expiresAt:0, lru:0, latency:350, incomplete:false, warn:'',
+ metaAll:false,contentCache:new Map(),contentPending:new Map(),contentStats:{hits:0,fetches:0},scan:{busy:false,abort:null,stop:false,seq:0,lastUI:0,known:0,metrics:null,skips:{},content:null},dataset:{busy:false,abort:null,stop:false,source:'',records:[],files:0,decoded:0,failed:0,skipped:0,capped:false,characters:0,filters:null,content:null}
+}; S.path=[S.root];S.paths.drive=S.path;
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])), rx=v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), qe=v=>String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+const ext=n=>(String(n).match(/\.([^.\/]+)$/)||[])[1]?.toLowerCase()||'', fmt=n=>n==null?'—':n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB', when=x=>x?new Date(x).toLocaleString():'—', stamp=x=>x?new Date(x).toISOString().slice(0,16).replace(/[-:]/g,'').replace('T',' ')+'Z':'—';
+function badge(el,text,cls=''){el.textContent=text;el.className='badge'+(cls?' '+cls:'')}
+function clamp(id,def,max,min=0){let n=Math.round(+E[id].value||def);n=Math.max(min,Math.min(max,n));E[id].value=n;return n}
+function toast(text,cls=''){E.scopeMsg.textContent=text;E.scopeMsg.className='note'+(cls?' '+cls:'')}
+function delay(ms,signal){return new Promise((resolve,reject)=>{let t=setTimeout(resolve,ms);signal?.addEventListener('abort',()=>{clearTimeout(t);reject(new DOMException('Aborted','AbortError'))},{once:true})})}
+function reason(body){try{return JSON.parse(body).error?.errors?.[0]?.reason||''}catch{return''}}
+function current(){return S.path.at(-1)}
+function targetMap(key=S.source){return S.targetSets[key]}
+function rememberPath(){S.paths[S.source]=S.path;S.browse[S.source]=E.browseArea.value}
+function isShortcut(f){return f.mimeType===SHORT}
+function actualMime(f){return isShortcut(f)?f.shortcutDetails?.targetMimeType||f.mimeType:f.mimeType}
+function isFolder(f){return !!f.localDir||actualMime(f)===DIR}
+function resourcePair(id,key){return key?`${id}/${key}`:''}
+function resourceHeaders(...pairs){let x=pairs.filter(Boolean).join(',');return x?{'X-Goog-Drive-Resource-Keys':x}:{}}
+function fields(){return 'nextPageToken,incompleteSearch,files(id,name,mimeType,size,createdTime,modifiedTime,parents,driveId,webViewLink,resourceKey,capabilities(canDownload),shortcutDetails(targetId,targetMimeType,targetResourceKey))'}
+async function request(url,opt={},label='Drive'){
+ let tries=0,signal=opt.signal;
+ for(;;){
+  let r,body='';
+  try{r=await fetch(url,{...opt,headers:{Authorization:'Bearer '+S.token,...(opt.headers||{})}})}catch(err){if(err.name==='AbortError')throw err;if(++tries<=4){await delay(Math.min(8000,300*2**tries)*(0.7+Math.random()*.6),signal);continue}throw err}
+  if(r.ok)return r;
+  body=await r.text();
+  if(r.status===401){disconnect();throw Error('Authorization expired. Connect again.')}
+  let why=reason(body),retry=r.status===429||r.status>=500||(r.status===403&&/rateLimitExceeded|userRateLimitExceeded/.test(why));
+  if(retry&&tries++<5){
+   toast(`${label}: rate limited or temporarily unavailable; retrying…`,'warn');
+   await delay(Math.min(12000,350*2**tries)*(0.65+Math.random()*.7),signal); continue
+  }
+  let err=Error(`${r.status} ${why||body.slice(0,120)}`); err.status=r.status; err.reason=why; throw err
+ }
+}
+function corpusParams(folder=null){
+ let c=E.corpus.value, p={supportsAllDrives:'true',includeItemsFromAllDrives:'true'};
+ if(folder?.driveId){p.corpora='drive';p.driveId=folder.driveId;return p}
+ if(c==='drive'){if(!E.driveId.value.trim())throw Error('Enter a Shared Drive ID.');p.corpora='drive';p.driveId=E.driveId.value.trim()}
+ else p.corpora=c;
+ return p
+}
+function filterActive(){return !!(E.fName.value.trim()||E.fExt.value.trim()||E.fMime.value.trim()||E.fFrom.value||E.fTo.value||E.fMin.value||E.fMax.value||E.fullText.value.trim()||E.itemType.value!=='all')}
+function queryParts(forScan=false, includeFilter=true){
+ let q=E.trash.checked?[]:['trashed = false'];
+ if(forScan)q.push(`mimeType != '${DIR}'`);
+ if(!includeFilter)return q;
+ let n=E.fName.value.trim(),m=E.fMime.value.trim(),full=E.fullText.value.trim(),t=E.itemType.value;
+ if(n)q.push(`name contains '${qe(n)}'`);
+ if(m)q.push(`mimeType = '${qe(m)}'`);
+ if(!forScan){if(t==='files')q.push(`mimeType != '${DIR}'`);if(t==='folders')q.push(`mimeType = '${DIR}'`)}
+ if(E.fFrom.value)q.push(`modifiedTime >= '${E.fFrom.value}T00:00:00'`);
+ if(E.fTo.value){let x=new Date(E.fTo.value+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+1);q.push(`modifiedTime < '${x.toISOString()}'`)}
+ if(full)q.push(`fullText contains '${qe(full)}'`);
+ return q
+}
+function makeQuery(area,parent,forScan=false,includeFilter=true){
+ let q=queryParts(forScan,includeFilter);
+ if(area==='folder')q.push(`'${qe(parent.id)}' in parents`);
+ return q.join(' and ')||'trashed = false or trashed = true'
+}
+function localPass(f,forScan=false,serverFiltered=false){
+ if(isFolder(f))return !forScan&&E.folders.checked&&E.itemType.value!=='files';
+ if(!forScan&&E.itemType.value==='folders')return false;
+ if(!serverFiltered){
+  let n=E.fName.value.trim().toLowerCase(),m=E.fMime.value.trim(),d=(f.modifiedTime||'').slice(0,10);
+  if(n&&!f.name.toLowerCase().includes(n)||m&&f.mimeType!==m||E.fFrom.value&&d<E.fFrom.value||E.fTo.value&&d>E.fTo.value)return false
+ }
+ let mb=+(f.size||0)/1048576,lo=+E.fMin.value||0,hi=+E.fMax.value||0,x=E.fExt.value.trim().toLowerCase();
+ if(lo&&mb<lo||hi&&mb>hi)return false;
+ if(x){let a=x.split(/[\s,]+/).filter(Boolean),z=ext(f.name);if(!a.some(v=>v==='noext'?!z:v.replace(/^\./,'')===z))return false}
+ return true
+}
+async function listPage(q,token='',folder=null,signal=null){
+ let u=new URL('https://www.googleapis.com/drive/v3/files'), p=corpusParams(folder);
+ Object.entries(p).forEach(([k,v])=>u.searchParams.set(k,v));
+ u.searchParams.set('q',q);u.searchParams.set('spaces','drive');u.searchParams.set('pageSize',String(clamp('apiPage',1000,1000,1)));u.searchParams.set('fields',fields());
+ if(token)u.searchParams.set('pageToken',token);
+ if(E.order.value&&!E.fullText.value.trim())u.searchParams.set('orderBy',E.order.value);
+ let h=resourceHeaders(resourcePair(folder?.id,folder?.resourceKey)),start=performance.now(),r;
+ try{r=await request(u,{signal,headers:h},'Listing')}catch(err){if(token&&err.status===400){err.pageToken=true}throw err}
+ let j=await r.json(),ms=performance.now()-start;S.latency=S.latency*.7+ms*.3;
+ return j
+}
+function viewKey(){
+ let area=E.browseArea.value,parent=area==='folder'?current():null;
+ if(S.source==='local')return JSON.stringify(['local',S.localMode,parent?.id||'',E.fName.value,E.fExt.value,E.fMime.value,E.fFrom.value,E.fTo.value,E.fMin.value,E.fMax.value,E.itemType.value,E.folders.checked]);
+ return JSON.stringify([area,parent?.id||'',parent?.driveId||'',E.corpus.value,E.driveId.value,makeQuery(area,parent||{},false,true),E.order.value,E.fExt.value,E.fMin.value,E.fMax.value,E.folders.checked])
+}
+function newView(key){return {key,source:S.source,area:E.browseArea.value,parent:current(),rows:[],pending:[],groups:[],cursor:{},done:false,busy:false,stop:false,demand:false,demandCap:0,capped:false,pages:0,received:0,scroll:0,touch:++S.lru,incomplete:false,group:null}}
+function touch(v){v.touch=++S.lru;S.views.delete(v.key);S.views.set(v.key,v)}
+function cacheRows(){let n=0;S.views.forEach(v=>n+=v.rows.length);return n}
+function pruneCache(){
+ let maxViews=E.cacheViews.value?clamp('cacheViews',4,30,1):Infinity,budget=E.cacheRows.value?clamp('cacheRows',100000,10000000,1000):Infinity,total=cacheRows(),victims=[...S.views.values()].filter(v=>v!==S.view).sort((a,b)=>a.touch-b.touch);
+ while((S.views.size>maxViews||total>budget)&&victims.length){let v=victims.shift();S.views.delete(v.key);total-=v.rows.length}
+ let over=Number.isFinite(budget)&&S.view&&S.view.rows.length>budget;
+ badge(E.memB,over?`active ${S.view.rows.length.toLocaleString()} > budget`:`cache ${total.toLocaleString()} rows${Number.isFinite(budget)?'':' · no automatic cap'}`,over?'warn':'');
+}
+function active(reset=false){
+ let k=viewKey(),v=!reset&&S.views.get(k);
+ if(!v){v=newView(k);S.views.set(k,v)}
+ touch(v);S.view=v;pruneCache();return v
+}
+function buildGroup(v){
+ if(v.group)return v.group;
+ let g={dirs:[],files:[],dp:new Map(),fp:new Map()};
+ v.rows.forEach(f=>{if(isFolder(f)){g.dp.set(f.id,g.dirs.length);g.dirs.push(f)}else{g.fp.set(f.id,g.files.length);g.files.push(f)}});
+ return v.group=g
+}
+function count(v=S.view){if(!v)return 0;if(S.layout==='api')return v.rows.length;let g=buildGroup(v);return g.dirs.length+g.files.length}
+function itemAt(v,i){if(S.layout==='api')return v.rows[i];let g=buildGroup(v);return S.layout==='folders'?(i<g.dirs.length?g.dirs[i]:g.files[i-g.dirs.length]):(i<g.files.length?g.files[i]:g.dirs[i-g.files.length])}
+function itemIndex(v,f,layout=S.layout){
+ if(layout==='api')return v.rows.indexOf(f);
+ let g=buildGroup(v);
+ return layout==='folders'?(isFolder(f)?g.dp.get(f.id):g.dirs.length+g.fp.get(f.id)):(isFolder(f)?g.files.length+g.dp.get(f.id):g.fp.get(f.id))
+}
+function anchor(v=S.view,layout=S.layout){if(!v||!count(v))return null;let i=Math.min(count(v)-1,Math.max(0,Math.floor(E.entries.scrollTop/RH))),f=itemAt(v,i);return f?{f,off:E.entries.scrollTop-i*RH,layout}:null}
+function restoreAnchor(v,a){if(!a)return;let i=itemIndex(v,a.f,S.layout);if(i>=0)E.entries.scrollTop=i*RH+a.off}
+function append(v,list,cap=0){
+ let a=S.layout!=='api'&&v===S.view?anchor(v):null,g=v.group,spill=[];
+ for(let f of list)if(localPass(f,false,v.source==='drive')){if(cap&&v.rows.length>=cap){spill.push(f);continue}v.rows.push(f);if(g){if(isFolder(f)){g.dp.set(f.id,g.dirs.length);g.dirs.push(f)}else{g.fp.set(f.id,g.files.length);g.files.push(f)}}}
+ restoreAnchor(v,a);pruneCache();return spill
+}
+function needLocalStat(){return !!(E.fMime.value.trim()||E.fFrom.value||E.fTo.value||+E.fMin.value||+E.fMax.value)}
+async function statLocal(f){if(f.localDir||f.local||f.stat||!f.handle)return f;let file=await f.handle.getFile();f.mimeType=file.type||'application/octet-stream';f.size=file.size;f.modifiedTime=new Date(file.lastModified).toISOString();f.stat=true;return f}
+function localFileNode(file,id,name=file.name){return {id,name,mimeType:file.type||'application/octet-stream',size:file.size,modifiedTime:new Date(file.lastModified).toISOString(),local:file,stat:true,origin:'local'}}
+function localDirNode(id,name,extra={}){return {id,name,mimeType:DIR,localDir:true,origin:'local',...extra}}
+function liveNode(parent,name,h){return h.kind==='directory'?localDirNode(`device:${parent.id}/${name}`,name,{handle:h,live:true}):{id:`device:${parent.id}/${name}`,name,mimeType:'application/octet-stream',handle:h,localHandle:true,origin:'local'}}
+const SOURCES={
+ drive:{
+  key:'drive',label:'Drive',corpus:true,ready:()=>S.connected,root:()=>S.root,
+  async list(parent,cursor,opt={}){
+   let q=opt.query||makeQuery(opt.area||'folder',parent||S.root,false,true),j=await listPage(q,cursor.token||'',opt.area==='folder'?parent:null,opt.signal);
+   cursor.token=j.nextPageToken||'';
+   return {items:(j.files||[]).map(f=>({...f,origin:'drive'})),received:(j.files||[]).length,done:!cursor.token,incomplete:!!j.incompleteSearch}
+  },
+  resolve:(f,signal)=>resolveDrive(f,signal),
+  folderNode:(f,real)=>({id:real.id,name:isShortcut(f)?`${f.name} ↗`:f.name,driveId:real.driveId||f.driveId,resourceKey:real.resourceKey||'',origin:'drive'}),
+  read:(f,signal,max)=>readDrive(f,signal,max)
+ },
+ local:{
+  key:'local',label:'Device',corpus:false,ready:()=>!!S.localRoot,root:()=>S.localRoot,
+  async list(parent,cursor,opt={}){
+   let batch=clamp('apiPage',1000,1000,1),items=[],done=false;
+   if(parent?.handle){
+    if(!cursor.iterator)cursor.iterator=parent.handle.entries();
+    for(let i=0;i<batch;i++){if(opt.signal?.aborted)throw new DOMException('Aborted','AbortError');let n=await cursor.iterator.next();if(n.done){done=true;break}let f=liveNode(parent,n.value[0],n.value[1]);if(needLocalStat()&&!f.localDir)await statLocal(f);items.push(f)}
+   }else{
+    let all=parent?.children||[],at=cursor.pos||0;items=all.slice(at,at+batch);cursor.pos=at+items.length;done=cursor.pos>=all.length
+   }
+   return {items,received:items.length,done,incomplete:false}
+  },
+  resolve:async f=>f,
+  folderNode:f=>f,
+  read:(f,signal,max)=>readDevice(f,signal,max)
+ }
+};
+function sourceAdapter(key=S.source){return SOURCES[key]}
+function entryAdapter(f){return SOURCES[f?.origin||S.source]}
+async function loadMore(v=S.view){
+ let A=sourceAdapter(v?.source||S.source);
+ if(!v||v.busy||v.done&&!v.pending.length||v.stop||!A.ready())return;
+ if(!v.demand&&v.capped)v.capped=false;
+ v.busy=true;updateButtons();let ctrl=new AbortController();S.listAbort=ctrl;
+ try{
+  let cap=v.demand?v.demandCap:0;
+  if(v.pending.length){let rest=append(v,v.pending,cap);v.pending=rest;renderFiles();if(v.pending.length||!v.demand)return}
+  let page=await A.list(v.parent,v.cursor,{area:v.area,signal:ctrl.signal}),start=count(v);
+  v.pages++;v.received+=page.received;v.done=page.done;v.incomplete=v.incomplete||page.incomplete;S.incomplete=S.incomplete||page.incomplete;
+  let spill=append(v,page.items,cap);if(spill.length)v.pending.push(...spill);v.groups.push({start,end:count(v)+spill.length,page:v.pages});renderFiles();
+  if(v.incomplete)toast('Drive reported incomplete search for this corpus. Narrow to a specific drive for complete results.','warn')
+ }catch(err){
+  if(err.name==='AbortError')return;
+  if(err.pageToken&&A.key==='drive'){toast('Continuation token expired; restarting this view.','warn');v.rows=[];v.pending=[];v.groups=[];v.group=null;v.cursor={};v.done=false;v.pages=0;v.received=0;return loadMore(v)}
+  toast(`${A.label} listing failed: ${err.message}`,'bad')
+ }finally{v.busy=false;S.listAbort=null;updateButtons();if(v===S.view&&!v.stop)queueMicrotask(()=>maybePrefetch())}
+}
+async function beginView(v=S.view){
+ if(!v||v!==S.view||v.busy)return;
+ if(!v.pages)await loadMore(v);
+ if(v!==S.view||v.done||v.stop)return;
+ if(filterActive()&&!v.capped)return demandFiltered(v);
+ if(E.prefetch.value==='smooth'&&v.pages<2)loadMore(v)
+}
+function restartView(){
+ S.listAbort?.abort();let v=active(true);E.entries.scrollTop=0;renderFiles();beginView(v)
+}
+function listedFiles(){return (S.view?.rows||[]).filter(f=>!isFolder(f))}
+function screenFiles(){
+ let v=S.view;if(!v)return[];let top=E.entries.scrollTop||0,h=E.entries.clientHeight||550,a=Math.max(0,Math.floor(top/RH)),b=Math.min(count(v),Math.ceil((top+h)/RH)),out=[];
+ for(let i=a;i<b;i++){let f=itemAt(v,i);if(f&&!isFolder(f))out.push(f)}
+ return out
+}
+async function demandFiltered(v=S.view){
+ if(!v||v!==S.view||v.demand||!filterActive())return;
+ let cap=Math.max(0,+E.demandLimit.value||0);v.stop=false;v.demand=true;v.demandCap=cap;v.capped=false;updateButtons();
+ try{
+  while(v===S.view&&!v.stop&&(!v.done||v.pending.length)&&(!cap||count(v)<cap))await loadMore(v);
+  v.capped=!!(cap&&count(v)>=cap&&(!v.done||v.pending.length))
+ }finally{v.demand=false;v.demandCap=0;if(v===S.view){renderFiles();updateButtons()}}
+}
+async function enumerateAll(){
+ let v=S.view;if(!v||(S.source==='drive'&&!S.connected)||!confirm('Enumerate all remaining metadata for this view? The DOM remains virtual, but metadata memory can grow large.'))return;
+ v.stop=false;v.capped=false;S.metaAll=true;E.cancelMeta.disabled=false;updateButtons();
+ while(!v.done&&!v.stop)await loadMore(v);
+ S.metaAll=false;E.cancelMeta.disabled=true;renderFiles()
+}
+function prefetchThreshold(){
+ if(E.prefetch.value==='off')return -1;
+ return Math.min(100,clamp('ahead',100,5000))
+}
+function readGroup(v){
+ let last=Math.max(0,Math.ceil(((E.entries.scrollTop||0)+(E.entries.clientHeight||550))/RH)-1),g=0;
+ for(let i=1;i<v.groups.length;i++)if(last>=v.groups[i].start)g=i;else break;
+ return g
+}
+function maybePrefetch(){
+ let v=S.view;if(!v||v.done||v.busy||v.demand||S.metaAll||filterActive())return;
+ if(E.prefetch.value==='off')return;
+ if(E.prefetch.value==='smooth'){
+  if(v.pages<2||readGroup(v)>=v.groups.length-1)loadMore(v);
+  return
+ }
+ let last=Math.ceil((E.entries.scrollTop+E.entries.clientHeight)/RH);
+ if(count(v)-last<=prefetchThreshold())loadMore(v)
+}
+function fileRange(){
+ let v=S.view,n=count(v),top=E.entries.scrollTop||0,h=E.entries.clientHeight||550,start=Math.max(0,Math.floor(top/RH)-OVER),end=Math.min(n+(v&&!v.done?1:0),Math.ceil((top+h)/RH)+OVER),files=[];
+ for(let i=start;i<Math.min(n,end);i++)files.push(itemAt(v,i));
+ return {start,end,n,files}
+}
+function rowIcon(f){if(isShortcut(f))return isFolder(f)?'🔗📁':'🔗';return isFolder(f)?'📁':'📄'}
+function folderInfo(f){
+ if(f.origin==='drive')return {
+  meta:`${isShortcut(f)?'Shortcut · ':''}M ${stamp(f.modifiedTime)}`,
+  status:`C ${stamp(f.createdTime)} · #${String(f.id||'').slice(0,4)}`,
+  title:`${f.name}\nModified: ${when(f.modifiedTime)}\nCreated: ${when(f.createdTime)}\nID: ${f.id||'—'}`
+ };
+ return {meta:f.live?'Device folder · dates unavailable':'Snapshot folder · dates unavailable',status:'',title:`${f.name}\nFolder created/modified dates are unavailable in this device mode.`}
+}
+function childKey(f){return `${f.origin||S.source}:${f.id}:${f.origin==='drive'?(E.trash.checked?'withtrash':'notrash'):'all'}`}
+function childValue(f){
+ let n=f.childCount??f.numChildren;
+ if(n!==''&&n!=null&&Number.isFinite(+n)&&+n>=0)return {done:true,n:+n,source:'metadata'};
+ if(f.origin==='local'&&!f.live&&Array.isArray(f.children))return {done:true,n:f.children.length,source:'snapshot'};
+ return S.childCounts.get(childKey(f))
+}
+function childPill(f){
+ let x=childValue(f),src=x?.source?` · ${x.source}`:'';
+ return x?.busy?['… items','busy','Counting direct children'] : x?.done?[`${x.n.toLocaleString()} item${x.n===1?'':'s'}`,'known',`${x.n.toLocaleString()} direct child${x.n===1?'':'ren'}${src}`] : x?.error?['retry count','',x.error] : ['? items','','Count direct children']
+}
+async function countChildren(f){
+ let key=childKey(f),seen=childValue(f);
+ if(seen?.busy||seen?.done){renderFiles();return}
+ S.childCounts.set(key,{busy:true,n:0});renderFiles();
+ try{
+  let n=0;
+  if(f.origin==='local'){
+   for await(let _ of f.handle.entries())n++
+  }else{
+   let real=await resolveDrive(f),token='',parent={id:real.id,driveId:real.driveId||f.driveId,resourceKey:real.resourceKey||f.resourceKey},q=(E.trash.checked?[]:['trashed = false']);
+   q.push(`'${qe(parent.id)}' in parents`);
+   do{
+    let u=new URL('https://www.googleapis.com/drive/v3/files'),cp=corpusParams(parent);
+    Object.entries(cp).forEach(([k,v])=>u.searchParams.set(k,v));
+    u.searchParams.set('q',q.join(' and '));u.searchParams.set('spaces','drive');u.searchParams.set('pageSize','1000');u.searchParams.set('fields','nextPageToken,files(id)');
+    if(token)u.searchParams.set('pageToken',token);
+    let r=await request(u,{headers:resourceHeaders(resourcePair(parent.id,parent.resourceKey))},'Count folder items'),j=await r.json();
+    n+=(j.files||[]).length;token=j.nextPageToken||''
+   }while(token)
+  }
+  S.childCounts.set(key,{done:true,n,source:'enumerated'})
+ }catch(err){S.childCounts.set(key,{error:'Count failed; tap to retry'});toast('Could not count folder children: '+err.message,'bad')}
+ renderFiles()
+}
+function statusText(f){if(f.capabilities?.canDownload===false&&!isFolder(f))return ['not downloadable','bad'];if(isShortcut(f))return ['shortcut target','warn'];if(f.localHandle&&!f.stat)return ['device file · metadata/body read on demand',''];return [S.selected.has(f.id)?'selected':'metadata only',S.selected.has(f.id)?'ok':'']}
+function renderFiles(){
+ badge(E.filterB,filterActive()?'active':'none',filterActive()?'ok':'');
+ E.path.textContent=S.path.map(x=>x.name).join(' / ');E.back.disabled=S.path.length<2;
+ let v=S.view;if(!v){E.space.innerHTML='<div class="empty">Connect Drive or choose local files.</div>';updateButtons();selection();return}
+ let r=fileRange(),total=r.n+(v.done?0:1);E.space.style.height=Math.max(E.entries.clientHeight||550,total*RH)+'px';
+ if(!total){E.space.innerHTML='<div class="empty">No metadata loaded.</div>';updateButtons();selection();return}
+ let html='';
+ for(let i=r.start;i<r.end;i++){
+  if(i>=r.n){html+=`<div class="vrow more" style="top:${i*RH}px">More items available · scroll or fetch next page</div>`;continue}
+  let f=itemAt(v,i),folder=isFolder(f),st=statusText(f),fi=folder?folderInfo(f):null,ch=folder?childPill(f):null,meta=folder?fi.meta:(ext(f.name)||'no extension')+' · '+fmt(+f.size||null)+' · '+when(f.modifiedTime),status=folder?fi.status:st[0],title=folder?` title="${esc(fi.title)}"`:'';
+  html+=`<div class="vrow ${folder?'folder':''}"${title} data-i="${i}" style="top:${i*RH}px"><span class="num">${i+1})</span>${folder?`<span class="icon">${rowIcon(f)}</span>`:`<input class="pick" type="checkbox" ${S.selected.has(f.id)?'checked':''}>`}<div><div class="nameLine"><div class="ename">${esc(f.name)}</div>${folder?`<button class="childbtn ${ch[1]}" title="${esc(ch[2])}">${esc(ch[0])}</button>`:''}</div><div class="meta">${esc(meta)}</div><div class="status ${folder?'':st[1]}">${esc(status)}</div></div>${folder?'<button class="smallbtn open">Open</button>':f.webViewLink?'<button class="smallbtn ext">Drive</button>':''}</div>`
+ }
+ E.space.innerHTML=html;
+ E.space.querySelectorAll('[data-i]').forEach(node=>{
+  let f=itemAt(v,+node.dataset.i);if(!f)return;
+  if(isFolder(f)){
+   node.querySelector('.childbtn')?.addEventListener('click',ev=>{ev.stopPropagation();countChildren(f)});
+   node.onclick=ev=>{if(!ev.target.closest('.childbtn')&&!ev.target.classList.contains('ext'))openFolder(f)}
+  }else{
+   node.querySelector('.pick').onchange=ev=>{ev.target.checked?S.selected.set(f.id,f):S.selected.delete(f.id);selection();renderFiles()};
+   node.querySelector('.ext')?.addEventListener('click',()=>open(f.webViewLink,'_blank','noopener'))
+  }
+ });
+ updateButtons();selection()
+}
+function updateButtons(){
+ let v=S.view,A=sourceAdapter(),disabled=!v||!A.ready()||v.busy||v.done&&!v.pending.length;
+ E.more.disabled=disabled;E.allMeta.disabled=disabled;E.cancelMeta.disabled=!v||(!S.metaAll&&!v?.demand&&!v.busy);
+ let n=count(v),got=v?.received||0,p=v?.pages||0,phase=v?.demand?'demanding filtered candidates':v?.capped?'filtered-demand cap reached · raise cap, Apply, More, or Enumerate all to continue':v?.done?'end reached':E.prefetch.value==='smooth'?'browse · keeping one unread page ahead':'browse buffering ahead',info=v?(A.key==='local'?`${got.toLocaleString()} device entries read · ${n.toLocaleString()} visible/fetched · ${p} batch${p===1?'':'es'} · ${phase} · virtual DOM`:`${got.toLocaleString()} received · ${n.toLocaleString()} visible/fetched · ${p} page${p===1?'':'s'} · ${phase} · ${S.latency.toFixed(0)} ms last-page estimate`):'Browse loads progressively; filtered demand retrieves aggressively. Only on-screen rows enter the DOM.';
+ if(A.key==='drive'&&E.fullText.value.trim())info+=' · Drive fullText prefilter active; orderBy omitted';
+ E.listNote.textContent=info;badge(E.metaB,`${n.toLocaleString()} visible`,n?'ok':'')
+}
+function arrangement(){
+ let a=anchor(S.view,S.layout);S.layout=E.arrange.value;if(S.layout!=='api'&&S.view)buildGroup(S.view);restoreAnchor(S.view,a);if(S.layout==='api'&&S.view)S.view.group=null;renderFiles()
+}
+async function getMetadata(id,key='',signal=null){
+ let cache=S.resolveCache.get(id);if(cache){S.resolveCache.delete(id);S.resolveCache.set(id,cache);return cache}
+ let u=new URL(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}`);
+ u.searchParams.set('supportsAllDrives','true');u.searchParams.set('fields','id,name,mimeType,size,createdTime,modifiedTime,driveId,webViewLink,resourceKey,capabilities(canDownload),shortcutDetails(targetId,targetMimeType,targetResourceKey)');
+ let r=await request(u,{signal,headers:resourceHeaders(resourcePair(id,key))},'Resolve shortcut'),f=await r.json();S.resolveCache.set(id,f);while(S.resolveCache.size>2000)S.resolveCache.delete(S.resolveCache.keys().next().value);return f
+}
+async function resolveDrive(f,signal=null){
+ if(!isShortcut(f))return f;
+ let d=f.shortcutDetails;if(!d?.targetId)throw Error('Broken shortcut');
+ let target=await getMetadata(d.targetId,d.targetResourceKey||'',signal);
+ target={...target,viaShortcut:f,resourceKey:target.resourceKey||d.targetResourceKey||''};
+ return target
+}
+async function openFolder(f){
+ try{
+  let A=entryAdapter(f),real=await A.resolve(f);
+  S.view&&(S.view.scroll=E.entries.scrollTop);S.path.push(A.folderNode(f,real));rememberPath();E.browseArea.value='folder';activatePath()
+ }catch(err){toast('Cannot open folder: '+err.message,'bad')}
+}
+function activatePath(){let v=active(false);E.entries.scrollTop=v.scroll||0;renderFiles();beginView(v)}
+function renderTargets(){E.targets.innerHTML=[...targetMap().values()].map(f=>`<span class="chip">${esc(f.name)} <button data-x="${esc(f.id)}">×</button></span>`).join('');E.targets.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{targetMap().delete(b.dataset.x);renderTargets()})}
+function selection(){
+ let n=S.selected.size,drive=0,device=0;for(let f of S.selected.values())if(f.origin==='local')device++;else drive++;
+ let text=n?`${n} selected${drive&&device?` · Drive ${drive} / Device ${device}`:''}`:'0 selected';
+ badge(E.chosen,text,n?'ok':'');E.sticky.classList.toggle('show',matchMedia('(max-width:909px)').matches&&n>0&&!S.scan.busy);E.stickText.textContent=text
+}
+function enterLocalRoot(root,mode){
+ S.localMode=mode;S.localRoot=root;for(let [k,v] of S.views)if(v.source==='local')S.views.delete(k);
+ S.targetSets.local.clear();S.paths.local=[root];S.browse.local='folder';E.source.value='local';switchSource(true);toast(mode==='live'?'Device folder opened in live read-only mode. Subfolders load as you browse.':'Folder snapshot loaded. Empty folders cannot be reconstructed from file-selection paths.','warn')
+}
+function localFileList(files){
+ let root=localDirNode(`files:${++S.localSeq}`,'Chosen files',{children:[]});
+ [...files].forEach((file,i)=>root.children.push(localFileNode(file,`${root.id}/${i}`,file.name)));
+ enterLocalRoot(root,'snapshot')
+}
+function localFolderSnapshot(files){
+ let all=[...files],first=(all[0]?.webkitRelativePath||'Selected folder').split('/')[0]||'Selected folder',root=localDirNode(`snapshot:${++S.localSeq}`,first,{children:[]}),dirs=new Map([[root.id,root]]);
+ for(let i=0;i<all.length;i++){
+  let file=all[i],parts=(file.webkitRelativePath||file.name).split('/').filter(Boolean),start=parts[0]===first?1:0,parent=root;
+  for(let j=start;j<parts.length-1;j++){
+   let id=parent.id+'/'+parts[j],dir=dirs.get(id);
+   if(!dir){dir=localDirNode(id,parts[j],{children:[]});dirs.set(id,dir);parent.children.push(dir)}
+   parent=dir
+  }
+  parent.children.push(localFileNode(file,`${parent.id}/file:${i}`,parts.at(-1)||file.name))
+ }
+ S.localTree=dirs;enterLocalRoot(root,'snapshot');
+ toast('Folder snapshot loaded. Empty folders cannot be reconstructed from file-selection paths.','warn')
+}
+async function openDeviceFolder(){
+ if(!window.showDirectoryPicker){E.folderInput.click();return}
+ try{
+  let handle=await window.showDirectoryPicker({id:'drive-lens-device',mode:'read'}),root=localDirNode(`device:${++S.localSeq}`,handle.name,{handle,live:true});
+  enterLocalRoot(root,'live')
+ }catch(err){if(err.name!=='AbortError')toast('Device folder unavailable: '+err.message,'bad')}
+}
+function scanQuery(area,parent,includeFilters,needFolders=false){
+ let q=E.trash.checked?[]:['trashed = false'];
+ if(!needFolders)q.push(`mimeType != '${DIR}'`);
+ if(includeFilters){
+  let n=E.fName.value.trim(),m=E.fMime.value.trim(),full=E.fullText.value.trim();
+  if(n)q.push(`name contains '${qe(n)}'`);
+  if(m)q.push(`mimeType = '${qe(m)}'`);
+  if(E.fFrom.value)q.push(`modifiedTime >= '${E.fFrom.value}T00:00:00'`);
+  if(E.fTo.value){let x=new Date(E.fTo.value+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+1);q.push(`modifiedTime < '${x.toISOString()}'`)}
+  if(full)q.push(`fullText contains '${qe(full)}'`)
+ }
+ if(area==='folder')q.push(`'${qe(parent.id)}' in parents`);
+ return q.join(' and ')||'trashed = false or trashed = true'
+}
+async function* streamTree(folder,recursive,signal,seenFolders){
+ let A=entryAdapter(folder),queue=[folder];
+ while(queue.length&&!S.scan.stop){
+  let parent=queue.shift();if(seenFolders.has(parent.id))continue;seenFolders.add(parent.id);
+  let cursor={},filteredOnServer=A.key==='drive'&&!recursive&&E.useFilter.checked,page;
+  do{
+   let query=A.key==='drive'?scanQuery('folder',parent,filteredOnServer,recursive):'';
+   page=await A.list(parent,cursor,{area:'folder',query,scan:true,recursive,signal});
+   if(page.incomplete)S.incomplete=true;
+   for(let f of page.items){
+    if(isFolder(f)){
+     if(recursive){try{let real=await A.resolve(f,signal);queue.push(A.folderNode(f,real))}catch{}}
+    }else if(!E.useFilter.checked||localPass(f,true,filteredOnServer))yield f
+   }
+  }while(!page.done&&!S.scan.stop)
+ }
+}
+async function* candidates(signal){
+ let area=E.scanArea.value,A=sourceAdapter(),limit=Math.max(0,+E.scanLimit.value||0),n=0,seen=new Set(),take=f=>{let k=(f.origin||S.source)+':'+f.id;if(seen.has(k)||limit&&n>=limit)return false;seen.add(k);n++;return true};
+ if(area==='selected'){for(let f of S.selected.values())if(localPass(f,true,false)&&take(f))yield f;return}
+ if(area==='viewport'||area==='loaded'){for(let f of listedFiles())if(localPass(f,true,false)&&take(f))yield f;return}
+ if(area==='folder'){for await(let f of streamTree(current(),false,signal,new Set())){if(!take(f))return;yield f}return}
+ if(area==='targets'){let used=new Set();for(let folder of targetMap().values())for await(let f of streamTree(folder,E.recursive.checked,signal,used)){if(!take(f))return;yield f}return}
+ if(!A.corpus)return;
+ let cursor={},page;
+ do{
+  page=await A.list(null,cursor,{area:'corpus',query:scanQuery('corpus',{},E.useFilter.checked),scan:true,signal});
+  if(page.incomplete)S.incomplete=true;
+  for(let f of page.items)if(!isFolder(f)&&localPass(f,true,A.key==='drive')){if(!take(f))return;yield f}
+ }while(!page.done&&!S.scan.stop)
+}
+function exportMime(m){
+ return m===G+'document'?'text/plain':m===G+'spreadsheet'?'text/csv':m===G+'presentation'?'text/plain':m===G+'script'?'application/vnd.google-apps.script+json':''
+}
+function readable(f,ct,b){
+ if(/text\/|json|javascript|xml|csv|html|markdown|css/i.test(ct+' '+f.name))return true;
+ let p=new TextDecoder().decode(b.slice(0,512)).trimStart();if('{['.includes(p[0]))return true;
+ let bad=0;for(let x of b.slice(0,512))if(x===0||x<9||x>13&&x<32)bad++;return bad<3
+}
+function skip(msg,code='skipped'){let e=Error(msg);e.code=code;throw e}
+async function readDevice(f,signal,max){
+ let file=f.local||await f.handle?.getFile();if(!file)skip('Device file unavailable','unsupported');
+ if(max&&file.size>max*1048576)skip('Above body-size limit','tooLarge');
+ return {text:await file.text(),type:file.type||f.mimeType,coverage:'',bytes:file.size}
+}
+async function readDrive(f,signal,max){
+ let mime=actualMime(f),out=exportMime(mime),url,coverage='';
+ if(mime.startsWith(G)){
+  if(!out)skip('Unsupported Workspace export','unsupported');
+  if(mime===G+'spreadsheet')coverage='Google Sheets CSV export searches the exported sheet only.';
+  url=`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(f.id)}/export?mimeType=${encodeURIComponent(out)}`
+ }else url=`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(f.id)}?alt=media&supportsAllDrives=true`;
+ let h=resourceHeaders(resourcePair(f.id,f.resourceKey)),r=await request(url,{signal,headers:h},'Download'),b=new Uint8Array(await r.arrayBuffer()),ct=r.headers.get('content-type')||mime;
+ if(max&&b.length>max*1048576)skip('Above body-size limit','tooLarge');
+ if(!readable(f,ct,b))skip('Unsupported binary content','unsupported');
+ return {text:new TextDecoder().decode(b),type:ct,coverage,real:f,bytes:b.length}
+}
+function contentBase(f){return [f.origin||S.source,f.id||f.name||''].join('\u0001')}
+function contentKey(f){return [contentBase(f),f.modifiedTime||'',f.size||'',actualMime(f),f.resourceKey||''].join('\u0001')}
+function contentUse(){return {keys:new Set(),hits:0,fetches:0}}
+function contentCacheStatus(){
+ let bytes=0;S.contentCache.forEach(x=>bytes+=x.bytes||0);
+ badge(E.contentCacheB,`${S.contentCache.size.toLocaleString()} cached · ${fmt(bytes)} · ${S.contentStats.hits.toLocaleString()} reused`,S.contentCache.size?'ok':'')
+}
+function finishContentUse(use,complete=true){
+ if(complete&&use?.keys.size&&!E.keepOutsideContent.checked)for(let k of [...S.contentCache.keys()])if(!use.keys.has(k))S.contentCache.delete(k);
+ contentCacheStatus()
+}
+async function getBody(original,signal,use=null){
+ let A=entryAdapter(original),f=await A.resolve(original,signal),max=+E.maxBody.value||0,key=contentKey(f),cached=E.reuseContent.checked&&S.contentCache.get(key);
+ if(f.capabilities?.canDownload===false)skip('Not downloadable','notDownloadable');
+ if(max&&f.size&&+f.size>max*1048576)skip('Above body-size limit','tooLarge');
+ if(cached){
+  if(max&&cached.bytes>max*1048576)skip('Above body-size limit','tooLarge');
+  cached.at=Date.now();use?.keys.add(key);if(use)use.hits++;S.contentStats.hits++;contentCacheStatus();return cached.body
+ }
+ if(E.reuseContent.checked&&S.contentPending.has(key)){
+  let body=await S.contentPending.get(key);use?.keys.add(key);if(use)use.hits++;S.contentStats.hits++;contentCacheStatus();return body
+ }
+ let job=A.read(f,signal,max);if(E.reuseContent.checked)S.contentPending.set(key,job);
+ try{
+  let body=await job;
+  if(E.reuseContent.checked){let base=contentBase(f);for(let [k,v] of S.contentCache)if(v.base===base&&k!==key)S.contentCache.delete(k);S.contentCache.set(key,{body,base,bytes:body.bytes||new TextEncoder().encode(body.text).length,at:Date.now()});use?.keys.add(key);if(use)use.fetches++;S.contentStats.fetches++;contentCacheStatus()}
+  return body
+ }finally{if(E.reuseContent.checked)S.contentPending.delete(key)}
+}
+function flatten(v,out=[],p=''){
+ if(typeof v==='string'){if(!p.endsWith('thoughtSignature')&&v.trim())out.push({kind:'content',label:p,text:v})}
+ else if(Array.isArray(v))v.forEach((x,i)=>flatten(x,out,`${p}[${i}]`));
+ else if(v&&typeof v==='object')Object.entries(v).forEach(([k,x])=>k!=='thoughtSignature'&&flatten(x,out,p?`${p}.${k}`:k));
+ return out
+}
+function signature(x){try{let b=Uint8Array.from(atob(x),c=>c.charCodeAt(0)),i=0,V=()=>{let n=0,k=0,c;do{c=b[i++];n+=(c&127)*2**(7*k++)}while(c&128&&i<b.length);return n},t=b[i++],outer=V(),t2=b[i++],payload=V();return{base64:x.length,bytes:b.length,outerField:t>>3,outerBytes:outer,innerField:t2>>3,payload,prefix:[...b.slice(i,i+16)].map(v=>v.toString(16).padStart(2,'0')).join(' ')}}catch{return{base64:x.length,error:'Invalid Base64'}}}
+function decode(file,body){
+ let raw=body.text,z=raw.trim(),j=null;try{if('{['.includes(z[0]))j=JSON.parse(raw)}catch{}
+ if(j&&Array.isArray(j?.chunkedPrompt?.chunks)){
+  let sections=[],signatures=[],sys=flatten(j.systemInstruction||{}).map(x=>x.text).join('\n');
+  if(sys)sections.push({kind:'system',text:sys});
+  if(j.runSettings)sections.push({kind:'settings',text:JSON.stringify(j.runSettings,null,2)});
+  j.chunkedPrompt.chunks.forEach(c=>{let text=c.text||(c.parts||[]).map(p=>p.text||'').join(''),kind=c.isThought?'thought':c.role==='user'?'user':'assistant';if(text)sections.push({kind,text,time:c.createTime||'',tokens:c.tokenCount||0});(c.parts||[]).forEach(p=>p.thoughtSignature&&signatures.push(signature(p.thoughtSignature)))});
+  return {file,decoder:'ai-studio-chat',title:'AI Studio chat',model:j.runSettings?.model||'',sections,signatures,raw,coverage:body.coverage||''}
+ }
+ if(j)return {file,decoder:'json',title:'JSON',model:'',sections:flatten(j),signatures:[],raw,coverage:body.coverage||''};
+ let text=raw;if(/html/i.test(body.type)||/<(?:html|body|div|p|article)\b/i.test(raw.slice(0,500)))try{text=new DOMParser().parseFromString(raw,'text/html').body.textContent||raw}catch{}
+ return {file,decoder:'text',title:'Text',model:'',sections:[{kind:'content',text}],signatures:[],raw,coverage:body.coverage||''}
+}
+function tokens(q){let a=[];String(q).replace(/"([^"]+)"|(\S+)/g,(_,p,w)=>a.push(p||w));return [...new Set(a)]}
+function caseSensitive(q=E.query.value){return E.caseMode.value==='match'||E.caseMode.value==='smart'&&/[A-Z]/.test(q)}
+function sourceForLiteral(t){let p=rx(t);return E.whole.checked?`(?<![\\p{L}\\p{N}_])(?:${p})(?![\\p{L}\\p{N}_])`:p}
+function literalRegex(t,q=E.query.value){return new RegExp(sourceForLiteral(t),caseSensitive(q)?'gu':'giu')}
+function collect(text,re,remaining,want){
+ let count=0,pos=[],m,capped=false;re.lastIndex=0;
+ while((m=re.exec(text))){
+  count++;if(pos.length<want)pos.push({p:m.index,n:m[0].length||1});
+  if(remaining&&count>=remaining){capped=true;break}
+  if(!m[0].length)re.lastIndex++
+ }
+ return {count,pos,capped}
+}
+function nearCollect(text,terms,remaining,want){
+ if(!terms.length)return {count:0,pos:[],capped:false};
+ let sources=terms.map(t=>'('+sourceForLiteral(t)+')'),re=new RegExp(sources.join('|'),caseSensitive()? 'gu':'giu'),queue=[],counts=Array(terms.length).fill(0),have=0,count=0,pos=[],m,span=Math.max(1,+E.nearSpan.value||120),capped=false;
+ while((m=re.exec(text))){
+  let id=m.slice(1).findIndex(x=>x!==undefined);if(id<0){if(!m[0].length)re.lastIndex++;continue}
+  queue.push({p:m.index,n:m[0].length||1,id});if(counts[id]++===0)have++;
+  while(queue.length&&counts[queue[0].id]>1){counts[queue.shift().id]--}
+  if(have===terms.length){
+   let end=m.index+(m[0].length||1),len=end-queue[0].p;
+   if(len<=span){count++;if(pos.length<want)pos.push({p:queue[0].p,n:len});if(remaining&&count>=remaining){capped=true;break}}
+   let first=queue.shift();if(--counts[first.id]===0)have--
+  }
+  if(!m[0].length)re.lastIndex++
+ }
+ return {count,pos,capped}
+}
+function excerpt(t,p,n){let c=Math.max(20,+E.contextChars.value||100),a=Math.max(0,p-c),b=Math.min(t.length,p+n+c);return(a?'…':'')+t.slice(a,b)+(b<t.length?'…':'')}
+function roleAllowed(kind){return ({user:E.user,assistant:E.assistant,thought:E.thought,content:E.content,system:E.system,settings:E.settings}[kind]||E.content).checked}
+function sectionDate(s,doc){let a=E.sFrom.value,b=E.sTo.value,z=(s.time||doc.file.modifiedTime||'').slice(0,10);return(!a&&!b)||!!z&&(!a||z>=a)&&(!b||z<=b)}
+function analyze(doc){
+ if(E.decoder.value&&doc.decoder!==E.decoder.value)return null;
+ let query=E.query.value.trim(),mode=E.searchMode.value,parts=mode==='literal'||mode==='regex'?[query]:tokens(query),exclude=tokens(E.exclude.value.trim()),sections=doc.sections.filter(s=>roleAllowed(s.kind)&&sectionDate(s,doc));
+ if(E.raw.checked)sections.push({kind:'raw',text:doc.raw});
+ if(exclude.length&&sections.some(s=>exclude.some(t=>literalRegex(t,E.exclude.value).test(s.text))))return null;
+ let cap=Math.max(0,+E.hitCap.value||0),snipLimit=Math.max(1,+E.maxSnippets.value||3),total=0,capped=false,hits=[],matched=[],found=new Set();
+ for(let s of sections){
+  let remaining=cap?Math.max(0,cap-total):0;if(cap&&!remaining){capped=true;break}
+  let out=[];
+  if(mode==='regex'){
+   let p=E.whole.checked?`(?<![\\p{L}\\p{N}_])(?:${query})(?![\\p{L}\\p{N}_])`:query;
+   out=[collect(s.text,new RegExp(p,caseSensitive()?'gu':'giu'),remaining,Math.max(0,snipLimit-hits.length))]
+  } else if(mode==='near') out=[nearCollect(s.text,parts,remaining,Math.max(0,snipLimit-hits.length))];
+  else {
+   for(let i=0;i<parts.length;i++){
+    let room=cap?Math.max(0,cap-total-out.reduce((n,x)=>n+x.count,0)):0, o=collect(s.text,literalRegex(parts[i]),room,Math.max(0,snipLimit-hits.length));
+    if(o.count)found.add(i);out.push(o);if(cap&&out.reduce((n,x)=>n+x.count,0)>=remaining)break
+   }
+  }
+  let c=out.reduce((n,x)=>n+x.count,0);if(!c)continue;
+  total+=c;matched.push(s);capped=capped||out.some(x=>x.capped);
+  for(let o of out)for(let p of o.pos){if(hits.length<snipLimit)hits.push({kind:s.kind,time:s.time||'',text:excerpt(s.text,p.p,p.n),count:c})}
+  if(cap&&total>=cap){capped=true;break}
+ }
+ if(mode==='near'&&total)parts.forEach((_,i)=>found.add(i));
+ if((mode==='all'||mode==='any')&&capped){
+  for(let i=0;i<parts.length;i++)if(!found.has(i)&&sections.some(s=>literalRegex(parts[i]).test(s.text)))found.add(i)
+ }
+ let qualified=mode==='all'?found.size===parts.length:mode==='any'?found.size>=Math.max(1,+E.minTerms.value||1):total>0;
+ if(!qualified||total<Math.max(1,+E.minHits.value||1))return null;
+ return {total,capped,distinct:found.size,hits,matched}
+}
+function captureSearchSpec(){
+ return {query:E.query.value.trim(),mode:E.searchMode.value,caseMode:E.caseMode.value,whole:E.whole.checked,context:Math.max(20,+E.contextChars.value||100),hitCap:Math.max(0,+E.hitCap.value||0),sFrom:E.sFrom.value,sTo:E.sTo.value,raw:E.raw.checked,roles:{user:E.user.checked,assistant:E.assistant.checked,thought:E.thought.checked,content:E.content.checked,system:E.system.checked,settings:E.settings.checked}}
+}
+function compactResult(doc,a,seq,spec){
+ let r={file:doc.file,decoder:doc.decoder,title:doc.title,model:doc.model,count:a.total,capped:a.capped,distinct:a.distinct,hits:a.hits,seq,coverage:doc.coverage||'',signatureCount:doc.signatures.length,spec:spec||captureSearchSpec()};
+ if(E.retainMode.value==='sections')r.sections=a.matched;
+ if(E.retainMode.value==='full')r.doc=doc;
+ return r
+}
+function sortResults(){
+ let mode=E.resultSort.value;
+ S.result.sort(mode==='hits'?(a,b)=>b.count-a.count||a.seq-b.seq:mode==='modified'?(a,b)=>String(b.file.modifiedTime||'').localeCompare(String(a.file.modifiedTime||'')):mode==='name'?(a,b)=>a.file.name.localeCompare(b.file.name):(a,b)=>a.seq-b.seq)
+}
+function specCase(sp){return sp.caseMode==='match'||sp.caseMode==='smart'&&/[A-Z]/.test(sp.query)}
+function paint(text,sp=captureSearchSpec()){
+ let q=sp.query.trim(),mode=sp.mode,re;if(!q)return esc(text);
+ try{
+  if(mode==='regex'){let p=sp.whole?`(?<![\\p{L}\\p{N}_])(?:${q})(?![\\p{L}\\p{N}_])`:q;re=new RegExp(p,specCase(sp)?'gu':'giu')}
+  else{let p=(mode==='literal'?[q]:tokens(q)).map(sourceForLiteral).sort((a,b)=>b.length-a.length).join('|');re=new RegExp(p,specCase(sp)?'gu':'giu')}
+ }catch{return esc(text)}
+ let out='',last=0,m,n=0;while((m=re.exec(text))&&n++<100){out+=esc(text.slice(last,m.index))+`<mark>${esc(m[0])}</mark>`;last=m.index+(m[0].length||1);if(!m[0].length)re.lastIndex++}
+ return out+esc(text.slice(last))
+}
+function resultRange(){let n=S.result.length,top=E.results.scrollTop||0,h=E.results.clientHeight||500,start=Math.max(0,Math.floor(top/RRH)-3),end=Math.min(n,Math.ceil((top+h)/RRH)+3);return {start,end,n}}
+function renderResults(){
+ sortResults();let r=resultRange();E.resultSpace.style.height=Math.max(E.results.clientHeight||500,r.n*RRH)+'px';
+ badge(E.hitsB,`${r.n} results`,r.n?'ok':'');badge(E.resultB,`${r.n} retained`,r.n?'ok':'');
+ if(!r.n){E.resultSpace.innerHTML='<div class="empty">No retained matches.</div>';return}
+ let html='';
+ for(let i=r.start;i<r.end;i++){
+  let x=S.result[i],label=x.capped?`≥${x.count.toLocaleString()} hits`:`${x.count.toLocaleString()} hits`,preview=x.hits[0]?.text||'Match retained.';
+  html+=`<div class="result" data-r="${i}" style="top:${i*RRH}px"><div class="result-top"><div><div class="result-title">${esc(x.file.name)}</div><div class="tiny">${x.file.origin==='local'?'Device':'Drive'} · ${esc(x.title)}${x.model?' · '+esc(x.model.replace('models/','')):''}${x.coverage?' · limited export':''}</div></div><span class="badge ok">${label}</span></div><div class="snip">${paint(preview,x.spec)}</div><div class="buttons"><button class="smallbtn openResult">Inspect</button>${x.file.webViewLink?'<button class="smallbtn driveResult">Drive</button>':''}<span class="tiny">${x.count.toLocaleString()} hit${x.count===1?'':'s'} · inspect flow/messages/list</span></div></div>`
+ }
+ E.resultSpace.innerHTML=html;
+ E.resultSpace.querySelectorAll('[data-r]').forEach(n=>{let x=S.result[+n.dataset.r];n.querySelector('.openResult').onclick=()=>openResult(x);n.querySelector('.driveResult')?.addEventListener('click',()=>open(x.file.webViewLink,'_blank','noopener'))})
+}
+function updateScanUI(force=false){
+ let sc=S.scan,m=sc.metrics;if(!m)return;
+ let now=performance.now();if(!force&&now-sc.lastUI<120)return;sc.lastUI=now;
+ badge(E.scanB,sc.busy?'scanning…':sc.stop?'stopped':'done',sc.busy?'warn':sc.stop?'warn':'ok');
+ E.scanStats.innerHTML=`<span class="badge">${m.files.toLocaleString()} scanned</span><span class="badge ok">${m.matched.toLocaleString()} matched</span><span class="badge">${S.result.length.toLocaleString()} retained</span><span class="badge">${sc.content?.hits||0} reused</span><span class="badge">${sc.content?.fetches||0} fetched</span><span class="badge bad">${m.failed.toLocaleString()} failed</span><span class="badge">${m.skipped.toLocaleString()} skipped</span>`;
+ if(sc.known){E.bar.classList.remove('run');E.bar.style.width=`${Math.min(100,m.files/sc.known*100)}%`}else if(sc.busy){E.bar.style.width='';E.bar.classList.add('run')}else{E.bar.classList.remove('run');E.bar.style.width='100%'}
+ renderResults()
+}
+async function startScan(areaOverride=''){
+ if(S.scan.busy)return toast('A scan is already running. Stop it before starting another.','warn');
+ if(areaOverride)E.scanArea.value=areaOverride;
+ let q=E.query.value.trim();if(!q)return toast('Enter content search text first.','warn');
+ try{if(E.searchMode.value==='regex'){let p=E.whole.checked?`(?<![\\p{L}\\p{N}_])(?:${q})(?![\\p{L}\\p{N}_])`:q;new RegExp(p,caseSensitive()?'gu':'giu')}}catch(err){return toast('Regex error: '+err.message,'bad')}
+ let broad=['folder','targets','corpus'].includes(E.scanArea.value),unlimited=!(+E.scanLimit.value||0);
+ if(E.scanArea.value==='targets'&&E.recursive.checked&&E.fullText.value.trim()&&E.useFilter.checked)toast('Recursive target scan bypasses Drive fullText prefilter so matching descendants are not hidden by parent folders.','warn');
+ if(broad&&unlimited&&!confirm('Scan this whole scope without a file-count limit? It streams data and keeps matched results only, but may use significant network/time.'))return;
+ let sc=S.scan={busy:true,abort:new AbortController(),stop:false,seq:0,lastUI:0,known:0,metrics:{files:0,matched:0,failed:0,skipped:0},skips:{},content:contentUse(),spec:captureSearchSpec()},cap=+E.keepLimit.value||0,iter;
+ S.result=[];renderResults();selection();E.scan.disabled=true;E.stopScan.disabled=false;
+ if(['selected','viewport','loaded'].includes(E.scanArea.value)){
+  let list=E.scanArea.value==='selected'?[...S.selected.values()]:E.scanArea.value==='viewport'?fileRange().files:(S.view?.rows||[]);
+  sc.known=list.filter(f=>!isFolder(f)&&localPass(f,true,false)).length
+ }
+ try{iter=candidates(sc.abort.signal)}catch(err){toast(err.message,'bad');return}
+ let done=false,workers=Math.max(1,+E.concurrency.value||6);
+ async function worker(){
+  while(!done&&!sc.stop){
+   let item;try{item=await iter.next()}catch(err){if(err.name!=='AbortError')toast('Scan listing failed: '+err.message,'bad');done=true;return}
+   if(item.done){done=true;return}
+   let f=item.value,seq=sc.seq++;sc.metrics.files++;
+   try{
+    let doc=decode(f,await getBody(f,sc.abort.signal,sc.content)),a=analyze(doc);
+    if(a){
+     sc.metrics.matched++;
+     if(!cap||S.result.length<cap)S.result.push(compactResult(doc,a,seq,sc.spec));
+     if(E.goal.value==='enough'&&cap&&S.result.length>=cap){sc.stop=true;sc.abort.abort()}
+    }
+   }catch(err){
+    if(err.name!=='AbortError'){if(err.code){sc.metrics.skipped++;sc.skips[err.code]=(sc.skips[err.code]||0)+1}else sc.metrics.failed++}
+   }
+   updateScanUI()
+  }
+ }
+ await Promise.all(Array.from({length:workers},worker));
+ sc.busy=false;finishContentUse(sc.content,!sc.stop&&!sc.abort.signal.aborted);E.scan.disabled=S.source==='drive'&&!S.connected;E.stopScan.disabled=true;selection();updateScanUI(true);
+ let skipped=Object.entries(sc.skips).map(([k,v])=>`${k}: ${v}`).join(', ');
+ toast(`Scan ${sc.stop?'stopped':'finished'}: ${sc.metrics.files} files checked, ${sc.metrics.matched} matched · ${sc.content.hits} reused, ${sc.content.fetches} fetched${skipped?'; skipped '+skipped:''}.`,sc.stop?'warn':'')
+}
+function stopScan(){if(!S.scan.busy)return;S.scan.stop=true;S.scan.abort?.abort();updateScanUI(true)}
+let opened=null,openedSpec=null,tab='content',inspectMode='flow',inspection=null,focusHit=0,picked=new Set(),extractShown=100;
+function specRegexes(sp){
+ let q=sp.query.trim(),mode=sp.mode;if(!q)return[];
+ try{
+  if(mode==='regex'){let p=sp.whole?`(?<![\p{L}\p{N}_])(?:${q})(?![\p{L}\p{N}_])`:q;return[new RegExp(p,specCase(sp)?'gu':'giu')]}
+  let list=mode==='literal'?[q]:tokens(q);
+  return list.map(x=>new RegExp((sp.whole?`(?<![\p{L}\p{N}_])(?:${sourceForLiteral(x)})(?![\p{L}\p{N}_])`:sourceForLiteral(x)),specCase(sp)?'gu':'giu'))
+ }catch{return[]}
+}
+function inspectAllowed(s,doc,sp){
+ let allow=sp.roles[s.kind]??sp.roles.content,z=(s.time||doc.file.modifiedTime||'').slice(0,10);
+ return allow&&((!sp.sFrom&&!sp.sTo)||!!z&&(!sp.sFrom||z>=sp.sFrom)&&(!sp.sTo||z<=sp.sTo))
+}
+function buildInspection(doc,sp){
+ let sections=doc.sections.slice();if(sp.raw&&doc.raw)sections.push({kind:'raw',text:doc.raw,time:''});
+ let regs=specRegexes(sp),max=sp.hitCap||50000,hits=[],matched=new Set(),capped=false;
+ for(let si=0;si<sections.length&&!capped;si++){
+  let sec=sections[si];if(!inspectAllowed(sec,doc,sp))continue;
+  let cand=[];
+  for(let re of regs){re.lastIndex=0;let m;while((m=re.exec(sec.text))){cand.push({si,p:m.index,n:m[0].length||1});if(!m[0].length)re.lastIndex++;if(cand.length>max*2)break}}
+  cand.sort((a,b)=>a.p-b.p||b.n-a.n);let last=-1;
+  for(let h of cand){if(h.p<last)continue;h.i=hits.length;hits.push(h);matched.add(si);last=h.p+h.n;if(hits.length>=max){capped=true;break}}
+ }
+ let by=new Map();hits.forEach(h=>{let a=by.get(h.si)||[];a.push(h);by.set(h.si,a)});
+ return {sections,hits,matched,by,capped,shown:{flow:200,matches:200,hits:200}}
+}
+function codeInfo(t,mode='keep',min=0){
+ let re=/```([^\n`]*)\n?([\s\S]*?)(```|$)/g,m,a=[],chars=0,out='',last=0,changed=false;
+ while((m=re.exec(t))){let body=m[2],type=m[1].trim()||'plain text',lines=body?body.replace(/\n$/,'').split('\n').length:0,closed=!!m[3],d={type,lines,characters:body.length,closed};a.push(d);chars+=d.characters;let replace=mode==='meta'||mode==='strip'||mode==='large'&&d.characters>=min;if(replace){out+=t.slice(last,m.index)+(mode==='strip'?'[code block omitted]':`[fenced code block ${a.length} · type: ${type} · lines: ${lines} · characters: ${d.characters}${closed?'':' · unclosed'}]`);last=re.lastIndex;changed=true}}
+ return {blocks:a.length,chars,lines:a.reduce((n,x)=>n+x.lines,0),details:a,text:changed?out+t.slice(last):t}
+}
+function codePass(c,k,n){return k==='has'?!!c.blocks:k==='min'?c.chars>=n:k==='none'?!c.blocks:true}
+function stripCode(t){return codeInfo(t,'strip').text}
+function hasCode(t){return codeInfo(t).blocks>0}
+function copied(text,label='Copied'){if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(text).then(()=>toast(label,'ok')).catch(()=>fallbackCopy(text,label));return fallbackCopy(text,label)}
+function fallbackCopy(text,label){let x=document.createElement('textarea');x.value=text;x.style.position='fixed';x.style.opacity='0';document.body.appendChild(x);x.select();try{document.execCommand('copy');toast(label,'ok')}catch{toast('Clipboard unavailable; use Download TXT.','warn')}x.remove()}
+function setPicked(i,on){on?picked.add(i):picked.delete(i);updateExtract()}
+function selectedExtract(){
+ if(!opened||!inspection)return[];
+ let roles={user:E.xUser.checked,assistant:E.xAssistant.checked,thought:E.xThought.checked,system:E.xSystem.checked,settings:E.xSettings.checked,content:E.xContent.checked,raw:E.xContent.checked},min=Math.max(0,+E.xMin.value||0),max=Math.max(0,+E.xMax.value||0),cf=E.xCodeFilter.value,cm=E.xCodeMin.value.trim()===''?2000:Math.max(0,+E.xCodeMin.value||0),co=E.xCodeOutput.value;
+ return inspection.sections.map((s,si)=>({s,si,code:codeInfo(s.text,co,cm)})).filter(x=>(roles[x.s.kind]??roles.content)&&(E.xScope.value!=='matching'||inspection.matched.has(x.si))&&(E.xScope.value!=='picked'||picked.has(x.si))&&x.s.text.length>=min&&(!max||x.s.text.length<=max)&&codePass(x.code,cf,cm)).map(x=>({...x,text:x.code.text}))
+}
+function extractText(){
+ let a=selectedExtract();return a.map((x,i)=>`[${x.s.kind.toUpperCase()}${x.s.time?' · '+when(x.s.time):''}]\n${x.text}`).join('\n\n---\n\n')
+}
+function updateExtract(){
+ if(!opened||!inspection)return;let a=selectedExtract(),chars=a.reduce((n,x)=>n+x.text.length,0);
+ badge(E.extractB,`${a.length} msg · ${chars.toLocaleString()} chars`,a.length?'ok':'')
+}
+function renderExtractPreview(reset=false){
+ if(reset)extractShown=100;
+ let a=selectedExtract(),t=extractText(),shown=a.slice(0,extractShown);
+ E.view.innerHTML=`<div class="extractPreview">${a.length} message${a.length===1?'':'s'} · ${t.length.toLocaleString()} copied characters. This is the exact transformed copy set.</div>`+shown.map(x=>`<div class="msg ${esc(x.s.kind)}"><div class="who"><span>${esc(x.s.kind.toUpperCase())}${x.s.time?' · '+esc(when(x.s.time)):''}</span></div><div class="msgbody">${esc(x.text)}</div></div>`).join('')+(shown.length<a.length?`<button class="moreInspect" data-exmore>Show next ${Math.min(100,a.length-shown.length)} copied messages</button>`:'');
+ E.view.querySelector('[data-exmore]')?.addEventListener('click',()=>{extractShown+=100;renderExtractPreview()})
+}
+function paintLocations(text,hs){
+ let out='',last=0;for(let h of hs||[]){if(h.p<last)continue;out+=esc(text.slice(last,h.p))+`<mark class="loc${h.i===focusHit?' active':''}" data-hit="${h.i}">${esc(text.slice(h.p,h.p+h.n))}</mark>`;last=h.p+h.n}return out+esc(text.slice(last))
+}
+function sectionHTML(s,si){
+ let hs=inspection.by.get(si)||[],code=hasCode(s.text);
+ return `<div class="msg ${esc(s.kind)}" data-si="${si}"><div class="who"><span>${esc(s.kind.toUpperCase())}${s.time?' · '+esc(when(s.time)):''}${s.tokens?' · '+s.tokens+' tokens':''}</span><span class="msgActions"><input class="msgPick" data-pick="${si}" type="checkbox" title="Pick for extraction" ${picked.has(si)?'checked':''}><button data-copy="${si}">Copy</button>${code?`<button data-strip="${si}">Copy no-code</button>`:''}</span></div><div class="msgbody">${paintLocations(s.text,hs)}</div></div>`
+}
+function inspectIndexes(mode){
+ if(mode==='flow')return inspection.sections.map((_,i)=>i);
+ return [...inspection.matched].sort((a,b)=>a-b)
+}
+function setInspectMode(mode){inspectMode=mode;focusHit=Math.min(focusHit,Math.max(0,(inspection?.hits.length||1)-1));renderModal()}
+function jumpInspectHit(step=0,index=null){
+ if(!inspection?.hits.length)return;
+ focusHit=index==null?(focusHit+step+inspection.hits.length)%inspection.hits.length:index;
+ let h=inspection.hits[focusHit];
+ if(inspectMode==='hits'){if(focusHit>=inspection.shown.hits)inspection.shown.hits=focusHit+1}
+ else {let seq=inspectIndexes(inspectMode),pos=seq.indexOf(h.si);if(pos>=inspection.shown[inspectMode])inspection.shown[inspectMode]=pos+1}
+ renderModal();
+ requestAnimationFrame(()=>E.view.querySelector(`[data-hit="${focusHit}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}))
+}
+function bindInspectorBody(){
+ E.view.querySelectorAll('[data-hit]').forEach(x=>x.onclick=()=>jumpInspectHit(0,+x.dataset.hit));
+ E.view.querySelectorAll('[data-pick]').forEach(x=>x.onclick=ev=>{ev.stopPropagation();setPicked(+x.dataset.pick,ev.currentTarget.checked)});
+ E.view.querySelectorAll('[data-copy]').forEach(x=>x.onclick=()=>copied(inspection.sections[+x.dataset.copy].text,'Message copied.'));
+ E.view.querySelectorAll('[data-strip]').forEach(x=>x.onclick=()=>copied(stripCode(inspection.sections[+x.dataset.strip].text),'Message copied without code blocks.'));
+ E.view.querySelector('[data-more]')?.addEventListener('click',x=>{let mode=x.currentTarget.dataset.more;inspection.shown[mode]+=200;renderModal()})
+}
+async function openResult(r){
+ if(r.doc)return openDoc(r.doc,r.spec);
+ E.modal.classList.add('show');E.mTitle.textContent=r.file.name;E.mSub.textContent='Loading full file for flow/message/hit inspection…';E.view.textContent='Loading…';
+ try{openDoc(decode(r.file,await getBody(r.file,new AbortController().signal)),r.spec)}catch(err){E.view.textContent='Unable to open full content: '+err.message}
+}
+function openDoc(doc,spec=captureSearchSpec()){
+ opened=doc;openedSpec=spec;inspection=buildInspection(doc,spec);picked.clear();extractShown=100;tab='content';inspectMode='flow';focusHit=0;E.modal.classList.add('show');E.mTitle.textContent=doc.file.name;E.mSub.textContent=doc.title+(doc.model?' · '+doc.model:'')+(doc.coverage?' · '+doc.coverage:'');renderModal()
+}
+function renderModal(){
+ if(!opened)return;
+ let content=tab==='content';E.inspectTools.classList.toggle('hide',!content);E.extractPanel.classList.toggle('hide',!content);
+ document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+ if(tab==='raw'){E.view.textContent=opened.raw;return}
+ if(tab==='info'){
+  let d=opened,t=`Decoder: ${d.title}\nMIME: ${d.file.mimeType||'—'}\nSize: ${fmt(+d.file.size||null)}\nModified: ${when(d.file.modifiedTime)}\nModel: ${d.model||'—'}\nSections: ${d.sections.length}\nSearch locations in viewer: ${inspection.hits.length}${inspection.capped?' (capped)':''}\nSignatures: ${d.signatures.length}\nCoverage note: ${d.coverage||'—'}`;
+  if(d.signatures.length)t+='\n\n'+d.signatures.map((x,i)=>`Signature ${i+1}\nBase64 chars: ${x.base64}\nDecoded bytes: ${x.bytes||'—'}\nPayload bytes: ${x.payload||'—'}\nReadable plaintext: no\nPrefix: ${x.prefix||'—'}`).join('\n\n');
+  E.view.textContent=t;return
+ }
+ E.modeFlow.classList.toggle('on',inspectMode==='flow');E.modeMatches.classList.toggle('on',inspectMode==='matches');E.modeHits.classList.toggle('on',inspectMode==='hits');
+ badge(E.hitStatus,`${inspection.hits.length.toLocaleString()} location${inspection.hits.length===1?'':'s'}${inspection.capped?' · capped':''}`,inspection.hits.length?'ok':'');
+ E.prevHit.disabled=E.nextHit.disabled=!inspection.hits.length;updateExtract();
+ let html='';
+ if(inspectMode==='hits'){
+  let a=inspection.hits.slice(0,inspection.shown.hits);
+  html=a.map(h=>{let s=inspection.sections[h.si];return `<div class="hitrow${h.i===focusHit?' active':''}" data-hit="${h.i}"><div class="hithead"><span>#${h.i+1} · ${esc(s.kind.toUpperCase())}${s.time?' · '+esc(when(s.time)):''}</span><span>message ${h.si+1}</span></div><div>${paint(excerpt(s.text,h.p,h.n),openedSpec)}</div></div>`}).join('');
+  if(a.length<inspection.hits.length)html+=`<button class="moreInspect" data-more="hits">Show next ${Math.min(200,inspection.hits.length-a.length)} hits</button>`
+ }else{
+  let idx=inspectIndexes(inspectMode),shown=idx.slice(0,inspection.shown[inspectMode]);
+  html=shown.map(si=>sectionHTML(inspection.sections[si],si)).join('');
+  if(shown.length<idx.length)html+=`<button class="moreInspect" data-more="${inspectMode}">Show next ${Math.min(200,idx.length-shown.length)} messages</button>`
+  if(!idx.length)html='<div class="empty">No matching messages for the saved search.</div>'
+ }
+ E.view.innerHTML=html;bindInspectorBody()
+}
+function download(name,text,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+const JS_KEY='device_drive_searcher_workspace';
+let jsOutput='',jsResult;
+function jsText(v){
+ if(v===undefined)return 'undefined';
+ if(typeof v==='string')return v;
+ try{return JSON.stringify(v,(k,x)=>typeof x==='bigint'?String(x)+'n':x,2)}
+ catch{return String(v)}
+}
+function workspaceData(){
+ let listed=listedFiles(),screen=screenFiles();
+ return {files:S.view?.rows||[],visibleFiles:listed,listedFiles:listed,screenFiles:screen,selected:[...S.selected.values()],results:S.result,records:S.dataset.records,dataset:datasetEnvelope(),openedFile:opened,inspection,state:S,ui:E,helpers:{codeInfo,codePass,datasetJSON,datasetJSONL,datasetTXT,reportJSON}}
+}
+function workspaceSet(text,ok=true){
+ jsOutput=String(text);E.jsOut.textContent=jsOutput;E.jsCopy.disabled=E.jsDownload.disabled=!jsOutput;badge(E.jsB,ok?'done':'error',ok?'ok':'bad')
+}
+async function runWorkspace(){
+ let {files,visibleFiles,listedFiles,screenFiles,selected,results,records,dataset,openedFile,inspection,state,ui,helpers}=workspaceData(),copy=copied,save=(name,text,type='text/plain')=>download(name,String(text),type);
+ try{jsResult=await eval(`(async()=>{\n${E.jsCode.value}\n})()`);workspaceSet(jsText(jsResult));STORE.set(JS_KEY,E.jsCode.value)}
+ catch(err){jsResult=undefined;workspaceSet(`${err.name||'Error'}: ${err.message||err}`,false)}
+}
+function datasetFilters(){
+ let n=id=>Math.max(0,+E[id].value||0);
+ return {roles:{user:E.dUser.checked,assistant:E.dAssistant.checked,thought:E.dThought.checked,system:E.dSystem.checked,settings:E.dSettings.checked,content:E.dContent.checked,raw:E.dContent.checked},from:E.dFrom.value,to:E.dTo.value,min:n('dMin'),max:n('dMax'),chatMin:n('dChatMin'),chatMax:n('dChatMax'),countMin:n('dCountMin'),countMax:n('dCountMax'),hitsMin:n('dHitsMin'),hitsMax:n('dHitsMax'),codeFilter:E.dCodeFilter.value,codeMin:E.dCodeMin.value.trim()===''?2000:n('dCodeMin'),codeOutput:E.dCodeOutput.value,limitMessages:n('dLimitMessages'),limitChars:n('dLimitChars'),order:E.dOrder.value}
+}
+function within(n,min,max){return n>=min&&(!max||n<=max)}
+function chatMeta(doc,match){
+ let msg=0,chars=0,all=0,index=[];
+ for(let s of doc.sections){all+=s.text.length;if(isConversationMessage(s.kind)){msg++;chars+=s.text.length;index.push(msg)}else index.push(null)}
+ return {title:doc.title,decoder:doc.decoder,model:doc.model||'',messageCount:msg,sectionCount:doc.sections.length,characterCount:chars,sectionCharacterCount:all,searchMatched:!!match,searchMatchCount:match?.count??null,searchMatchCountCapped:!!match?.capped,savedSearch:match?.spec||null,index}
+}
+function chatPass(c,f){
+ return within(c.characterCount,f.chatMin,f.chatMax)&&within(c.messageCount,f.countMin,f.countMax)&&(!(f.hitsMin||f.hitsMax)||c.searchMatchCount!=null&&within(c.searchMatchCount,f.hitsMin,f.hitsMax))
+}
+function datasetDatePass(section,doc,f){
+ let z=(section.time||doc.file.modifiedTime||'').slice(0,10);
+ return (!f.from&&!f.to)||!!z&&(!f.from||z>=f.from)&&(!f.to||z<=f.to)
+}
+function datasetMessagePass(section,doc,f){
+ if(!(f.roles[section.kind]??f.roles.content)||!datasetDatePass(section,doc,f)||section.text.length<f.min||f.max&&section.text.length>f.max)return null;
+ let code=codeInfo(section.text,f.codeOutput,f.codeMin);
+ if(!codePass(code,f.codeFilter,f.codeMin))return null;
+ return {code,text:code.text}
+}
+function datasetResultMap(){let m=new Map();for(let r of S.result)m.set(`${r.file.origin||S.source}:${r.file.id}`,r);return m}
+function isConversationMessage(kind){return kind==='user'||kind==='assistant'||kind==='thought'||kind==='content'}
+function datasetRecord(doc,section,index,meta,processed){
+ let value=datasetMessagePass(section,doc,S.dataset.filters);if(!value)return null;
+ let file=doc.file,{index:positions,...chat}=meta;
+ return {file:{source:file.origin||S.source,id:file.id,name:file.name,mimeType:file.mimeType||'',createdTime:file.createdTime||'',modifiedTime:file.modifiedTime||''},chat,message:{index:positions[index],sectionIndex:index+1,role:section.kind,time:section.time||'',characters:section.text.length,tokens:section.tokens||0,codeBlocks:value.code.blocks,codeCharacters:value.code.chars,codeLines:value.code.lines,codeDetails:value.code.details,text:value.text},buildOrder:processed}
+}
+function datasetAddDoc(doc,match=null){
+ let d=S.dataset,f=d.filters,meta=chatMeta(doc,match);
+ if(!chatPass(meta,f)){d.skipped++;return}
+ for(let i=0;i<doc.sections.length&&!d.stop;i++){
+  let r=datasetRecord(doc,doc.sections[i],i,meta,d.records.length);if(!r)continue;
+  let add=r.message.text.length;
+  if(f.limitMessages&&d.records.length>=f.limitMessages||f.limitChars&&d.characters+add>f.limitChars){d.capped=true;d.stop=true;d.abort?.abort();break}
+  d.records.push(r);d.characters+=add
+ }
+}
+function orderedDatasetRecords(){
+ let a=S.dataset.records.slice(),o=S.dataset.filters?.order||'time';
+ if(o==='time')a.sort((x,y)=>(x.message.time||x.file.modifiedTime||'').localeCompare(y.message.time||y.file.modifiedTime||'')||x.file.name.localeCompare(y.file.name)||x.message.sectionIndex-y.message.sectionIndex);
+ else if(o==='file')a.sort((x,y)=>x.file.name.localeCompare(y.file.name)||x.file.id.localeCompare(y.file.id)||x.message.sectionIndex-y.message.sectionIndex);
+ return a
+}
+function datasetEnvelope(){
+ let d=S.dataset,records=orderedDatasetRecords(),files=new Set(records.map(r=>`${r.file.source}:${r.file.id}`));
+ return {generatedAt:new Date().toISOString(),type:'device-drive-searcher-message-dataset',source:d.source,scope:{activeSource:S.source,scanArea:E.scanArea.value,recursive:E.recursive.checked,corpus:E.corpus.value,driveId:E.driveId.value||''},filters:d.filters,build:{filesRead:d.files,filesDecoded:d.decoded,failed:d.failed,skipped:d.skipped,capped:d.capped,stopped:d.stop},summary:{messages:records.length,files:files.size,exportedTextCharacters:d.characters},records}
+}
+function datasetJSON(){return JSON.stringify(datasetEnvelope(),null,2)}
+function datasetJSONL(){
+ let d=datasetEnvelope(),head={type:d.type,generatedAt:d.generatedAt,source:d.source,scope:d.scope,filters:d.filters,build:d.build,summary:d.summary};
+ return [JSON.stringify(head),...d.records.map(r=>JSON.stringify(r))].join('\n')
+}
+function datasetTXT(){
+ let d=datasetEnvelope(),t=`DEVICE-DRIVE SEARCHER MESSAGE DATASET\nGenerated: ${d.generatedAt}\nSource: ${d.source}\nMessages: ${d.summary.messages}\nFiles: ${d.summary.files}\nExported text chars: ${d.summary.exportedTextCharacters}\nCapped: ${d.build.capped}\n\n`;
+ d.records.forEach((r,i)=>{t+=`========================================\nRECORD ${i+1} · ${r.message.role.toUpperCase()}${r.message.time?' · '+r.message.time:''}\nFILE: ${r.file.name}\nCHAT: ${r.chat.title}${r.chat.model?' · '+r.chat.model:''}\nMESSAGE INDEX: ${r.message.index??'—'}/${r.chat.messageCount} · SECTION: ${r.message.sectionIndex}/${r.chat.sectionCount}\nMESSAGE CHARS: ${r.message.characters} · CODE CHARS: ${r.message.codeCharacters}\nSEARCH HITS IN FILE: ${r.chat.searchMatchCount==null?'—':(r.chat.searchMatchCountCapped?'≥':'')+r.chat.searchMatchCount}\n\n${r.message.text}\n\n`});
+ return t
+}
+function renderDataset(){
+ let d=S.dataset,files=new Set(d.records.map(r=>`${r.file.source}:${r.file.id}`)),ready=d.records.length>0,reuse=d.content?` · ${d.content.hits} reused · ${d.content.fetches} fetched`:'';
+ badge(E.datasetB,d.busy?'building…':ready?`${d.records.length.toLocaleString()} msg`:'not built',d.busy?'warn':ready?'ok':'');
+ E.datasetStats.textContent=d.busy?`Building ${d.source}: ${d.files.toLocaleString()} files read · ${d.records.length.toLocaleString()} messages retained · ${d.characters.toLocaleString()} characters…`:`${ready?`${d.records.length.toLocaleString()} message${d.records.length===1?'':'s'} from ${files.size.toLocaleString()} file${files.size===1?'':'s'} · ${d.characters.toLocaleString()} exported-text characters${reuse}${d.capped?' · capped by dataset limit':''}.`:'No dataset built. Candidate-scope build can export all qualifying prompts without a search query.'}`;
+ [E.dCopyJson,E.dCopyJsonl,E.dCopyTxt,E.dDownloadJson,E.dDownloadJsonl,E.dDownloadTxt].forEach(x=>x.disabled=!ready||d.busy);E.dStop.disabled=!d.busy;E.dBuildScope.disabled=E.dBuildResults.disabled=d.busy;
+ let preview=ready?orderedDatasetRecords():[];E.datasetPreview.textContent=ready?preview.slice(0,5).map((r,i)=>`#${i+1} ${r.message.role.toUpperCase()} · ${r.message.time||'no message time'} · ${r.file.name} · ${r.message.characters} chars${r.message.codeCharacters?` · ${r.message.codeCharacters} code chars`:''}${r.chat.searchMatchCount!=null?` · file hits ${r.chat.searchMatchCountCapped?'≥':''}${r.chat.searchMatchCount}`:''}`).join('\n')+(preview.length>5?`\n… ${preview.length-5} more records in export`:''):'Records include file/chat metadata, message role/order/time/length, code-block statistics, and search match count when a source file came from retained results.'
+}
+async function buildDataset(source){
+ if(S.dataset.busy)return;
+ if(source==='results'&&!S.result.length)return toast('No retained search-result files to export.','warn');
+ if(source==='scope'&&!sourceAdapter().ready())return toast('Open or connect a candidate source first.','warn');
+ let broad=source==='scope'&&['folder','targets','corpus'].includes(E.scanArea.value),unlimited=!(+E.scanLimit.value||0),f=datasetFilters();
+ if(!Object.values(f.roles).some(Boolean))return toast('Select at least one message role for dataset export.','warn');
+ if(broad&&unlimited&&!confirm('Build a dataset across this whole scope without a file-count limit? It reads file bodies and may use significant time/network.'))return;
+ if(!f.limitMessages&&!f.limitChars&&!confirm('Dataset output is unlimited. Continue without a retained-message or output-character cap?'))return;
+ let d=S.dataset={busy:true,abort:new AbortController(),stop:false,source:source==='results'?'retained-search-results':'current-candidate-scope',records:[],files:0,decoded:0,failed:0,skipped:0,capped:false,characters:0,filters:f,content:contentUse()},rmap=datasetResultMap(),iter;
+ renderDataset();
+ try{
+  if(source==='results'){
+   let unique=new Map();for(let r of S.result)unique.set(`${r.file.origin||S.source}:${r.file.id}`,r);
+   let values=[...unique.values()],at=0;iter={next:async()=>at<values.length?{value:values[at++].file,done:false}:{done:true}}
+  }else iter=candidates(d.abort.signal);
+  let workers=Math.max(1,+E.concurrency.value||6);
+  async function worker(){
+   while(!d.stop){
+    let n;try{n=await iter.next()}catch(err){if(err.name!=='AbortError'){d.failed++;toast('Dataset candidate listing failed: '+err.message,'bad')}return}
+    if(n.done)return;let file=n.value,key=`${file.origin||S.source}:${file.id}`,match=rmap.get(key);d.files++;
+    try{let doc=match?.doc||decode(file,await getBody(file,d.abort.signal,d.content));d.decoded++;datasetAddDoc(doc,match)}
+    catch(err){if(err.name!=='AbortError'){if(err.code)d.skipped++;else d.failed++}}
+    if(d.files%4===0||d.stop)renderDataset()
+   }
+  }
+  await Promise.all(Array.from({length:workers},worker))
+ }finally{d.busy=false;finishContentUse(d.content,!d.stop&&!d.abort.signal.aborted);renderDataset();toast(`Dataset built: ${d.records.length.toLocaleString()} messages from ${d.files.toLocaleString()} files · ${d.content.hits} reused, ${d.content.fetches} fetched${d.capped?' · capped':''}.`,d.capped?'warn':'ok')}
+}
+function stopDataset(){if(!S.dataset.busy)return;S.dataset.stop=true;S.dataset.abort?.abort();renderDataset()}
+function clearDataset(){if(S.dataset.busy)stopDataset();S.dataset={busy:false,abort:null,stop:false,source:'',records:[],files:0,decoded:0,failed:0,skipped:0,capped:false,characters:0,filters:null,content:null};renderDataset()}
+function reportJSON(){
+ return {query:E.query.value,exclude:E.exclude.value,scope:{source:S.source,corpus:E.corpus.value,driveId:E.driveId.value,browseArea:E.browseArea.value,scanArea:E.scanArea.value,recursive:E.recursive.checked},options:{mode:E.searchMode.value,case:E.caseMode.value,whole:E.whole.checked,minHits:E.minHits.value,hitCap:E.hitCap.value,maxBodyMB:E.maxBody.value,goal:E.goal.value,keepLimit:E.keepLimit.value,roles:['user','assistant','thought','content','system','settings','raw'].filter(k=>E[k].checked)},metrics:S.scan.metrics,incompleteSearch:S.incomplete,results:S.result.map(r=>({file:{source:r.file.origin||S.source,name:r.file.name,id:r.file.id,mimeType:r.file.mimeType,modifiedTime:r.file.modifiedTime},decoder:r.decoder,model:r.model,count:r.count,capped:r.capped,hits:r.hits}))}
+}
+function reportTXT(){
+ let j=reportJSON(),t=`DEVICE-DRIVE SEARCHER SEARCH REPORT\nQuery: ${j.query}\nScan area: ${j.scope.scanArea}\nMode: ${j.options.mode}\nFiles scanned: ${j.metrics?.files||0}\nFiles matched: ${j.metrics?.matched||0}\nRetained: ${j.results.length}\nIncomplete Drive search: ${j.incompleteSearch}\n\n`;
+ j.results.forEach(r=>{t+=`========================================\nFILE: ${r.file.name}\nDECODER: ${r.decoder}\nHITS: ${r.capped?'≥':''}${r.count}\n\n`;r.hits.forEach(h=>t+=`[${h.kind.toUpperCase()}${h.time?' · '+h.time:''}]\n${h.text}\n\n`)});
+ return t
+}
+const SETUP_KEY='drive_lens_setups', SETUP_FIELDS='corpus driveId fName fExt fMime fFrom fTo fMin fMax demandLimit fullText itemType arrange order cacheViews cacheRows apiPage trash browseArea prefetch ahead folders scanArea scanLimit goal keepLimit concurrency maxBody reuseContent keepOutsideContent searchMode caseMode minHits hitCap minTerms nearSpan decoder retainMode maxSnippets contextChars resultSort whole sFrom sTo useFilter recursive user assistant thought content system settings raw'.split(' ');
+function savedSetups(){try{return JSON.parse(STORE.get(SETUP_KEY)||'{}')}catch{return{}}}
+function setupValue(){let x={};SETUP_FIELDS.forEach(k=>x[k]=E[k].type==='checkbox'?E[k].checked:E[k].value);return x}
+function applySetup(x){
+ SETUP_FIELDS.forEach(k=>{if(k in x)E[k].type==='checkbox'?E[k].checked=!!x[k]:E[k].value=String(x[k])});
+ E.driveIdField.classList.toggle('hide',E.corpus.value!=='drive');E.corpusGrid.classList.toggle('single',E.corpus.value!=='drive');S.layout=E.arrange.value;switchSource();restartView()
+}
+function renderPresets(){let p=savedSetups();E.preset.innerHTML='<option value="">— none —</option>'+Object.keys(p).sort().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
+function saveSetup(){
+ let n=prompt('Setup name:');if(!n)return;let p=savedSetups();p[n]=setupValue();if(!STORE.set(SETUP_KEY,JSON.stringify(p)))return toast('Local storage is unavailable here; export JSON instead.','warn');renderPresets();E.preset.value=n;toast('Saved setup: '+n)
+}
+function loadSetup(){let x=savedSetups()[E.preset.value];if(x)applySetup(x)}
+function deleteSetup(){let n=E.preset.value;if(!n)return;let p=savedSetups();delete p[n];STORE.set(SETUP_KEY,JSON.stringify(p));renderPresets();toast('Deleted setup: '+n)}
+function exportSetup(){download('device_drive_searcher_setup.json',JSON.stringify({version:1,settings:setupValue()},null,2),'application/json')}
+async function importSetup(file){try{let x=JSON.parse(await file.text()),v=x.settings||x;applySetup(v);toast('Imported setup settings. Save it locally only if desired.')}catch(err){toast('Invalid setup JSON: '+err.message,'bad')}}
+function switchSource(force=false){
+ let next=E.source.value,prior=S.source;
+ if(next!==prior||force){
+  if(next!==prior)rememberPath();
+  S.source=next;let A=sourceAdapter(),fallback=A.root()||{id:'device:none',name:'Device',localDir:true,origin:'local'};
+  S.path=S.paths[next]?.length?S.paths[next]:[fallback];S.paths[next]=S.path;
+  E.browseArea.value=S.browse[next]||'folder';S.view=null
+ }
+ let A=sourceAdapter(),drive=A.key==='drive',tree=A.ready();
+ E.driveFields.classList.toggle('hide',!drive);E.localFields.classList.toggle('hide',drive);
+ ['folder','targets'].forEach(v=>E.scanArea.querySelector?.(`option[value="${v}"]`)?.toggleAttribute('disabled',!tree));
+ E.scanArea.querySelector?.('option[value="corpus"]')?.toggleAttribute('disabled',!A.corpus);
+ E.browseArea.querySelector?.('option[value="corpus"]')?.toggleAttribute('disabled',!A.corpus);
+ if(!A.corpus&&E.browseArea.value==='corpus')E.browseArea.value='folder';
+ if(!A.corpus&&E.scanArea.value==='corpus')E.scanArea.value=tree?'folder':'loaded';
+ E.fullText.disabled=E.order.disabled=E.trash.disabled=!drive;
+ E.deviceFolder.disabled=!window.showDirectoryPicker;
+ E.deviceNote.textContent=window.showDirectoryPicker?'Live device folders list subfolders lazily; Import Folder Snapshot is the broad-browser fallback.':'Live device-folder access is unavailable here; Import Folder Snapshot still reconstructs navigable folders from selected files.';
+ E.networkNote.textContent=drive?'Smooth browse fetches two pages initially, then keeps one unread page ahead; filtered demand retrieves aggressively to its cap.':S.localMode==='live'?'Smooth browsing reads two device batches initially, then keeps one unread batch ahead.':'Imported folder/file snapshot is browsable without network requests.';
+ E.restart.disabled=!A.ready();E.scan.disabled=!A.ready();renderTargets();
+ if(A.ready()){let v=active(false);E.entries.scrollTop=v.scroll||0;renderFiles();beginView(v)}else renderFiles()
+}
+const CONN_KEY='drive_lens_connection';
+function savedConnection(){try{let x=JSON.parse(STORE.get(CONN_KEY)||'null');if(x?.token&&x.expiresAt>Date.now()+30000)return x;STORE.del(CONN_KEY)}catch{STORE.del(CONN_KEY)}return null}
+function persistConnection(id,scope,expiresAt){
+ if(!E.rememberConnection.checked){STORE.del(CONN_KEY);return}
+ let ok=STORE.set(CONN_KEY,JSON.stringify({token:S.token,expiresAt,clientId:id,scope,corpus:E.corpus.value,driveId:E.driveId.value}));
+ if(!ok)toast('Local storage is unavailable here; connection cannot be remembered.','warn')
+}
+function restoreConnection(){
+ let x=savedConnection();if(!x)return false;
+ E.clientId.value=x.clientId||E.clientId.value;E.scope.value=x.scope||RO;E.corpus.value=x.corpus||'user';E.driveId.value=x.driveId||'';E.source.value='drive';E.rememberConnection.checked=true;
+ let specific=E.corpus.value==='drive';E.driveIdField.classList.toggle('hide',!specific);E.corpusGrid.classList.toggle('single',!specific);
+ S.token=x.token;S.expiresAt=x.expiresAt;S.connected=true;badge(E.connB,'Drive · restored','ok');E.disconnect.disabled=false;E.connection.removeAttribute('open');scopeState();switchSource(true);
+ toast(`Connection restored · expires ${when(x.expiresAt)} · Disconnect clears it.`,'ok');return true
+}
+function scopeState(){
+ let ok=E.scope.value.trim()===RO,keep=E.rememberConnection.checked?' A short-lived token will be stored locally until expiry or Disconnect.':' Tokens remain in page memory only.';
+ badge(E.scopeB,ok?'READ ONLY':'CUSTOM SCOPE',ok?'ok':'warn');
+ toast((ok?'Read-only.':'Custom scope requested; verify its permissions.')+keep,ok?'':'warn')
+}
+function connect(ev){
+ ev.preventDefault();let id=E.clientId.value.trim(),scope=E.scope.value.trim()||RO;if(!id)return toast('Enter an OAuth Client ID.','bad');
+ if(E.corpus.value==='drive'&&!E.driveId.value.trim())return toast('Specific shared drive mode requires a Shared Drive ID.','bad');
+ if(!window.google?.accounts?.oauth2)return toast('Google authorization library is not ready yet.','warn');
+ if(E.remember.checked&&!STORE.set('lens_client_id',id))toast('Local storage is unavailable here; Client ID will not be remembered.','warn');else if(!E.remember.checked)STORE.del('lens_client_id');
+ S.tc=google.accounts.oauth2.initTokenClient({client_id:id,scope,callback:r=>{if(r.error)return toast('Authorization failed: '+r.error,'bad');S.token=r.access_token;S.expiresAt=Date.now()+(Math.max(1,+r.expires_in||3600)*1000);S.connected=true;persistConnection(id,scope,S.expiresAt);badge(E.connB,'Drive · connected','ok');E.disconnect.disabled=false;E.restart.disabled=E.scan.disabled=false;E.connection.removeAttribute('open');restartView()}});
+ S.tc.requestAccessToken({prompt:'select_account'})
+}
+function disconnect(){S.listAbort?.abort();stopScan();STORE.del(CONN_KEY);if(S.token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(S.token,()=>{});S.token='';S.expiresAt=0;S.connected=false;E.disconnect.disabled=true;E.restart.disabled=E.scan.disabled=true;badge(E.connB,'Disconnected');toast('Disconnected; remembered token cleared.')}
+function jumpTo(id){let x=E[id];if(!x)return;E.resultsPanel.classList.toggle('landable',id==='resultsPanel');if(x.tagName==='DETAILS')x.open=true;x.scrollIntoView?.({behavior:'auto',block:'start'})}
+function setupRail(){
+ let nodes=[...E.rail.querySelectorAll('[data-to]')],sections=nodes.map(b=>E[b.dataset.to]).filter(Boolean),hide=0,pinned=false;
+ let show=(wait=2400)=>{clearTimeout(hide);E.rail.classList.add('peek');if(wait&&!pinned)hide=setTimeout(()=>E.rail.classList.remove('peek'),wait)};
+ let close=()=>{clearTimeout(hide);if(!pinned)E.rail.classList.remove('peek')};
+ E.rail.onpointerdown=()=>show();
+ E.railLine.onclick=()=>{pinned=!pinned;E.rail.classList.toggle('peek',pinned);if(!pinned)close()};
+ E.rail.onpointerenter=()=>show(0);E.rail.onpointerleave=close;
+ nodes.forEach(b=>b.onclick=()=>{show();jumpTo(b.dataset.to)});
+ if(!window.IntersectionObserver||!sections.length)return;
+ let obs=new IntersectionObserver(entries=>{for(let e of entries)if(e.isIntersecting){nodes.forEach(b=>b.classList.toggle('active',b.dataset.to===e.target.id));break}},{rootMargin:'-18% 0px -58% 0px',threshold:0});
+ sections.forEach(x=>obs.observe(x))
+}
+function bind(){
+ E.auth.onsubmit=connect;E.disconnect.onclick=disconnect;E.scope.oninput=scopeState;E.rememberConnection.onchange=()=>{if(!E.rememberConnection.checked)STORE.del(CONN_KEY);else if(S.connected&&S.token)persistConnection(E.clientId.value.trim(),E.scope.value.trim()||RO,S.expiresAt);scopeState()};E.source.onchange=switchSource;E.corpus.onchange=()=>{let specific=E.corpus.value==='drive';E.driveIdField.classList.toggle('hide',!specific);E.corpusGrid.classList.toggle('single',!specific);if(E.corpus.value!=='user')E.browseArea.value='corpus';restartView()};
+ E.deviceFolder.onclick=openDeviceFolder;E.pickFiles.onclick=()=>E.fileInput.click();E.pickFolder.onclick=()=>E.folderInput.click();E.fileInput.onchange=x=>localFileList(x.target.files);E.folderInput.onchange=x=>localFolderSnapshot(x.target.files);
+ E.apply.onclick=restartView;E.clearFilters.onclick=()=>{'fName fExt fMime fFrom fTo fMin fMax fullText'.split(' ').forEach(id=>E[id].value='');E.itemType.value='all';restartView()};
+ E.clearCache.onclick=()=>{let current=S.view;S.views.clear();S.resolveCache.clear();S.childCounts.clear();if(current)S.views.set(current.key,current);pruneCache();toast('Inactive metadata, shortcut-target and child-count caches cleared.')};
+ E.savePreset.onclick=saveSetup;E.loadPreset.onclick=loadSetup;E.deletePreset.onclick=deleteSetup;E.exportSetup.onclick=exportSetup;E.importSetup.onclick=()=>E.setupFile.click();E.setupFile.onchange=x=>x.target.files[0]&&importSetup(x.target.files[0]);
+ E.arrange.onchange=arrangement;E.order.onchange=restartView;E.itemType.onchange=restartView;E.trash.onchange=restartView;E.folders.onchange=restartView;E.browseArea.onchange=restartView;
+ E.restart.onclick=restartView;E.more.onclick=()=>{if(S.view){S.view.stop=false;S.view.capped=false}loadMore()};E.allMeta.onclick=enumerateAll;E.cancelMeta.onclick=()=>{if(S.view)S.view.stop=true;S.listAbort?.abort()};
+ E.back.onclick=()=>{if(S.path.length>1){S.view&&(S.view.scroll=E.entries.scrollTop);S.path.pop();rememberPath();E.browseArea.value='folder';activatePath()}};
+ E.root.onclick=()=>{S.path=[sourceAdapter().root()||S.root];rememberPath();E.browseArea.value='folder';activatePath()};
+ E.target.onclick=()=>{let f=current();targetMap().set(f.id,{...f});renderTargets()};E.jumpResults.onclick=()=>jumpTo('resultsPanel');E.jumpCandidates.onclick=()=>jumpTo('candidatesPanel');setupRail();
+ let lastTop=0,lastTime=performance.now(),raf=0;
+ E.entries.onscroll=()=>{let now=performance.now(),dt=Math.max(1,now-lastTime);S.scrollV=(E.entries.scrollTop-lastTop)/dt;lastTop=E.entries.scrollTop;lastTime=now;if(S.view)S.view.scroll=E.entries.scrollTop;if(!raf)raf=requestAnimationFrame(()=>{raf=0;renderFiles();maybePrefetch()})};
+ E.selectLoaded.onclick=()=>{listedFiles().forEach(f=>S.selected.set(f.id,f));selection();renderFiles()};
+ E.clearChosen.onclick=()=>{S.selected.clear();selection();renderFiles()};
+ E.scan.onclick=()=>startScan();E.stopScan.onclick=stopScan;E.stickScan.onclick=()=>startScan('selected');E.resultSort.onchange=renderResults;E.results.onscroll=()=>requestAnimationFrame(renderResults);
+ E.exportTxt.onclick=()=>download('device_drive_searcher_report.txt',reportTXT(),'text/plain');E.exportJson.onclick=()=>download('device_drive_searcher_report.json',JSON.stringify(reportJSON(),null,2),'application/json');
+ E.clearResults.onclick=()=>{S.result=[];S.scan.metrics=null;E.bar.style.width='0';E.bar.classList.remove('run');renderResults();badge(E.scanB,'idle')};
+ E.clearContentCache.onclick=()=>{S.contentCache.clear();S.contentPending.clear();S.contentStats={hits:0,fetches:0};contentCacheStatus();toast('Fetched file-content cache cleared. Later operations will read bodies from their source again.')};
+ E.reuseContent.onchange=()=>{if(!E.reuseContent.checked)toast('Content reuse disabled. New operations will read bodies from source instead of using the session cache.','warn');contentCacheStatus()};
+ E.dBuildScope.onclick=()=>buildDataset('scope');E.dBuildResults.onclick=()=>buildDataset('results');E.dStop.onclick=stopDataset;E.dClear.onclick=clearDataset;
+ E.dCopyJson.onclick=()=>copied(datasetJSON(),'Dataset JSON copied.');E.dCopyJsonl.onclick=()=>copied(datasetJSONL(),'Dataset JSONL copied.');E.dCopyTxt.onclick=()=>copied(datasetTXT(),'Dataset text copied.');
+ E.dDownloadJson.onclick=()=>download('device_drive_searcher_messages.json',datasetJSON(),'application/json');E.dDownloadJsonl.onclick=()=>download('device_drive_searcher_messages.jsonl',datasetJSONL(),'application/x-ndjson');E.dDownloadTxt.onclick=()=>download('device_drive_searcher_messages.txt',datasetTXT(),'text/plain');
+ E.jsRun.onclick=runWorkspace;E.jsCode.oninput=()=>STORE.set(JS_KEY,E.jsCode.value);
+ E.jsCopy.onclick=()=>jsOutput&&copied(jsOutput,'JavaScript output copied.');
+ E.jsDownload.onclick=()=>jsOutput&&download('device_drive_searcher_workspace_output.txt',jsOutput,'text/plain');
+ E.jsClear.onclick=()=>{jsResult=undefined;jsOutput='';E.jsOut.textContent='Run a script to view its returned output.';E.jsCopy.disabled=E.jsDownload.disabled=true;badge(E.jsB,'idle')};
+ E.jsExample.onclick=()=>{E.jsCode.value="return records.filter(r => r.message.role === 'user' && (r.message.codeDetails?.some(b => /html/i.test(b.type)) || /<!doctype\\s+html/i.test(r.message.text))).map(r => r.message.text).join('\\n\\n---\\n\\n');";STORE.set(JS_KEY,E.jsCode.value)};
+ E.mClose.onclick=()=>E.modal.classList.remove('show');E.modal.onclick=x=>{if(x.target===E.modal)E.modal.classList.remove('show')};document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderModal()});
+ E.modeFlow.onclick=()=>setInspectMode('flow');E.modeMatches.onclick=()=>setInspectMode('matches');E.modeHits.onclick=()=>setInspectMode('hits');E.prevHit.onclick=()=>jumpInspectHit(-1);E.nextHit.onclick=()=>jumpInspectHit(1);
+ [E.xUser,E.xAssistant,E.xThought,E.xSystem,E.xSettings,E.xContent,E.xScope,E.xCodeFilter,E.xCodeMin,E.xCodeOutput,E.xMin,E.xMax].forEach(x=>x.onchange=()=>{updateExtract();if(E.view.querySelector('.extractPreview'))renderExtractPreview(true)});
+ E.xClearPick.onclick=()=>{picked.clear();renderModal()};
+ E.xCopy.onclick=()=>{let t=extractText();if(!t)return toast('No messages match extraction filters.','warn');copied(t,'Extracted messages copied.')};
+ E.xDownload.onclick=()=>{let t=extractText();if(!t)return toast('No messages match extraction filters.','warn');download((opened?.file?.name||'messages')+'_extract.txt',t,'text/plain')};
+ E.xPreview.onclick=()=>renderExtractPreview(true)
+}
+window.__LENS_TEST__={S,E,SOURCES,sourceAdapter,entryAdapter,targetMap,queryParts,makeQuery,scanQuery,localPass,newView,append,buildGroup,count,itemAt,arrangement,collect,nearCollect,decode,analyze,captureSearchSpec,buildInspection,codeInfo,codePass,setPicked,selectedExtract,extractText,renderExtractPreview,setInspectMode,jumpInspectHit,openDoc,datasetFilters,chatMeta,chatPass,datasetAddDoc,orderedDatasetRecords,datasetEnvelope,datasetJSON,datasetJSONL,datasetTXT,listedFiles,screenFiles,readGroup,maybePrefetch,demandFiltered,beginView,workspaceData,runWorkspace,buildDataset,clearDataset,renderDataset,folderInfo,childValue,countChildren,savedConnection,persistConnection,restoreConnection,disconnect,jumpTo,setupRail,renderFiles,renderResults,listPage,loadMore,candidates,getBody,contentBase,contentKey,contentUse,contentCacheStatus,finishContentUse,resolveDrive,startScan,pruneCache,localFileList,localFolderSnapshot,openDeviceFolder,openFolder,activatePath,streamTree,switchSource,request};
+syncGeometry();let layoutRAF=0;const resizeLayout=()=>{if(!layoutRAF)layoutRAF=requestAnimationFrame(()=>{layoutRAF=0;syncGeometry();renderFiles();renderResults()})};addEventListener('resize',resizeLayout,{passive:true});window.visualViewport?.addEventListener('resize',resizeLayout,{passive:true});bind();
+' fName fExt fMime fFrom fTo fMin fMax fullText demandLimit cacheViews cacheRows ahead query exclude scanLimit keepLimit maxBody minHits hitCap minTerms nearSpan maxSnippets contextChars sFrom sTo dFrom dTo dMin dMax dChatMin dChatMax dCountMin dCountMax dHitsMin dHitsMax dCodeMin dLimitMessages dLimitChars xCodeMin xMin xMax '.trim().split(/\s+/).forEach(id=>E[id].value='');
+E.itemType.value='all';E.goal.value='complete';E.dCodeFilter.value=E.xCodeFilter.value='any';E.dCodeOutput.value=E.xCodeOutput.value='large';E.reuseContent.checked=E.keepOutsideContent.checked=true;
+let script=STORE.get(JS_KEY);if(script)E.jsCode.value=script;let saved=STORE.get('lens_client_id');if(saved){E.clientId.value=saved;E.remember.checked=true}E.driveIdField.classList.add('hide');E.corpusGrid.classList.add('single');renderPresets();scopeState();switchSource();restoreConnection();renderResults();renderDataset();pruneCache();contentCacheStatus();selection()
+})();
+</script>
+</body></html>
