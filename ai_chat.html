@@ -259,22 +259,11 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 				<button class="tab-btn" data-tab="ui">UI</button>
 				<button class="tab-btn" data-tab="chats" disabled>Chats</button>
 				<button class="tab-btn" data-tab="io">ex/import↑↓💾</button>
+				<button class="tab-btn" data-tab="swarm">Swarm</button>
 				<button class="tab-btn" data-tab="other">Other</button>
 			</div>
 			<div class="tab-content active" id="tab-model">
-				<div class="setting-row">
-					<select id="providerSelect" style="flex:1;"></select>
-					<button class="btn-outline" id="addProvBtn" style="padding: 4px 6px;" title="Clone to Custom">➕</button>
-					<button class="btn-outline" id="editProvBtn" style="padding: 4px 6px;" title="Edit Provider JSON">✏️</button>
-				</div>
-				<div id="provEditorContainer" style="display:none; flex-direction:column; gap:6px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid var(--border);">
-					<span style="font-size:0.65rem; color:var(--text-secondary);">Edit Provider JSON Configuration</span>
-					<textarea id="provJsonText" rows="10" style="background:var(--code-bg); color:var(--text); font-family:monospace; font-size:0.7rem; border:1px solid var(--border); border-radius:4px; outline:none; resize:vertical; padding: 6px;"></textarea>
-					<div style="display:flex; gap:6px;">
-						<button class="btn" id="saveProvJsonBtn" style="flex:1;">Save JSON</button>
-						<button class="btn-outline" id="cancelProvJsonBtn">Cancel</button>
-					</div>
-				</div>
+				<div id="registryRows"></div>
 				<div style="display:flex; gap:8px;">
 					<input type="password" id="apiKeyInput" placeholder="API Key..." spellcheck="false" style="flex:1;" />
 					<button class="btn" id="saveKeyBtn">Save</button>
@@ -304,7 +293,16 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 					<button class="btn-outline" id="restoreBackupBtn" style="border-color: var(--danger); color: var(--danger);">Restore from Collision Backup</button>
 				</div>
 			</div>
+			<div class="tab-content" id="tab-swarm"><div id="swarmRows"></div></div>
 			<div class="tab-content" id="tab-other"></div>
+			<div id="provEditorContainer" style="display:none; flex-direction:column; gap:6px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid var(--border);">
+				<span id="provEditorTitle" style="font-size:0.65rem; color:var(--text-secondary);">Edit Provider JSON Configuration</span>
+				<textarea id="provJsonText" rows="10" style="background:var(--code-bg); color:var(--text); font-family:monospace; font-size:0.7rem; border:1px solid var(--border); border-radius:4px; outline:none; resize:vertical; padding: 6px;"></textarea>
+				<div style="display:flex; gap:6px;">
+					<button class="btn" id="saveProvJsonBtn" style="flex:1;">Save JSON</button>
+					<button class="btn-outline" id="cancelProvJsonBtn">Cancel</button>
+				</div>
+			</div>
 			<button class="btn" id="applySettingsBtn" style="margin-top: 12px; width: 100%;">Apply Settings</button>
 		</div>
 	</div>
@@ -373,7 +371,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 ],defaultSettings={displayTokens:false};SG.map(r=>{defaultSettings[r[1]]=r[5];(r[7]||[]).map(x=>{let e=x[1];e&&!/[ax]/.test(e[2])&&(defaultSettings[e[0]]=e[4])})});
 	let settings = { ...defaultSettings };
 
-	const SGT=t=>$(t.split('/')[0]),SC=([k,l,t,id,d,o])=>t=='b'?`<label class=toggle><input type=checkbox id=${id}><span class=slider></span></label>`:t=='s'?`<select id=${id}>${o.map(x=>`<option value="${x}">${x}</option>`).join('')}</select>`:t=='a'?`<span id=${id} class=eval-open>${l}</span>`:t=='x'?`<button id=${id}>${l}</button>`:`<input type=number id=${id} value="${d}">`;SG.map(([tab,k,l,t,id,d,o,x])=>SGT(tab).insertAdjacentHTML('beforeend',`<div class=setting-row><span>${l}</span>${SC([k,l,t,id,d,o])}${(x||[]).map(y=>`<span id=${y[1][3]}X style="display:none">${SC(y[1])}</span>`).join('')}</div>`));
+	const SGT=t=>$(t.split('/')[0]),SC=([k,l,t,id,d,o])=>t=='b'?`<label class=toggle><input type=checkbox id=${id}><span class=slider></span></label>`:t=='s'?`<select id=${id}>${o.map(x=>`<option value="${x}">${x}</option>`).join('')}</select>`:t=='r'?`<select id=${id} data-registry=${k} style="flex:1"></select><button class=btn-outline data-add=${k}>➕</button><button class=btn-outline data-edit=${k}>✏️</button>`:t=='a'?`<span id=${id} class=eval-open>${l}</span>`:t=='x'?`<button id=${id}>${l}</button>`:`<input type=number id=${id} value="${d}">`,ROW=([tab,k,l,t,id,d,o,x])=>`<div class=setting-row>${l?`<span>${l}</span>`:''}${SC([k,l,t,id,d,o])}${(x||[]).map(y=>`<span id=${y[1][3]}X style="display:none">${SC(y[1])}</span>`).join('')}</div>`;SG.map(r=>SGT(r[0]).insertAdjacentHTML('beforeend',ROW(r)));
 $q('[id]').forEach(el => els[el.id] = el);
 	els.tokenCounter.dataset.cost='global';
 	const CHAT_ID = 'default';
@@ -507,8 +505,14 @@ $q('[id]').forEach(el => els[el.id] = el);
 	const modelIds=p=>modelEntries(p).map(x=>x[0]).filter(Boolean);
 	const modelDef=(p,id)=>modelEntries(p).find(x=>x[0]===id)?.[1]||{};
 	const modelPricing=(p,id)=>modelDef(p,id).pricing||modelDef(default_providers[p?.id],id).pricing||null;
+	let agents=JSON.parse(localStorage.getItem('dse_agents')||'{}'),activeAgentId=localStorage.getItem('dse_active_agent')||'';
+	const registries={
+		provider:{items:providers,label:'Provider',prefix:'custom_',omit:'custom_template',template:()=>providers.custom_template,active:()=>activeProviderId,use:id=>{activeProviderId=id;localStorage.dse_active_provider=id;els.apiKeyInput.value=getApiKey();loadModels()}},
+		agent:{items:agents,label:'Agent',host:'swarmRows',empty:'Off',template:()=>({provider:activeProviderId,prompt:''}),active:()=>activeAgentId,use:id=>{activeAgentId=id;localStorage.dse_active_agent=id}}
+	};Object.entries(registries).map(([k,r])=>($(r.host||'registryRows').insertAdjacentHTML('beforeend',ROW([0,k,'','r',k+'Select'])),els[k+'Select']=$(k+'Select')));
+	const agent=a=>a&&typeof a=='object'?a:agents[a]||{},run=(a,x={})=>{a=agent(a);let p=providers[x.provider||a.provider||activeProviderId]||providers[activeProviderId],m=x.model||a.model||(p.id==activeProviderId?getCurrentModel():p.defaultModel),d=modelDef(p,m);return{...settings,...p,...d,...a,...x,p,m,request:{...p.request,...d.request,...a.request,...x.request}}};
 
-	function getApiKey() { return getMetadata().apiKeys?.[activeProviderId] || ''; }
+	function getApiKey(id=activeProviderId) { return getMetadata().apiKeys?.[id] || ''; }
 
 	function saveApiKey(val) { updateMetadata(m => { m.apiKeys[activeProviderId] = val; }); }
 
@@ -516,10 +520,10 @@ $q('[id]').forEach(el => els[el.id] = el);
 	let welcomeSettingsOpened = false;
 
 	function updateSendBtn() {
-		const p = providers[activeProviderId]; const hasText = els.messageInput.value.trim().length > 0;
-		const hasKey = getApiKey().length > 2; const hasProvider = !!p && !!p.baseURL && !!p.apiPath;
-		const isBusy = activeControllers.size > 0;
-		els.sendBtn.disabled = !(hasText && hasKey && hasProvider && !!getCurrentModel() && !els.modelSelect.disabled && !isBusy);
+		const r=run(activeAgentId),p=r.p; const hasText = els.messageInput.value.trim().length > 0;
+		const hasKey = getApiKey(p.id).length > 2; const hasProvider = !!p && !!p.baseURL && !!p.apiPath;
+		const isBusy = activeControllers.size > 0, hasModel=!!r.m&&(p.id!==activeProviderId||!els.modelSelect.disabled);
+		els.sendBtn.disabled = !(hasText && hasKey && hasProvider && hasModel && !isBusy);
 		if (els.welcomeScreen && els.chatContainer) {
 			const showWelcome = activeViewList.length <= 2;
 			els.welcomeScreen.style.display = showWelcome ? 'inline-flex' : 'none';
@@ -531,33 +535,15 @@ $q('[id]').forEach(el => els[el.id] = el);
 		}
 	}
 
-	function renderProviderDropdown() {
-		els.providerSelect.innerHTML = '';
-		Object.entries(providers).forEach(([key, p]) => {
-			if (key === 'custom_template') return;
-			const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.name || p.id; els.providerSelect.appendChild(opt);
-	});
-		els.providerSelect.value = activeProviderId; els.apiKeyInput.value = getApiKey();
-	}
-
-	els.providerSelect.addEventListener('change', () => { activeProviderId = els.providerSelect.value; localStorage.setItem('dse_active_provider', activeProviderId); els.apiKeyInput.value = getApiKey(); els.provEditorContainer.style.display = 'none'; loadModels(); });
-
-	els.editProvBtn.addEventListener('click', () => { els.provJsonText.value = JSON.stringify(providers[activeProviderId], null, 4); els.provEditorContainer.style.display = 'flex'; });
-
-	els.addProvBtn.addEventListener('click', () => {
-		const newId = 'custom_' + Date.now(); let newP = structuredClone(providers.custom_template); newP.id = newId; newP.name = 'New Custom Provider'; providers[newId] = newP;
-		localStorage.setItem('dse_providers', JSON.stringify(providers)); activeProviderId = newId; localStorage.setItem('dse_active_provider', activeProviderId);
-		renderProviderDropdown(); els.provJsonText.value = JSON.stringify(newP, null, 4); els.provEditorContainer.style.display = 'flex'; els.apiKeyInput.value = ''; loadModels();
-});
-
-	els.cancelProvJsonBtn.addEventListener('click', () => els.provEditorContainer.style.display = 'none');
-
-	els.saveProvJsonBtn.addEventListener('click', () => {
-		try { const parsed = JSON.parse(els.provJsonText.value); if (!parsed.id) throw new Error("JSON must have 'id'"); if (parsed.id !== activeProviderId) delete providers[activeProviderId];
-			providers[parsed.id] = parsed; activeProviderId = parsed.id; localStorage.setItem('dse_providers', JSON.stringify(providers)); localStorage.setItem('dse_active_provider', activeProviderId);
-			renderProviderDropdown(); els.provEditorContainer.style.display = 'none'; showToast('Provider settings saved!'); loadModels();
-		} catch (e) { alert("Invalid JSON: " + e.message); }
-});
+	const renderRegistry=kind=>{const r=registries[kind],s=els[kind+'Select'];s.replaceChildren(...(r.empty?[new Option(r.empty,'')]:[]),...Object.entries(r.items).filter(([id])=>id!==r.omit).map(([,x])=>new Option(x.name||x.id,x.id)));s.value=r.active()};
+	const saveRegistry=kind=>localStorage['dse_'+kind+'s']=JSON.stringify(registries[kind].items);
+	let editingKind='provider';
+	const openRegistryEditor=(kind,item)=>(editingKind=kind,els.provEditorTitle.textContent=kind==='provider'?'Edit Provider JSON Configuration':'Edit Agent JSON Configuration',els.provJsonText.value=JSON.stringify(item,null,4),els.provEditorContainer.style.display='flex');
+	const createRegistryEntry=kind=>{const r=registries[kind],id=(r.prefix||kind+'_')+Date.now(),item=structuredClone(r.template());item.id=id;item.name=kind==='provider'?'New Custom Provider':'New '+r.label;r.items[id]=item;saveRegistry(kind);r.use(id);renderRegistry(kind);openRegistryEditor(kind,item)};
+	const regChange=e=>{const kind=e.target.dataset.registry;if(kind)registries[kind].use(e.target.value),els.provEditorContainer.style.display='none'},regClick=e=>{const kind=e.target.dataset.add||e.target.dataset.edit;if(!kind)return;const r=registries[kind],item=r.items[r.active()];e.target.dataset.add||!item?createRegistryEntry(kind):openRegistryEditor(kind,item)};
+	Object.values(registries).map(r=>els[r.host||'registryRows']).forEach(h=>{h.onchange=regChange;h.onclick=regClick});
+	els.cancelProvJsonBtn.onclick=()=>els.provEditorContainer.style.display='none';
+	els.saveProvJsonBtn.onclick=()=>{try{const item=JSON.parse(els.provJsonText.value),r=registries[editingKind],old=r.active();if(!item.id)throw Error("JSON must have 'id'");if(item.id!==old)delete r.items[old];r.items[item.id]=item;saveRegistry(editingKind);r.use(item.id);renderRegistry(editingKind);els.provEditorContainer.style.display='none';showToast(r.label+' saved!')}catch(e){alert("Invalid JSON: "+e.message)}};
 
 	$q('.tab-btn').forEach(btn => {
 		btn.addEventListener('click', () => {
@@ -572,7 +558,7 @@ $q('[id]').forEach(el => els[el.id] = el);
 		document.documentElement.style.setProperty('--block-font-scale', settings.fontScale);
 		const tabBtn = document.querySelector(`.tab-btn[data-tab="${localStorage.getItem('dse_activeTab') || 'model'}"]`);
 		if (tabBtn && !tabBtn.disabled) tabBtn.click(); else document.querySelector('.tab-btn[data-tab="model"]').click();
-		renderProviderDropdown(); syncUI(); applyVisibility();
+		Object.keys(registries).map(renderRegistry);registries.provider.use(activeProviderId); syncUI(); applyVisibility();
 	}
 
 	let CL=[],CP=()=>window.EO&&(EO.value=CL.join('\n'),EO.scrollTop=1e9);['log','warn','error'].map(k=>{let f=console[k].bind(console);console[k]=(...a)=>(f(...a),CL.push(a.join(' ')),CP())});
@@ -838,7 +824,7 @@ $q('[id]').forEach(el => els[el.id] = el);
 		let stopConfirmReady = false; let stopTimeout;
 		els.stopBtn.addEventListener('click', (e) => {
 			e.preventDefault();
-			if (!stopConfirmReady) { stopConfirmReady = true; els.stopBtn.classList.add('confirm'); els.stopBtn.textContent = 'STOP ALL'; clearTimeout(stopTimeout); stopTimeout = setTimeout(() => { stopConfirmReady = false; els.stopBtn.classList.remove('confirm'); els.stopBtn.textContent = '⏹'; }, 3000); }
+			if (!stopConfirmReady) { stopConfirmReady = true; els.stopBtn.classList.add('confirm'); els.stopBtn.textContent = activeControllers.size>1?'STOP '+activeControllers.size:'STOP'; clearTimeout(stopTimeout); stopTimeout = setTimeout(() => { stopConfirmReady = false; els.stopBtn.classList.remove('confirm'); els.stopBtn.textContent = '⏹'; }, 3000); }
 			else { activeControllers.forEach(c => c.abort()); activeControllers.clear(); }
 	});
 		async function fetchModels() { const p = providers[activeProviderId]; const key = getApiKey(); if (!key || !p.baseURL) return null; try { const res = await fetch(p.baseURL + '/models', { headers: { 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key } }); return res.ok ? (await res.json()).data?.map(m => m.id).filter(Boolean) || [] : null; } catch { return null; } }
@@ -932,7 +918,7 @@ $q('[id]').forEach(el => els[el.id] = el);
 			saveHistory(); return node;
 		}
 		function getUnreadDotsHTML(node) { return { dL: node.versions.slice(0, node.activeVersion).some(v => v.unread) ? `<span data-action="v-unread-left" class="v-unread-left" title="Jump to unread">•</span>` : '', dR: node.versions.slice(node.activeVersion + 1).some(v => v.unread) ? `<span data-action="v-unread-right" class="v-unread-right" title="Jump to unread">•</span>` : '' }; }
-		function updateVersionDots(node) { let ctrlEl = getMessageEl(node.id)?.querySelector('.version-ctrl'); if (!ctrlEl) return; const { dL, dR } = getUnreadDotsHTML(node); ctrlEl.innerHTML = `${dL}<button data-action="v-prev" class="v-prev">◀</button> v${node.activeVersion+1}/${node.versions.length} <button data-action="v-next" class="v-next">▶</button>${dR}`; }
+		function updateVersionDots(n,i){let a=n.activeVersion,v=n.versions,b=v[a].swarm&&!v[a].endTime&&getMessageEl(n.id)?.querySelector('.bubble');if(b){b.innerText=v.slice(a+1).map((x,i)=>{let e=x.endTime,q=e?'':'+';return`V${a+i+2}:${getMessageStatString(n,x)}${q} ${((e||Date.now())-x.startTime)/1e3|0}s${q}`}).join('\n');return}if(i!=null){if(v[i].unread)return;v[i].unread=1}let c=getMessageEl(n.id)?.querySelector('.version-ctrl');if(!c)return;let{dL,dR}=getUnreadDotsHTML(n);c.innerHTML=`${dL}<button data-action="v-prev" class="v-prev">◀</button> v${a+1}/${v.length} <button data-action="v-next" class="v-next">▶</button>${dR}`}
 		function getTopoCore(id) { const s = String(id || ''); const p = s.lastIndexOf('_'); return p >= 0 ? s.slice(0, p) : s; }
 		function getRenderedMessageEls() { return Array.from(els.chatContainer.children).filter(el => el.classList.contains('message')); }
 		function getMessageEl(id) { return getRenderedMessageEls().find(el => el.dataset.msgId === id) || null; }
@@ -1012,13 +998,13 @@ $q('[id]').forEach(el => els[el.id] = el);
 			if (node.activeVersion === vIndex) { if (!softFinalizeNodeDOM(node, vIndex)) updateNodeDOM(node); autoCollapseThinkingBlocks(); } else updateVersionDots(node);
 			if (controller) activeControllers.delete(controller); resetStopBtn(); updateSendBtn(); updateTokenDisplay();
 		}
-		async function executeAPI(messages, node, vIndex, controller) {
-		const providerId=activeProviderId,p=providers[providerId],key=getApiKey(),isStream=settings.streaming,modelId=getCurrentModel();
-		const payload = { model: modelId, messages: messages, temperature: 0.7, stream: isStream }; payload[p.maxTokensParam || 'max_tokens'] = settings.maxTokens; if (isStream && p.supportsStreamUsage) payload.stream_options = { include_usage: true };
+		async function executeAPI(messages, node, vIndex, controller, r=run()) {
+		const p=r.p,key=getApiKey(p.id),isStream=settings.streaming,modelId=r.m;
+		const payload = { ...r.request,model:modelId,messages,temperature:r.temperature??.7,stream:isStream }; payload[p.maxTokensParam || 'max_tokens'] = r.maxTokens; if (isStream && p.supportsStreamUsage) payload.stream_options = { include_usage: true };
 		node.versions[vIndex].startTime = Date.now();
 		const res = await fetch(p.baseURL + p.apiPath, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key }, body: JSON.stringify(payload), signal: controller.signal });
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		const applyUsage = u => applyResponseMetadata(node.versions[vIndex],u,p,modelId,providerId);
+		const applyUsage = u => applyResponseMetadata(node.versions[vIndex],u,p,modelId,p.id);
 		if (!isStream) {
 			const data = await res.json(); applyUsage(data.usage); node.versions[vIndex].rawContent = data.choices[0].message.content || ''; node.versions[vIndex].thinking = data.choices[0].message.reasoning_content || '';
 			handleNewContent(node.versions[vIndex].rawContent.length + node.versions[vIndex].thinking.length, true);
@@ -1037,7 +1023,7 @@ $q('[id]').forEach(el => els[el.id] = el);
 					}
 
 					if (!isFirstChunk && (fullC.length + fullT.length > 0)) {
-						if (node.activeVersion !== vIndex) { if (!node.versions[vIndex].unread) { node.versions[vIndex].unread = true; updateVersionDots(node); } }
+						if(node.activeVersion!==vIndex){let v=node.versions,a=node.activeVersion;if(v[a].swarm&&!v[a].endTime||!v[vIndex].unread)updateVersionDots(node,vIndex)}
 						else {
 							node.versions[vIndex].unread = false; const currentLen = fullC.length + fullT.length; handleNewContent(currentLen - lastRenderedLen, false); lastRenderedLen = currentLen;
 							const el = getMessageEl(node.id);
@@ -1055,24 +1041,19 @@ $q('[id]').forEach(el => els[el.id] = el);
 		await saveStreamBuffer(node, vIndex);
 		node.versions[vIndex].endTime = node.lastUpdateTime || Date.now(); finalizeGeneration(node, vIndex, controller);
 	}
-		function buildAPIMessages(targetPath) {
-			const p = providers[activeProviderId]; const messages = [{ role: p.systemRole || 'system', content: 'You are a helpful assistant.' }];
-			targetPath.forEach(n => { if (n.id !== 'root' && n.role !== 'system' && n.role !== 'system-msg' && n.versions[n.activeVersion || 0].rawContent) messages.push({ role: n.role, content: n.versions[n.activeVersion].rawContent }); }); return messages;
+		function buildAPIMessages(targetPath,r=run(),messages) {
+			if(!messages){messages=[{role:r.systemRole||'system',content:'You are a helpful assistant.'}];targetPath.forEach(n=>{if(n.id!=='root'&&n.role!=='system'&&n.role!=='system-msg'&&n.versions[n.activeVersion||0].rawContent)messages.push({role:n.role,content:n.versions[n.activeVersion].rawContent})})}return r.prompt?messages.concat({role:r.systemRole||'system',content:r.prompt}):messages;
 		}
-		function triggerAI(messages, asstNode, vIndex) {
-			els.sendBtn.style.display = 'none'; els.stopBtn.style.display = 'flex'; const controller = new AbortController(); activeControllers.add(controller); gens[genKey(asstNode.id,vIndex)]=Date.now();tabBeat(1); updateSendBtn();
-			executeAPI(messages, asstNode, vIndex, controller).catch(err => {
-				const ver = asstNode.versions[vIndex]; ver.isDead = true; ver.endTime = Date.now();
-				if (err.name === 'AbortError') { ver.errorIcon = '☠️'; ver.errorText = 'Stopped by user'; } else { ver.errorIcon = '⚠️'; ver.errorText = `Error: ${err.message}`; showToast(`⚠️ Error: ${err.message}`); }
-				finalizeGeneration(asstNode, vIndex, controller);
-		});
+		function triggerAI(messages,node,v,r) {
+			els.sendBtn.style.display='none';els.stopBtn.style.display='flex';const controller=new AbortController();activeControllers.add(controller);gens[genKey(node.id,v)]=Date.now();tabBeat(1);updateSendBtn();
+			return executeAPI(messages,node,v,controller,r).then(()=>1).catch(err=>{const ver=node.versions[v];ver.isDead=true;ver.endTime=Date.now();if(err.name==='AbortError'){ver.errorIcon='☠️';ver.errorText='Stopped by user'}else{ver.errorIcon='⚠️';ver.errorText=`Error: ${err.message}`;showToast(`⚠️ Error: ${err.message}`)}finalizeGeneration(node,v,controller);return 0});
 		}
-		function generateAIResponse(overrideLeafId = null) {
-			const path = getViewNodes(); const leafId = overrideLeafId || path[path.length - 1]?.id || 'root';
-			if (leafId !== 'root') updateNodeDOM(chatTree.nodes[leafId]);
-			const asstNode = createNode('assistant', '', '', leafId, true);
-			if (overrideLeafId) renderPathFrom(asstNode.id); else { els.chatContainer.appendChild(createMessageDOM(asstNode, true)); updatePathTracker(); updateSendBtn(); if (isAtBottom) els.chatContainer.scrollTop = els.chatContainer.scrollHeight; }
-			updateTokenDisplay(); triggerAI(buildAPIMessages(getViewNodes()), asstNode, asstNode.activeVersion);
+		async function generateAIResponse(leaf=null,node,agent=activeAgentId,x={},messages,v,skip) {
+			const path=getViewNodes(),parent=leaf||path.at(-1)?.id||'root',r=run(agent,x);
+			if(!node){if(parent!=='root')updateNodeDOM(chatTree.nodes[parent]);node=createNode('assistant','','',parent,true);v=0;if(!leaf||path.some(n=>n.id===parent)){if(leaf)renderPathFrom(node.id);else{els.chatContainer.appendChild(createMessageDOM(node,true));updatePathTracker();updateSendBtn();if(isAtBottom)els.chatContainer.scrollTop=els.chatContainer.scrollHeight}}updateTokenDisplay()}
+			else if(v==null)v=node.versions.push(ver(node,{rawContent:'',thinking:'',isDead:false}))-1;const version=node.versions[v];
+			if(r.batch?.length&&!skip){const base=messages||buildAPIMessages(path);version.swarm=agent;version.startTime=Date.now();const out=await Promise.all(r.batch.map(e=>generateAIResponse(null,node,typeof e==='string'?e:agent,{...x,...(typeof e==='number'?{temperature:e}:typeof e==='string'?{}:e)},base,null,1)));if(out.some(v=>v<0)){let{errorIcon,errorText}=node.versions[~out.find(v=>v<0)];Object.assign(version,{isDead:true,endTime:Date.now(),errorIcon,errorText});finalizeGeneration(node,v);return -1}return generateAIResponse(null,node,r.synth||{prompt:'Synthesize the candidates.'},{},base.concat(out.map((n,i)=>({role:'assistant',content:'[Candidate '+(i+1)+']\n'+node.versions[n].rawContent}))),v,1)}
+			messages=buildAPIMessages(path,r,messages);if(agent||Object.keys(x).length)Object.assign(version,{agent,x,temperature:r.temperature,maxTokens:r.maxTokens,request:r.request});const ok=await triggerAI(messages,node,v,r);if(ok&&r.next)generateAIResponse(node.id,null,r.next,{},messages.concat({role:'assistant',content:version.rawContent}));return ok?v:~v;
 		}
 		function sendMessage() {
 			const text = els.messageInput.value.trim(); if (!text || els.sendBtn.disabled) return;
@@ -1333,6 +1314,7 @@ $q('[id]').forEach(el => els[el.id] = el);
 							return;
 						}
 					}
+					const prior=targetNode.versions[targetNode.activeVersion];
 					targetNode.versions.push(ver(targetNode,{ rawContent: '', thinking: '', isDead: false }));
 					targetNode.activeVersion = targetNode.versions.length - 1;
 					targetNode.isGenerating = true;
@@ -1343,7 +1325,7 @@ $q('[id]').forEach(el => els[el.id] = el);
 					}
 					waitingToSave[targetNode.id] = targetNode;
 					updateNodeDOM(targetNode);
-					triggerAI(buildAPIMessages(path.slice(0, sliceIdx + 1)), targetNode, targetNode.activeVersion);
+					generateAIResponse(null,targetNode,prior.swarm||prior.agent||'',prior.swarm?{}:prior.agent?{...prior,...prior.x}:{},buildAPIMessages(path.slice(0,sliceIdx+1)),targetNode.activeVersion,!prior.swarm);
 					break;
 				}
 				case 'v-prev': if (listIdx > 0 && activeViewList[listIdx].v > 0) { activeViewList[listIdx].v--; node.activeVersion = activeViewList[listIdx].v; node.versions[node.activeVersion].unread = false; pushHistoryNext=1; commitNode(node); } break;
