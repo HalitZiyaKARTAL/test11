@@ -1,0 +1,1876 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Static WebRTC QR + Auto Rendezvous + Link/Socket Relay + Eval Console</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#101018;--surface:#181825;--surface2:#202034;--surface3:#141420;--text:#eee;--muted:#aaa;
+  --border:#444455;--good:#17351f;--bad:#3a1f1f;--warn:#3a3118;--btn:#22283a;--blue:#263c68;--green:#1f4a2a;--red:#4a2228
+}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);margin:0;padding:14px}
+.box{max-width:1040px;margin:auto}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:850px){.grid.two{grid-template-columns:1fr 1fr}}
+.row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:6px 0}
+button,input,textarea,select{font:inherit}
+button{padding:10px 12px;border:1px solid #555568;border-radius:10px;background:var(--btn);color:var(--text);cursor:pointer}
+button:active{transform:scale(.98)}
+button.primary{background:var(--blue)}button.good{background:var(--green)}button.danger{background:var(--red)}
+textarea{width:100%;min-height:105px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;margin:8px 0;resize:vertical}
+textarea.code{min-height:170px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;line-height:1.35}
+input[type=text],input:not([type]){background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px}
+.wide{width:100%}
+.status{padding:12px;border-radius:12px;background:var(--bad);margin:10px 0;font-weight:800}
+.connected{background:var(--good)}.warn{background:var(--warn)}
+.hint,.small{color:var(--muted);font-size:.95em;line-height:1.35}
+pre{white-space:pre-wrap;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;min-height:120px;max-height:45vh;overflow:auto}
+pre.compact{min-height:80px;max-height:30vh}
+#localQr{background:white;color:black;display:none;padding:10px;border-radius:10px;width:max-content;max-width:100%;overflow:auto}
+#qrVideo{display:none;width:100%;max-height:45vh;border-radius:10px;background:#000;border:1px solid var(--border)}
+.pill{display:inline-block;padding:4px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
+label{user-select:none}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.fileBtn{padding:8px 10px;min-width:42px}
+
+details.card{display:block}
+details.card>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin:-2px 0 8px 0}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary h3{margin:0;display:inline}
+details.card>summary .arrow{font-size:1.05em;width:1.3em;text-align:center;color:var(--muted)}
+details.card>summary .arrow::before{content:"▸"}
+details.card[open]>summary .arrow::before{content:"▾"}
+details.card:not([open]){padding-bottom:8px}
+details.card:not([open])>summary{margin-bottom:0}
+.denseControls{justify-content:flex-end;margin-top:-2px}
+
+.methodList{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.methodItem{display:flex;align-items:center;gap:7px;flex-wrap:wrap;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:8px}
+.methodItem .methodName{font-weight:700;min-width:130px}
+.methodItem button{padding:6px 9px}
+.methodItem.disabled{opacity:.58}
+.reportLine{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);font-size:.92em}
+
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Static WebRTC QR + Auto Rendezvous + Link/Socket Relay + Eval Console</h2>
+  <div id="status" class="status">Not connected</div>
+  <input id="universalFileInput" type="file" accept=".txt,.js,.json,.html,.sdp,.log,.md,text/*,application/javascript,application/json" style="display:none" onchange="finishPopulateFromFile(this)">
+
+  <details class="card collapsible setupSection" open>
+    <summary><span class="arrow"></span><h3>Fast usage</h3></summary>
+    <div class="hint">
+      Expected fast path: open this page on both devices, then press <b>Auto Connect</b> on both. The button becomes <b>Stop auto</b>; the app keeps trying enabled public WSS/socket rendezvous methods in priority order until connected or stopped, reports failures, and collapses setup UI after DataChannel opens.
+      <br><br>
+      Manual/QR fallback: Device A makes host code → Device B scans/pastes it → Device B makes reply → Device A scans/pastes reply → finish.
+      <br><br>
+      Link relay: default link is note.ms, but the field can be replaced by any compatible note/proxy URL. Enable <b>Use link intermediary</b> on both devices.
+      <br><br>
+      Socket/auto rendezvous: default room id is cross_talk_room1 and randomizer is off, so the literal room is cross_talk_room1. For private deterministic rooms, put the visible room id in the first box, the shared randomizer phrase/key in the second box, and turn randomizer on on both devices. Example: room id apple + randomize using orange → same hidden room; randomizer off → room is only apple.
+      <br><br>
+      Auto-collapse is on by default: after DataChannel opens, sections above Text / ping collapse to remove setup clutter.
+      <br><br>
+      Eval console is under Global log so received/sent text and eval output are visible in the same lower area. Remote eval only runs when <b>Accept remote eval</b> is checked on the receiving device.
+      <br><br>
+      <b>🔗 buttons</b> beside fields open a file picker and only populate that specific box. They do not run, send, connect, or evaluate anything automatically.
+    </div>
+    <div class="row denseControls">
+      <button id="publicAutoButton" class="primary" onclick="publicToggleAutoConnect()">Auto Connect</button>
+      <span id="publicAutoState" class="pill">auto idle</span>
+      <button onclick="setAllSections(true)">Expand all</button>
+      <button onclick="setAllSections(false)">Collapse all</button>
+      <label><input id="autoCollapseOnConnect" type="checkbox" checked> auto-collapse setup on connect</label>
+    </div>
+  </details>
+
+
+  <div class="grid two">
+    <details class="card numbered setupSection" open>
+      <summary><span class="arrow"></span><h3>1. Local connection code</h3></summary>
+      <div class="row">
+        <button class="primary" onclick="makeHostCode()">Host: make code</button>
+        <button onclick="copyLocalCode()">Copy</button>
+        <button onclick="shareLocalCode()">Share</button>
+        <button onclick="makeLocalQr()">Make QR</button>
+        <button onclick="hideLocalQr()">Hide QR</button>
+        <button class="fileBtn" title="Load file text into Local connection code" onclick="beginPopulateFromFile('localCode')">🔗</button>
+        <button class="danger" onclick="clearAll()">Reset</button>
+      </div>
+      <textarea id="localCode" readonly placeholder="Your generated offer/answer code appears here"></textarea>
+      <div id="localQr"></div>
+      <div class="small">QR generation uses qrcodejs CDN for now. Replaceable later.</div>
+    </details>
+
+    <details class="card numbered setupSection" open>
+      <summary><span class="arrow"></span><h3>2. Remote connection code</h3></summary>
+      <textarea id="remoteCode" placeholder="Paste or scan the other device's code here"></textarea>
+      <div class="row">
+        <button onclick="pasteRemoteCode()">Paste clipboard</button>
+        <button class="fileBtn" title="Load file text into Remote connection code" onclick="beginPopulateFromFile('remoteCode')">🔗</button>
+        <button onclick="startQrScan()">Read QR</button>
+        <button onclick="stopQrScan()">Stop QR</button>
+      </div>
+      <video id="qrVideo" playsinline muted></video>
+      <div class="row">
+        <button class="good" onclick="joinFromHostCode()">Join: make reply</button>
+        <button class="good" onclick="finishHostConnection()">Host: finish</button>
+      </div>
+    </details>
+  </div>
+
+  <details class="card numbered setupSection" open>
+    <summary><span class="arrow"></span><h3>3. Link intermediary</h3></summary>
+    <div class="row">
+      <label><input id="relayOn" type="checkbox" onchange="setRelayEnabled(this.checked)"> Use link intermediary</label>
+      <span id="relayState" class="pill">relay off</span>
+    </div>
+    <label class="small">Relay URL. Default is note.ms; replace with proxy URL only if needed.</label>
+    <div class="row">
+      <input id="relayUrl" type="text" value="https://note.ms/connector20260617testing1" style="flex:1;min-width:220px">
+      <button class="fileBtn" title="Load file text into Relay URL" onclick="beginPopulateFromFile('relayUrl')">🔗</button>
+    </div>
+    <div class="row">
+      <button onclick="relayCheckOnce()">Check once</button>
+      <button onclick="relayPublishLocal()">Write current local code</button>
+      <button onclick="relayAutoStartAsHost()">Auto host publish</button>
+      <button onclick="relayNoteMsSelfTest()">Test read/write</button>
+      <button onclick="relayClearRemote()">Clear relay page</button>
+    </div>
+    <div class="hint">
+      Direct link relay tries GET + POST. If read/write fails but manual page works, paste a CORS proxy URL directly into the Relay URL field.
+    </div>
+  </details>
+
+  <details class="card numbered setupSection" open>
+    <summary><span class="arrow"></span><h3>4. Socket / Auto rendezvous</h3></summary>
+    <div class="hint">
+      Main happy path: both devices press <b>Auto Connect</b>. It loops forever through the enabled methods below, in priority order, until DataChannel opens or you press Stop auto. Manual/QR/link fallback remains available if public rendezvous fails.
+    </div>
+    <div class="row">
+      <button id="publicAutoButtonSocket" class="primary" onclick="publicToggleAutoConnect()">Auto Connect</button>
+      <label><input id="publicAutoCollapse" type="checkbox" checked> collapse setup after connect</label>
+      <span id="publicState" class="pill">public rendezvous idle</span>
+    </div>
+    <label class="small">Room id + optional randomizer. Randomizer OFF means the literal room is only the Room id, e.g. <span class="mono">apple</span>. Randomizer ON means both devices use Room id + Randomize using, e.g. <span class="mono">apple</span> + <span class="mono">orange</span>, to derive the same hard-to-guess deterministic room.</label>
+    <div class="row">
+      <label class="small" style="flex:1;min-width:180px">Room id<br><input id="publicRoomSeed" type="text" value="cross_talk_room1" oninput="updatePublicRoomPreview()" style="width:100%"></label>
+      <label class="small" style="flex:1;min-width:180px">Randomize using<br><input id="publicRoomSalt" type="text" value="" placeholder="orange / shared phrase" oninput="updatePublicRoomPreview()" style="width:100%"></label>
+      <label><input id="publicHashRoom" type="checkbox" onchange="updatePublicRoomPreview()"> randomizer on</label>
+      <button onclick="randomizePublicRoomSalt()">Randomize using</button>
+      <button class="fileBtn" title="Load file text into Auto room id" onclick="beginPopulateFromFile('publicRoomSeed')">🔗 id</button>
+      <button class="fileBtn" title="Load file text into Auto randomizer" onclick="beginPopulateFromFile('publicRoomSalt')">🔗 rand</button>
+    </div>
+    <div class="row">
+      <span class="small">Derived room: <span id="publicRoomPreview" class="mono">cross_talk_room1</span></span>
+      <label class="small">method window <input id="publicMethodSeconds" type="text" value="25" style="width:70px"> s</label>
+      <label class="small">retry pause max <input id="publicRetryMaxSeconds" type="text" value="5" style="width:70px"> s</label>
+    </div>
+    <div class="hint">Methods are tried top-to-bottom forever while Auto is running. Keep all enabled for easiest no-setup behavior; top item only shows ↓, bottom item only shows ↑, middle items show both, and unchecking skips a method.</div>
+    <div id="publicMethodList" class="methodList"></div>
+    <pre id="publicReport" class="compact"></pre>
+    <hr style="border:0;border-top:1px solid var(--border);margin:12px 0">
+    <div class="hint">Custom socket relay fallback: only use this if you have a specific <span class="mono">wss://</span> relay URL. Auto Connect above is the no-setup public rendezvous path.</div>
+
+    <div class="row">
+      <label><input id="socketOn" type="checkbox" onchange="setSocketEnabled(this.checked)"> Use socket intermediary</label>
+      <label><input id="socketAutoStart" type="checkbox" checked> Auto offer/answer</label>
+      <label><input id="socketHashRoom" type="checkbox" onchange="updateSocketRoomPreview()"> randomizer on</label>
+      <span id="socketState" class="pill">socket off</span>
+    </div>
+    <label class="small">Socket URL. GitHub Pages is HTTPS, so use <span class="mono">wss://</span> for public relay URLs. The relay accepts <span class="mono">join</span> then forwards same-room JSON messages.</label>
+    <div class="row">
+      <input id="socketUrl" type="text" value="" placeholder="wss://your-relay.example/ws" style="flex:1;min-width:220px">
+      <button class="fileBtn" title="Load file text into Socket URL" onclick="beginPopulateFromFile('socketUrl')">🔗</button>
+    </div>
+    <label class="small">Room id + optional randomizer. Randomizer OFF means the socket room is only the Room id. Randomizer ON hashes Room id + Randomize using, so both devices can type <span class="mono">apple</span> and <span class="mono">orange</span> into the two boxes and get the same hidden room.</label>
+    <div class="row">
+      <label class="small" style="flex:1;min-width:180px">Room id<br><input id="socketRoomSeed" type="text" value="cross_talk_room1" oninput="updateSocketRoomPreview()" style="width:100%"></label>
+      <label class="small" style="flex:1;min-width:180px">Randomize using<br><input id="socketRoomSalt" type="text" value="" placeholder="orange / shared phrase" oninput="updateSocketRoomPreview()" style="width:100%"></label>
+      <button onclick="randomizeSocketRoomSalt()">Randomize using</button>
+      <button class="fileBtn" title="Load file text into Socket room id" onclick="beginPopulateFromFile('socketRoomSeed')">🔗 id</button>
+      <button class="fileBtn" title="Load file text into Socket randomizer" onclick="beginPopulateFromFile('socketRoomSalt')">🔗 rand</button>
+    </div>
+    <div class="small">Derived room: <span id="socketRoomPreview" class="mono">cross_talk_room1</span></div>
+    <div class="row">
+      <button onclick="socketConnect()">Connect socket</button>
+      <button onclick="socketDisconnect()">Disconnect socket</button>
+      <button onclick="socketAnnounce()">Send hello</button>
+      <button onclick="socketStartOfferNow()">Host offer now</button>
+    </div>
+    <div class="hint">
+      Room logic: randomizer off = literal Room id only. Randomizer on = deterministic SHA-256 of Room id + Randomize using. The room does not need to exist in advance; both clients join the same derived room and the relay forwards messages.
+    </div>
+  </details>
+
+  <details class="card numbered" open>
+    <summary><span class="arrow"></span><h3>5. Text / ping</h3></summary>
+    <div class="row">
+      <button class="primary" onclick="sendPing()">Ping</button>
+      <input id="customText" placeholder="hello" style="flex:1;min-width:160px">
+      <button class="fileBtn" title="Load file text into Text box" onclick="beginPopulateFromFile('customText')">🔗</button>
+      <button onclick="sendText()">Send text</button>
+    </div>
+  </details>
+
+  <details class="card numbered" open>
+    <summary><span class="arrow"></span><h3>6. Global log</h3></summary>
+    <pre id="log"></pre>
+  </details>
+
+  <details class="card numbered" open>
+    <summary><span class="arrow"></span><h3>7. Eval console</h3></summary>
+    <div class="row">
+      <button class="primary" onclick="runEvalFromBox('local')">Evaluate locally</button>
+      <button class="good" onclick="sendEvalFromBox()">Send eval to remote</button>
+      <button onclick="fillEvalSample()">Sample</button>
+      <button onclick="clearEvalOutput()">Clear eval output</button>
+      <button class="fileBtn" title="Load file text into Eval code box" onclick="beginPopulateFromFile('evalCode')">🔗</button>
+      <label><input id="acceptRemoteEval" type="checkbox"> Accept remote eval</label>
+      <span class="pill">remote default off</span>
+    </div>
+    <textarea id="evalCode" class="code" placeholder="Write JS here. Example:
+console.log('hello from eval', location.href);
+document.body.style.outline='4px solid lime';
+'outlined';
+"></textarea>
+    <div class="hint">
+      Remote trigger is <span class="mono">evaluate me =&gt;</span>.
+      Remote result is returned as <span class="mono">evaluation result =&gt;</span>.
+      Console methods captured: log/info/warn/error/debug.
+      The 🔗 file button only populates the eval textarea; it does not evaluate automatically.
+    </div>
+    <h4>Eval output</h4>
+    <pre id="evalOutput" class="compact"></pre>
+  </details>
+</div>
+
+<script>
+/* -----------------------------
+   State
+----------------------------- */
+
+let pc=null, channel=null;
+let pendingPings=new Map();
+
+const peerId="p"+Math.random().toString(36).slice(2,10);
+const EVAL_PREFIX="evaluate me =>";
+const EVAL_RESULT_PREFIX="evaluation result =>";
+
+const statusEl=document.getElementById("status");
+const logEl=document.getElementById("log");
+const evalOutputEl=document.getElementById("evalOutput");
+const localCodeEl=document.getElementById("localCode");
+const remoteCodeEl=document.getElementById("remoteCode");
+const relayStateEl=document.getElementById("relayState");
+const socketStateEl=document.getElementById("socketState");
+const socketRoomPreviewEl=document.getElementById("socketRoomPreview");
+const publicStateEl=document.getElementById("publicState");
+const publicAutoStateEl=document.getElementById("publicAutoState");
+const publicAutoButtonEl=document.getElementById("publicAutoButton");
+const publicAutoButtonSocketEl=document.getElementById("publicAutoButtonSocket");
+const publicRoomPreviewEl=document.getElementById("publicRoomPreview");
+const publicReportEl=document.getElementById("publicReport");
+const publicMethodListEl=document.getElementById("publicMethodList");
+
+const rtcConfig={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
+
+function log(text){
+  logEl.textContent+="["+new Date().toLocaleTimeString()+"] "+text+"\n";
+  logEl.scrollTop=logEl.scrollHeight;
+}
+function evalLog(text){
+  evalOutputEl.textContent+="["+new Date().toLocaleTimeString()+"] "+text+"\n";
+  evalOutputEl.scrollTop=evalOutputEl.scrollHeight;
+}
+function setStatus(text,connected=false,warn=false){
+  statusEl.textContent=text;
+  statusEl.className=connected?"status connected":warn?"status warn":"status";
+}
+function setRelayState(text){relayStateEl.textContent=text}
+function setSocketState(text){if(socketStateEl)socketStateEl.textContent=text}
+function setPublicState(text){
+  if(publicStateEl)publicStateEl.textContent=text;
+  if(publicAutoStateEl)publicAutoStateEl.textContent=text;
+}
+function setPublicAutoButtons(running){
+  for(const btn of [publicAutoButtonEl,publicAutoButtonSocketEl]){
+    if(!btn)continue;
+    btn.textContent=running?"Stop auto":"Auto Connect";
+    btn.classList.toggle("danger",!!running);
+    btn.classList.toggle("primary",!running);
+  }
+}
+function publicReport(text){if(publicReportEl){publicReportEl.textContent+="["+new Date().toLocaleTimeString()+"] "+text+"\n";publicReportEl.scrollTop=publicReportEl.scrollHeight}log("AUTO: "+text)}
+function connected(){return channel&&channel.readyState==="open"}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function collapseSetupSectionsAfterConnect(){
+  const usageToggle=document.getElementById("autoCollapseOnConnect");
+  const socketToggle=document.getElementById("publicAutoCollapse");
+  if((usageToggle&&!usageToggle.checked)||(socketToggle&&!socketToggle.checked))return;
+  document.querySelectorAll("details.setupSection").forEach(section=>section.open=false);
+  log("Auto-collapsed setup sections after connection opened.");
+}
+
+function setAllSections(open){
+  document.querySelectorAll("details.card").forEach(section => section.open = !!open);
+  log((open ? "Expanded" : "Collapsed") + " all collapsible sections.");
+}
+
+/* -----------------------------
+   Code encode/decode
+----------------------------- */
+
+function bytesToBase64Url(bytes){
+  let binary="";
+  for(const byte of bytes)binary+=String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
+}
+
+async function sha256Hex(text){
+  const bytes=new TextEncoder().encode(text);
+  const hash=await crypto.subtle.digest("SHA-256",bytes);
+  return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+function base64UrlToBytes(text){
+  text=text.replaceAll("-","+").replaceAll("_","/");
+  text+="=".repeat((4-text.length%4)%4);
+  const binary=atob(text);
+  return Uint8Array.from(binary,ch=>ch.charCodeAt(0));
+}
+function encodeCode(obj){
+  const bytes=new TextEncoder().encode(JSON.stringify(obj));
+  return "WEBRTC-PING-v1:"+bytesToBase64Url(bytes);
+}
+function decodeCode(text){
+  text=text.trim();
+  if(text.startsWith("WEBRTC-PING-v1:"))text=text.slice("WEBRTC-PING-v1:".length);
+  const bytes=base64UrlToBytes(text);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function shortCodeInfo(text){return text?text.length+" chars":"empty"}
+
+/* -----------------------------
+   WebRTC
+----------------------------- */
+
+function makePeer(){
+  pc=new RTCPeerConnection(rtcConfig);
+  pc.oniceconnectionstatechange=()=>log("ICE state: "+pc.iceConnectionState);
+  pc.onconnectionstatechange=()=>log("Peer state: "+pc.connectionState);
+  pc.ondatachannel=event=>{
+    channel=event.channel;
+    setupChannel();
+    log("Received data channel.");
+  };
+}
+
+function setupChannel(){
+  channel.onopen=()=>{
+    setStatus("CONNECTED — DataChannel open",true);
+    log("DataChannel opened.");
+    collapseSetupSectionsAfterConnect();
+  };
+  channel.onclose=()=>{
+    setStatus("Disconnected");
+    log("DataChannel closed.");
+  };
+  channel.onerror=e=>{
+    log("DataChannel error.");
+    console.error(e);
+  };
+  channel.onmessage=event=>handleChannelMessage(event.data);
+}
+
+async function handleChannelMessage(data){
+  let msg;
+  try{msg=JSON.parse(data)}catch{
+    log("Received raw: "+data);
+    await handleTextPayload(String(data));
+    return;
+  }
+
+  if(msg.type==="ping"){
+    log("Received ping: "+msg.id);
+    channel.send(JSON.stringify({type:"pong",id:msg.id,time:Date.now()}));
+    return;
+  }
+
+  if(msg.type==="pong"){
+    const started=pendingPings.get(msg.id);
+    pendingPings.delete(msg.id);
+    log(started ? "Received pong: "+msg.id+" | RTT ≈ "+Math.round(performance.now()-started)+" ms" : "Received pong: "+msg.id);
+    return;
+  }
+
+  if(msg.type==="text"){
+    await handleTextPayload(String(msg.text ?? ""));
+    return;
+  }
+
+  log("Received unknown message: "+data);
+}
+
+async function waitForIceGatheringComplete(){
+  if(pc.iceGatheringState==="complete")return;
+  await new Promise(resolve=>{
+    let done=false;
+    const finish=()=>{if(done)return;done=true;resolve()};
+    pc.addEventListener("icegatheringstatechange",()=>{if(pc.iceGatheringState==="complete")finish()});
+    pc.addEventListener("icecandidate",event=>{if(!event.candidate)finish()});
+    setTimeout(finish,5000);
+  });
+}
+
+async function makeHostCode(){
+  clearConnectionOnly();
+  makePeer();
+  channel=pc.createDataChannel("ping");
+  setupChannel();
+  log("Creating host offer...");
+  const offer=await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await waitForIceGatheringComplete();
+  localCodeEl.value=encodeCode(pc.localDescription);
+  log("Host code created: "+shortCodeInfo(localCodeEl.value)+".");
+}
+
+async function joinFromHostCode(){
+  clearConnectionOnly();
+  makePeer();
+
+  let hostOffer;
+  try{hostOffer=decodeCode(remoteCodeEl.value)}
+  catch(err){log("Bad host code: "+err.message);return}
+
+  log("Reading host code...");
+  await pc.setRemoteDescription(hostOffer);
+
+  log("Creating reply code...");
+  const answer=await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await waitForIceGatheringComplete();
+
+  localCodeEl.value=encodeCode(pc.localDescription);
+  log("Reply code created: "+shortCodeInfo(localCodeEl.value)+".");
+}
+
+async function finishHostConnection(){
+  if(!pc){log("No host peer exists. First click Host: make code.");return}
+
+  let answer;
+  try{answer=decodeCode(remoteCodeEl.value)}
+  catch(err){log("Bad answer code: "+err.message);return}
+
+  log("Applying reply code...");
+  await pc.setRemoteDescription(answer);
+  log("Reply accepted. Waiting for DataChannel open...");
+}
+
+function sendPing(){
+  if(!connected()){log("Cannot ping: not connected yet.");return}
+  const id=Math.random().toString(36).slice(2);
+  pendingPings.set(id,performance.now());
+  channel.send(JSON.stringify({type:"ping",id,time:Date.now()}));
+  log("Sent ping: "+id);
+}
+
+function sendText(){
+  if(!connected()){log("Cannot send: not connected yet.");return}
+  const text=document.getElementById("customText").value||"hello";
+  channel.send(JSON.stringify({type:"text",text,time:Date.now()}));
+  log("Sent text: "+text);
+}
+
+function clearConnectionOnly(){
+  if(channel){try{channel.close()}catch{}}
+  if(pc){try{pc.close()}catch{}}
+  pc=null;
+  channel=null;
+  pendingPings.clear();
+  setStatus("Not connected");
+}
+
+function clearAll(){
+  stopQrScan();
+  setRelayEnabled(false);
+  socketDisconnect();
+  publicStopAutoConnect();
+  document.getElementById("relayOn").checked=false;
+  document.getElementById("socketOn").checked=false;
+
+  clearConnectionOnly();
+  localCodeEl.value="";
+  remoteCodeEl.value="";
+  hideLocalQr();
+  logEl.textContent="";
+  evalOutputEl.textContent="";
+
+  relaySeen.clear();
+  relayOutbox.length=0;
+  relayMadeOffer=false;
+  relayHelloQueued=false;
+  relayAnsweredOfferIds.clear();
+  relayAppliedAnswerIds.clear();
+  relayLastState=null;
+
+  log("Reset. My peer id: "+peerId);
+}
+
+/* -----------------------------
+   Shared eval engine
+----------------------------- */
+
+function formatEvalValue(value, seen=new WeakSet()){
+  if(value instanceof Error)return value.stack||String(value);
+  if(value===undefined)return "undefined";
+  if(value===null)return "null";
+  if(typeof value==="string")return value;
+  if(typeof value==="function")return String(value);
+  if(value instanceof Node){
+    if(value.outerHTML)return value.outerHTML;
+    return String(value);
+  }
+  if(typeof value==="object"){
+    try{
+      return JSON.stringify(value,(key,val)=>{
+        if(typeof val==="object"&&val!==null){
+          if(seen.has(val))return "[Circular]";
+          seen.add(val);
+        }
+        if(typeof val==="function")return String(val);
+        if(val instanceof Node)return val.outerHTML||String(val);
+        return val;
+      },2);
+    }catch{return String(value)}
+  }
+  return String(value);
+}
+
+function captureConsoleStart(){
+  const methods=["log","info","warn","error","debug"];
+  const original={};
+  const captured=[];
+  for(const method of methods){
+    original[method]=console[method];
+    console[method]=(...args)=>{
+      const line=args.map(arg=>formatEvalValue(arg)).join(" ");
+      captured.push({method,line});
+      original[method].apply(console,args);
+    };
+  }
+  return {
+    captured,
+    stop(){
+      for(const method of methods)console[method]=original[method];
+    }
+  };
+}
+
+async function runEvalEngine(code, origin){
+  const started=performance.now();
+  const cap=captureConsoleStart();
+  let ok=true,result,error;
+  try{
+    result=await eval(code);
+  }catch(err){
+    ok=false;
+    error=err;
+  }finally{
+    cap.stop();
+  }
+  const ms=Math.round(performance.now()-started);
+  const consoleText=cap.captured.map(x=>"["+x.method+"] "+x.line).join("\n");
+  return {
+    ok,
+    origin,
+    ms,
+    result:ok?formatEvalValue(result):"",
+    error:ok?"":formatEvalValue(error),
+    console:consoleText
+  };
+}
+
+function renderEvalReport(report){
+  const text =
+    "origin: "+report.origin+"\n"+
+    "ok: "+report.ok+"\n"+
+    "time: "+report.ms+" ms\n"+
+    (report.console ? "\nconsole:\n"+report.console+"\n" : "\nconsole: <empty>\n")+
+    (report.ok ? "\nresult:\n"+report.result+"\n" : "\nerror:\n"+report.error+"\n");
+  evalLog(text);
+}
+
+async function runEvalFromBox(origin="local"){
+  const code=document.getElementById("evalCode").value;
+  evalLog("RUN "+origin+" eval, "+code.length+" chars");
+  const report=await runEvalEngine(code,origin);
+  renderEvalReport(report);
+  return report;
+}
+
+async function handleTextPayload(text){
+  log("Received text: "+(text.length>600?text.slice(0,600)+"... ["+text.length+" chars]":text));
+
+  if(text.startsWith(EVAL_RESULT_PREFIX)){
+    const payload=text.slice(EVAL_RESULT_PREFIX.length).trim();
+    evalLog("REMOTE RESULT RAW:\n"+payload);
+    return;
+  }
+
+  if(!text.startsWith(EVAL_PREFIX))return;
+
+  const code=text.slice(EVAL_PREFIX.length);
+  if(!document.getElementById("acceptRemoteEval").checked){
+    const blocked={ok:false,origin:"remote-blocked",ms:0,result:"",error:"receiver checkbox is off",console:""};
+    evalLog("BLOCKED remote eval request, "+code.length+" chars");
+    sendEvalResult(blocked);
+    return;
+  }
+
+  evalLog("RUN remote eval request, "+code.length+" chars");
+  const report=await runEvalEngine(code,"remote-received");
+  renderEvalReport(report);
+  sendEvalResult(report);
+}
+
+function sendEvalResult(report){
+  if(!connected())return;
+  channel.send(JSON.stringify({type:"text",text:EVAL_RESULT_PREFIX+" "+JSON.stringify(report,null,2),time:Date.now()}));
+}
+
+function sendEvalFromBox(){
+  if(!connected()){log("Cannot send eval: not connected yet.");return}
+  const code=document.getElementById("evalCode").value;
+  const text=EVAL_PREFIX+" "+code;
+  channel.send(JSON.stringify({type:"text",text,time:Date.now()}));
+  evalLog("SENT remote eval request, "+code.length+" chars");
+}
+
+function fillEvalSample(){
+  document.getElementById("evalCode").value =
+`console.log('hello from eval', location.href);
+console.warn('peer-ish page title:', document.title);
+document.body.style.outline = '4px solid lime';
+'outlined';`;
+}
+
+function clearEvalOutput(){evalOutputEl.textContent=""}
+
+let pendingFilePopulateTargetId = "";
+
+function beginPopulateFromFile(targetId){
+  pendingFilePopulateTargetId = targetId;
+  const input = document.getElementById("universalFileInput");
+  input.value = "";
+  input.click();
+}
+
+async function finishPopulateFromFile(input){
+  const targetId = pendingFilePopulateTargetId;
+  pendingFilePopulateTargetId = "";
+
+  const file = input.files && input.files[0];
+  input.value = "";
+
+  if(!targetId){
+    log("File populate cancelled: no target field was selected.");
+    return;
+  }
+
+  const target = document.getElementById(targetId);
+  if(!target){
+    log("File populate failed: target not found: " + targetId);
+    return;
+  }
+
+  if(!file){
+    log("File populate cancelled for " + targetId + ".");
+    return;
+  }
+
+  try{
+    const text = await file.text();
+    target.value = text;
+    const msg = "Loaded file into #" + targetId + " only, not executed/sent: " + file.name + " (" + text.length + " chars)";
+    log(msg);
+    if(targetId === "evalCode") evalLog(msg);
+  }catch(err){
+    const msg = "File populate failed for #" + targetId + ": " + ((err && (err.stack || err.message)) || err);
+    log(msg);
+    if(targetId === "evalCode") evalLog(msg);
+  }
+}
+
+/* -----------------------------
+   Clipboard/share
+----------------------------- */
+
+async function copyLocalCode(){
+  const text=localCodeEl.value;
+  if(!text){log("No local code to copy.");return}
+  try{await navigator.clipboard.writeText(text);log("Copied local code.")}
+  catch{
+    localCodeEl.select();
+    document.execCommand("copy");
+    log("Tried fallback copy.");
+  }
+}
+
+async function pasteRemoteCode(){
+  try{
+    remoteCodeEl.value=await navigator.clipboard.readText();
+    log("Pasted clipboard into remote code box.");
+  }catch(err){log("Clipboard paste failed: "+err.name+". Paste manually.")}
+}
+
+async function shareLocalCode(){
+  const text=localCodeEl.value.trim();
+  if(!text){log("No local code to share.");return}
+  if(!navigator.share){log("Web Share not available. Use Copy.");return}
+  try{await navigator.share({title:"WebRTC connection code",text});log("Share sheet opened.")}
+  catch(err){log("Share cancelled/failed: "+err.name)}
+}
+
+/* -----------------------------
+   QR make/read
+----------------------------- */
+
+function makeLocalQr(){
+  const text=localCodeEl.value.trim();
+  if(!text){log("No local code to make QR from.");return}
+  if(!window.QRCode){log("QRCode library not loaded.");return}
+
+  const box=document.getElementById("localQr");
+  box.innerHTML="";
+  box.style.display="inline-block";
+
+  try{
+    new QRCode(box,{text,width:320,height:320,correctLevel:QRCode.CorrectLevel.L});
+    log("QR made from local code: "+shortCodeInfo(text)+".");
+  }catch(err){
+    box.style.display="none";
+    log("QR generation failed: "+err.message);
+  }
+}
+
+function hideLocalQr(){
+  const box=document.getElementById("localQr");
+  box.innerHTML="";
+  box.style.display="none";
+}
+
+let qrStream=null,qrDetector=null,qrScanning=false;
+
+async function startQrScan(){
+  if(!("BarcodeDetector" in globalThis)){log("Native QR reader not supported. Use paste fallback.");return}
+
+  try{qrDetector=new BarcodeDetector({formats:["qr_code"]})}
+  catch(err){log("BarcodeDetector failed: "+err.message);return}
+
+  const video=document.getElementById("qrVideo");
+  video.style.display="block";
+
+  try{
+    qrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+  }catch(err){
+    log("Camera failed: "+err.name+". Use paste fallback.");
+    video.style.display="none";
+    return;
+  }
+
+  video.srcObject=qrStream;
+  await video.play();
+
+  qrScanning=true;
+  log("QR scanner started.");
+  scanQrLoop();
+}
+
+async function scanQrLoop(){
+  if(!qrScanning||!qrDetector)return;
+  const video=document.getElementById("qrVideo");
+
+  try{
+    if(video.readyState>=2){
+      const results=await qrDetector.detect(video);
+      if(results.length){
+        remoteCodeEl.value=results[0].rawValue||"";
+        log("QR read into remote-code box: "+shortCodeInfo(remoteCodeEl.value)+".");
+        stopQrScan();
+        return;
+      }
+    }
+  }catch(err){log("QR detect error: "+err.name)}
+
+  requestAnimationFrame(scanQrLoop);
+}
+
+function stopQrScan(){
+  qrScanning=false;
+  const video=document.getElementById("qrVideo");
+  video.pause();
+  video.style.display="none";
+
+  if(qrStream){
+    for(const track of qrStream.getTracks())track.stop();
+    qrStream=null;
+  }
+
+  if(qrDetector)log("QR scanner stopped.");
+  qrDetector=null;
+}
+
+
+
+/* -----------------------------
+   Auto public rendezvous: priority methods
+----------------------------- */
+
+const PUBLIC_METHOD_DEFS={
+  nostr:{id:"nostr",name:"Nostr WSS",note:"public WSS relays; best tested default"},
+  mqtt:{id:"mqtt",name:"MQTT-over-WSS",note:"public WSS pub/sub fallback"},
+  peerjs:{id:"peerjs",name:"PeerJS Cloud",note:"optional direct DataConnection fallback"}
+};
+let publicMethods=[
+  {id:"nostr",enabled:true},
+  {id:"mqtt",enabled:true},
+  {id:"peerjs",enabled:true}
+];
+let publicSession=null;
+let publicAbort=false;
+let publicAutoRunning=false;
+let publicSeenEvents=new Set();
+let publicPeers=new Set();
+let publicMadeOffer=false;
+let publicOfferId="";
+let publicOfferTimer=null;
+let publicConnectedMethod="";
+const PUBLIC_NOSTR_RELAYS=["wss://relay.damus.io","wss://nos.lol","wss://relay.primal.net","wss://nostr.mom"];
+const PUBLIC_MQTT_BROKERS=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt"];
+const PUBLIC_PEERJS_CDN="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js";
+const PUBLIC_MQTT_CDN="https://unpkg.com/mqtt/dist/mqtt.min.js";
+const PUBLIC_NOSTR_CDN="https://esm.sh/nostr-tools@2.10.4?bundle";
+
+function renderPublicMethods(){
+  if(!publicMethodListEl)return;
+  publicMethodListEl.innerHTML="";
+  publicMethods.forEach((entry,index)=>{
+    const def=PUBLIC_METHOD_DEFS[entry.id];
+    const row=document.createElement("div");
+    row.className="methodItem"+(entry.enabled?"":" disabled");
+    const moveButtons=(index===0)
+      ? `<button onclick="movePublicMethod(${index},1)">↓</button>`
+      : (index===publicMethods.length-1)
+        ? `<button onclick="movePublicMethod(${index},-1)">↑</button>`
+        : `<button onclick="movePublicMethod(${index},-1)">↑</button><button onclick="movePublicMethod(${index},1)">↓</button>`;
+    row.innerHTML=`
+      <label><input type="checkbox" ${entry.enabled?"checked":""} onchange="setPublicMethodEnabled(${index},this.checked)"> enabled</label>
+      <span class="methodName">${index+1}. ${def.name}</span>
+      ${moveButtons}
+      <span class="small">${def.note}</span>`;
+    publicMethodListEl.appendChild(row);
+  });
+}
+function setPublicMethodEnabled(index,on){
+  if(publicMethods[index])publicMethods[index].enabled=!!on;
+  renderPublicMethods();
+}
+function movePublicMethod(index,dir){
+  const next=index+dir;
+  if(next<0||next>=publicMethods.length)return;
+  const temp=publicMethods[index];
+  publicMethods[index]=publicMethods[next];
+  publicMethods[next]=temp;
+  renderPublicMethods();
+}
+async function derivePublicRoom(){
+  const roomId=(document.getElementById("publicRoomSeed")?.value||"cross_talk_room1").trim()||"cross_talk_room1";
+  const randomizer=(document.getElementById("publicRoomSalt")?.value||"").trim();
+  const hardened=document.getElementById("publicHashRoom")?.checked;
+  if(!hardened)return roomId;
+  const hash=await sha256Hex(`static-webrtc-public-room-v2:
+room=${roomId}
+randomizeUsing=${randomizer}`);
+  return "r_"+hash.slice(0,48);
+}
+async function updatePublicRoomPreview(){
+  try{
+    const room=await derivePublicRoom();
+    if(publicRoomPreviewEl)publicRoomPreviewEl.textContent=room;
+    return room;
+  }catch(err){
+    if(publicRoomPreviewEl)publicRoomPreviewEl.textContent="room derive error";
+    log("Public room derive failed: "+err.message);
+    return "cross_talk_room1";
+  }
+}
+function randomizePublicRoomSalt(){
+  const bytes=new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  document.getElementById("publicRoomSalt").value="rand-"+bytesToBase64Url(bytes);
+  document.getElementById("publicHashRoom").checked=true;
+  updatePublicRoomPreview();
+}
+function randomizePublicRoomSeed(){randomizePublicRoomSalt()}
+function loadScriptOnce(src,globalName,timeout=20000){
+  return new Promise((resolve,reject)=>{
+    if(globalName&&window[globalName])return resolve(window[globalName]);
+    const existing=[...document.scripts].find(s=>s.src===src);
+    if(existing&&globalName&&window[globalName])return resolve(window[globalName]);
+    const script=document.createElement("script");
+    const timer=setTimeout(()=>reject(new Error("script load timeout: "+src)),timeout);
+    script.src=src;
+    script.async=true;
+    script.onload=()=>{
+      clearTimeout(timer);
+      if(globalName&&!window[globalName])reject(new Error("script loaded but global missing: "+globalName));
+      else resolve(globalName?window[globalName]:true);
+    };
+    script.onerror=()=>{clearTimeout(timer);reject(new Error("script load failed: "+src))};
+    document.head.appendChild(script);
+  });
+}
+function publicCleanupSession(){
+  if(publicOfferTimer)clearTimeout(publicOfferTimer);
+  publicOfferTimer=null;
+  if(publicSession&&publicSession.close){try{publicSession.close()}catch{}}
+  publicSession=null;
+}
+function publicStopAutoConnect(){
+  publicAbort=true;
+  publicAutoRunning=false;
+  publicCleanupSession();
+  setPublicAutoButtons(false);
+  setPublicState("auto stopped");
+  publicReport("Auto connect stopped.");
+}
+function publicResetRun(clearReport=true){
+  publicAbort=false;
+  publicCleanupSession();
+  publicSeenEvents.clear();
+  publicPeers.clear();
+  publicMadeOffer=false;
+  publicOfferId="";
+  publicConnectedMethod="";
+  if(clearReport&&publicReportEl)publicReportEl.textContent="";
+}
+function publicActiveMethods(){return publicMethods.filter(x=>x.enabled).map(x=>x.id)}
+function publicMethodWindowMs(){
+  const v=parseFloat(document.getElementById("publicMethodSeconds")?.value||"25");
+  return Math.max(8000,Math.min(120000,Math.round((isFinite(v)?v:25)*1000)));
+}
+function publicRetryPauseMs(round){
+  const cap=parseFloat(document.getElementById("publicRetryMaxSeconds")?.value||"5");
+  const capMs=Math.max(500,Math.min(30000,Math.round((isFinite(cap)?cap:5)*1000)));
+  return Math.min(capMs,700+round*650+Math.floor(Math.random()*600));
+}
+function publicToggleAutoConnect(){
+  if(publicAutoRunning)publicStopAutoConnect();
+  else publicAutoConnect();
+}
+async function publicAutoConnect(){
+  if(publicAutoRunning){publicStopAutoConnect();return}
+  if(connected()){
+    setPublicState("already connected");
+    publicReport("Already connected; auto connect skipped.");
+    return;
+  }
+  publicResetRun(true);
+  publicAutoRunning=true;
+  setPublicAutoButtons(true);
+  let round=0;
+  const started=Date.now();
+  publicReport("Starting indefinite Auto Connect. It will keep trying enabled methods until connected or stopped.");
+  while(publicAutoRunning&&!publicAbort&&!connected()){
+    const room=await updatePublicRoomPreview();
+    const methods=publicActiveMethods();
+    if(!methods.length){setPublicState("no enabled methods");publicReport("No enabled rendezvous methods. Enable at least one method or stop auto.");break}
+    const methodWindow=publicMethodWindowMs();
+    round++;
+    setPublicState("auto round "+round+" | "+methods.join(" → "));
+    publicReport("Round "+round+" | room="+room+" | method window="+Math.round(methodWindow/1000)+"s | methods="+methods.map(id=>PUBLIC_METHOD_DEFS[id].name).join(" → "));
+    for(const method of methods){
+      if(publicAbort||!publicAutoRunning||connected())break;
+      publicResetRun(false);
+      setPublicState("trying "+PUBLIC_METHOD_DEFS[method].name+" | round "+round);
+      publicReport("Trying "+PUBLIC_METHOD_DEFS[method].name+" for up to "+Math.round(methodWindow/1000)+"s...");
+      try{
+        if(method==="nostr")await publicTryNostr(room,methodWindow);
+        else if(method==="mqtt")await publicTryMqtt(room,methodWindow);
+        else if(method==="peerjs")await publicTryPeerJs(room,methodWindow);
+        if(connected()){
+          publicConnectedMethod=method;
+          publicAutoRunning=false;
+          publicAbort=true;
+          setPublicAutoButtons(false);
+          setPublicState("connected via "+PUBLIC_METHOD_DEFS[method].name);
+          publicReport("Connected via "+PUBLIC_METHOD_DEFS[method].name+" after "+Math.round((Date.now()-started)/1000)+"s.");
+          return;
+        }
+        publicReport(PUBLIC_METHOD_DEFS[method].name+" ended without DataChannel open; continuing.");
+      }catch(err){
+        publicReport(PUBLIC_METHOD_DEFS[method].name+" failed: "+(err&&err.message?err.message:err));
+      }finally{
+        if(!connected()){
+          publicCleanupSession();
+          clearConnectionOnly();
+        }
+      }
+    }
+    if(publicAbort||!publicAutoRunning||connected())break;
+    const pause=publicRetryPauseMs(round);
+    setPublicState("retrying in "+Math.round(pause/1000)+"s");
+    publicReport("No connection yet. Next round in "+Math.round(pause/1000)+"s. Stop auto to fall back manually.");
+    await sleep(pause);
+  }
+  if(!connected()){
+    publicAutoRunning=false;
+    setPublicAutoButtons(false);
+    if(publicAbort)setPublicState("auto stopped");
+    else setPublicState("auto idle");
+  }
+}
+function publicSendSignal(msg){
+  if(!publicSession||!publicSession.send){publicReport("No active public session to send "+msg.kind);return false}
+  return publicSession.send({app:"static-webrtc-v7",room:publicSession.room,from:peerId,ts:Date.now(),...msg});
+}
+function schedulePublicMaybeOffer(reason){
+  if(publicOfferTimer)clearTimeout(publicOfferTimer);
+  publicOfferTimer=setTimeout(()=>publicMaybeStartOffer(reason),650+Math.floor(Math.random()*450));
+}
+async function publicMaybeStartOffer(reason){
+  if(publicAbort||connected()||publicMadeOffer||!publicSession)return;
+  const peers=[...publicPeers].filter(id=>id&&id!==peerId).sort();
+  if(!peers.length){
+    publicReport("No peer seen yet; waiting before offer.");
+    return;
+  }
+  if(peerId.localeCompare(peers[0])>0){
+    publicReport("Peer "+peers[0]+" has lower id; waiting to answer.");
+    return;
+  }
+  publicReport("Starting offer via "+publicSession.methodName+" after "+reason+".");
+  await publicStartOfferNow();
+}
+async function publicStartOfferNow(){
+  if(!publicSession){publicReport("No public session active.");return}
+  if(connected()){publicReport("Offer skipped: already connected.");return}
+  await makeHostCode();
+  let offer;
+  try{offer=decodeCode(localCodeEl.value)}
+  catch(err){publicReport("Could not decode generated offer: "+err.message);return}
+  publicMadeOffer=true;
+  publicOfferId=Math.random().toString(36).slice(2);
+  publicSendSignal({kind:"offer",id:publicOfferId,data:offer});
+  publicReport("Offer sent via "+publicSession.methodName+": "+publicOfferId+" | "+shortCodeInfo(localCodeEl.value));
+}
+async function handlePublicSignal(msg){
+  if(!msg||msg.app!=="static-webrtc-v7")return;
+  if(publicSession&&msg.room!==publicSession.room)return;
+  if(msg.from===peerId)return;
+  if(msg.id&&publicSeenEvents.has(msg.kind+":"+msg.id+":"+msg.from))return;
+  if(msg.id)publicSeenEvents.add(msg.kind+":"+msg.id+":"+msg.from);
+  if(msg.from)publicPeers.add(msg.from);
+
+  if(msg.kind==="hello"){
+    publicReport("Saw hello from "+msg.from+".");
+    publicSendSignal({kind:"helloAck",to:msg.from,id:Math.random().toString(36).slice(2),data:{ua:navigator.userAgent.slice(0,90)}});
+    schedulePublicMaybeOffer("hello");
+    return;
+  }
+  if(msg.kind==="helloAck"){
+    publicReport("Saw helloAck from "+msg.from+".");
+    schedulePublicMaybeOffer("helloAck");
+    return;
+  }
+  if(msg.kind==="offer"){
+    if(connected()){publicReport("Offer ignored: already connected.");return}
+    if(publicMadeOffer&&peerId.localeCompare(msg.from)<0){
+      publicReport("Offer collision: keeping my lower-id offer; ignoring "+msg.from+".");
+      return;
+    }
+    publicReport("Offer received from "+msg.from+". Answering.");
+    publicMadeOffer=false;
+    clearConnectionOnly();
+    remoteCodeEl.value=encodeCode(msg.data);
+    await joinFromHostCode();
+    let answer;
+    try{answer=decodeCode(localCodeEl.value)}
+    catch(err){publicReport("Could not decode generated answer: "+err.message);return}
+    publicSendSignal({kind:"answer",to:msg.from,replyTo:msg.id,id:Math.random().toString(36).slice(2),data:answer});
+    publicReport("Answer sent to "+msg.from+".");
+    return;
+  }
+  if(msg.kind==="answer"){
+    if(msg.to&&msg.to!==peerId)return;
+    if(!publicMadeOffer){publicReport("Answer ignored: I did not make active offer.");return}
+    if(msg.replyTo&&publicOfferId&&msg.replyTo!==publicOfferId){publicReport("Answer ignored: replyTo mismatch.");return}
+    if(connected()){publicReport("Answer ignored: already connected.");return}
+    publicReport("Answer received from "+msg.from+". Applying.");
+    remoteCodeEl.value=encodeCode(msg.data);
+    try{await finishHostConnection()}
+    catch(err){publicReport("Applying public answer failed: "+err.message)}
+    return;
+  }
+}
+async function publicTryNostr(room,methodWindowMs=25000){
+  const tools=await import(PUBLIC_NOSTR_CDN);
+  const secret=tools.generateSecretKey?tools.generateSecretKey():tools.generatePrivateKey();
+  const roomTag="ct-room-"+(await sha256Hex("nostr:"+room)).slice(0,40);
+  const sockets=[];
+  let opened=0;
+  publicSession={method:"nostr",methodName:"Nostr WSS",room,close(){for(const ws of sockets){try{ws.close()}catch{}}},send(payload){
+    const base={kind:20000,created_at:Math.floor(Date.now()/1000),tags:[["t",roomTag],["client","static-webrtc-v7"]],content:JSON.stringify(payload)};
+    const event=tools.finalizeEvent?tools.finalizeEvent(base,secret):tools.finishEvent({...base,pubkey:tools.getPublicKey(secret)},secret);
+    for(const ws of sockets)if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(["EVENT",event]));
+    return true;
+  }};
+  await new Promise(resolve=>{
+    let settled=false;
+    const done=()=>{if(!settled){settled=true;resolve()}};
+    setTimeout(done,Math.min(7000,Math.max(3000,methodWindowMs)));
+    for(const url of PUBLIC_NOSTR_RELAYS){
+      try{
+        const ws=new WebSocket(url);
+        sockets.push(ws);
+        ws.onopen=()=>{
+          opened++;
+          ws.send(JSON.stringify(["REQ","sub_"+peerId,{kinds:[20000],"#t":[roomTag],since:Math.floor(Date.now()/1000)-20}]));
+          if(opened>=1)done();
+        };
+        ws.onmessage=event=>{
+          try{
+            const arr=JSON.parse(event.data);
+            if(arr[0]==="EVENT"&&arr[2]&&arr[2].content){
+              const msg=JSON.parse(arr[2].content);
+              handlePublicSignal(msg);
+            }
+          }catch{}
+        };
+        ws.onerror=()=>{};
+      }catch{}
+    }
+  });
+  if(opened<1)throw new Error("no Nostr relay opened");
+  publicReport("Nostr opened "+opened+" relay(s). Sending hello.");
+  publicSendSignal({kind:"hello",id:Math.random().toString(36).slice(2),data:{ua:navigator.userAgent.slice(0,90)}});
+  await waitPublicConnectOrTimeout("Nostr WSS",methodWindowMs);
+}
+async function publicTryMqtt(room,methodWindowMs=25000){
+  await loadScriptOnce(PUBLIC_MQTT_CDN,"mqtt");
+  const topic="ct/public_rendezvous/"+(await sha256Hex("mqtt:"+room)).slice(0,48);
+  const clients=[];
+  let opened=0;
+  publicSession={method:"mqtt",methodName:"MQTT-over-WSS",room,close(){for(const c of clients){try{c.end(true)}catch{}}},send(payload){
+    const text=JSON.stringify({app:"static-webrtc-v7",room,from:peerId,ts:Date.now(),...payload});
+    for(const c of clients)if(c.connected)c.publish(topic,text,{qos:0,retain:false});
+    return true;
+  }};
+  await new Promise(resolve=>{
+    let settled=false;
+    const done=()=>{if(!settled){settled=true;resolve()}};
+    setTimeout(done,Math.min(8000,Math.max(3000,methodWindowMs)));
+    for(const url of PUBLIC_MQTT_BROKERS){
+      try{
+        const c=mqtt.connect(url,{clientId:"ct_"+peerId+"_"+Math.random().toString(36).slice(2),clean:true,connectTimeout:Math.min(8000,Math.max(3000,methodWindowMs)),reconnectPeriod:0});
+        clients.push(c);
+        c.on("connect",()=>{
+          c.subscribe(topic,err=>{
+            if(!err){opened++;if(opened>=1)done()}
+          });
+        });
+        c.on("message",(t,payload)=>{
+          if(t!==topic)return;
+          try{handlePublicSignal(JSON.parse(String(payload)))}catch{}
+        });
+        c.on("error",()=>{});
+      }catch{}
+    }
+  });
+  if(opened<1)throw new Error("no MQTT broker subscribed");
+  publicReport("MQTT subscribed on "+opened+" broker(s). Sending hello.");
+  publicSendSignal({kind:"hello",id:Math.random().toString(36).slice(2),data:{ua:navigator.userAgent.slice(0,90)}});
+  await waitPublicConnectOrTimeout("MQTT-over-WSS",methodWindowMs);
+}
+function bindPeerJsConnection(conn,peer){
+  channel={
+    readyState:"open",
+    send(data){conn.send(data)},
+    close(){try{conn.close()}catch{};try{peer.destroy()}catch{};this.readyState="closed";if(this.onclose)this.onclose()},
+    onopen:null,onclose:null,onerror:null,onmessage:null
+  };
+  conn.on("data",data=>handleChannelMessage(typeof data==="string"?data:JSON.stringify(data)));
+  conn.on("close",()=>{if(channel){channel.readyState="closed";setStatus("Disconnected");log("PeerJS DataConnection closed.")}});
+  conn.on("error",err=>{log("PeerJS DataConnection error: "+(err&&err.message?err.message:err))});
+  setStatus("CONNECTED — PeerJS DataConnection open",true);
+  log("PeerJS DataConnection bound as app channel.");
+  collapseSetupSectionsAfterConnect();
+}
+async function publicTryPeerJs(room,methodWindowMs=25000){
+  await loadScriptOnce(PUBLIC_PEERJS_CDN,"Peer");
+  const hash=(await sha256Hex("peerjs:"+room)).slice(0,32);
+  const hostId="ct_"+hash+"_a";
+  const joinId="ct_"+hash+"_b_"+peerId;
+  setPublicState("PeerJS opening...");
+  let peer,role="host";
+  try{
+    peer=await openPeerJsId(hostId,Math.min(15000,methodWindowMs));
+    role="host";
+    publicReport("PeerJS opened as host id "+hostId+".");
+  }catch(err){
+    role="joiner";
+    publicReport("PeerJS host id unavailable; joining host.");
+    peer=await openPeerJsId(joinId,Math.min(15000,methodWindowMs));
+  }
+  publicSession={method:"peerjs",methodName:"PeerJS Cloud",room,close(){try{peer&&peer.destroy()}catch{}},send(){return false}};
+  if(role==="host"){
+    const conn=await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error("PeerJS host waited but no joiner connected")),methodWindowMs);
+      peer.on("connection",c=>{clearTimeout(timer);resolve(c)});
+      peer.on("error",err=>{clearTimeout(timer);reject(err)});
+    });
+    await waitPeerJsConnOpen(conn,Math.min(15000,methodWindowMs));
+    bindPeerJsConnection(conn,peer);
+  }else{
+    const conn=peer.connect(hostId,{reliable:true,serialization:"json",metadata:{room,from:peerId}});
+    await waitPeerJsConnOpen(conn,methodWindowMs);
+    bindPeerJsConnection(conn,peer);
+  }
+}
+function openPeerJsId(id,ms){
+  return new Promise((resolve,reject)=>{
+    const p=new Peer(id,{debug:0});
+    const timer=setTimeout(()=>{try{p.destroy()}catch{};reject(new Error("PeerJS open timeout: "+id))},ms);
+    p.on("open",()=>{clearTimeout(timer);resolve(p)});
+    p.on("error",err=>{clearTimeout(timer);try{p.destroy()}catch{};reject(err)});
+  });
+}
+function waitPeerJsConnOpen(conn,ms){
+  return new Promise((resolve,reject)=>{
+    if(conn.open)return resolve();
+    const timer=setTimeout(()=>reject(new Error("PeerJS connection open timeout")),ms);
+    conn.on("open",()=>{clearTimeout(timer);resolve()});
+    conn.on("error",err=>{clearTimeout(timer);reject(err)});
+  });
+}
+function waitPublicConnectOrTimeout(label,ms){
+  return new Promise((resolve,reject)=>{
+    const start=Date.now();
+    const tick=()=>{
+      if(publicAbort)return reject(new Error(label+" aborted"));
+      if(connected())return resolve();
+      if(Date.now()-start>ms)return reject(new Error(label+" timeout without DataChannel open"));
+      setTimeout(tick,250);
+    };
+    tick();
+  });
+}
+
+/* -----------------------------
+   WebSocket intermediary relay
+----------------------------- */
+
+let socket=null;
+let socketRoom="cross_talk_room1";
+let socketMadeOffer=false;
+let socketOfferId="";
+let socketSawPeerIds=new Set();
+let socketStartTimer=null;
+
+async function sha256Base64Url(text){
+  const bytes=new TextEncoder().encode(text);
+  const hash=await crypto.subtle.digest("SHA-256",bytes);
+  return bytesToBase64Url(new Uint8Array(hash));
+}
+
+async function deriveSocketRoom(){
+  const roomId=(document.getElementById("socketRoomSeed").value||"cross_talk_room1").trim()||"cross_talk_room1";
+  const randomizer=(document.getElementById("socketRoomSalt")?.value||"").trim();
+  const hardened=document.getElementById("socketHashRoom").checked;
+  if(!hardened)return roomId;
+  return "r_"+(await sha256Base64Url(`static-webrtc-room-v2:
+room=${roomId}
+randomizeUsing=${randomizer}`)).slice(0,43);
+}
+
+async function updateSocketRoomPreview(){
+  try{
+    const room=await deriveSocketRoom();
+    socketRoomPreviewEl.textContent=room;
+    return room;
+  }catch(err){
+    socketRoomPreviewEl.textContent="room derive error";
+    log("Socket room derive failed: "+err.message);
+    return "default";
+  }
+}
+
+function randomizeSocketRoomSalt(){
+  const bytes=new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  document.getElementById("socketRoomSalt").value="rand-"+bytesToBase64Url(bytes);
+  document.getElementById("socketHashRoom").checked=true;
+  updateSocketRoomPreview();
+}
+function randomizeSocketRoomSeed(){randomizeSocketRoomSalt()}
+
+function socketUrl(){return (document.getElementById("socketUrl").value||"").trim()}
+function socketReady(){return socket&&socket.readyState===WebSocket.OPEN}
+
+function socketSend(msg){
+  if(!socketReady()){log("Socket send skipped: socket not open.");return false}
+  socket.send(JSON.stringify({room:socketRoom,from:peerId,ts:Date.now(),...msg}));
+  return true;
+}
+
+async function socketConnect(){
+  const url=socketUrl();
+  if(!url){log("Socket URL is empty. Use a wss:// relay URL.");document.getElementById("socketOn").checked=false;return}
+  socketDisconnect(false);
+  socketRoom=await updateSocketRoomPreview();
+  socketMadeOffer=false;
+  socketOfferId="";
+  socketSawPeerIds.clear();
+  setSocketState("connecting...");
+  log("Socket connecting: "+url+" | room "+socketRoom);
+
+  socket=new WebSocket(url);
+  socket.onopen=()=>{
+    setSocketState("socket open | room "+socketRoom.slice(0,28));
+    log("Socket opened. Joining room: "+socketRoom);
+    socketSend({kind:"join"});
+    socketAnnounce();
+    scheduleSocketAutoStart("open");
+  };
+  socket.onclose=event=>{
+    setSocketState("socket closed");
+    log("Socket closed: code "+event.code+(event.reason?" | "+event.reason:""));
+    document.getElementById("socketOn").checked=false;
+    if(socketStartTimer)clearTimeout(socketStartTimer);
+  };
+  socket.onerror=event=>{
+    setSocketState("socket error");
+    log("Socket error. Check relay URL / HTTPS / server.");
+    console.error(event);
+  };
+  socket.onmessage=event=>handleSocketMessage(event.data);
+}
+
+function socketDisconnect(updateCheckbox=true){
+  if(socketStartTimer)clearTimeout(socketStartTimer);
+  socketStartTimer=null;
+  if(socket){try{socket.close()}catch{}}
+  socket=null;
+  setSocketState("socket off");
+  if(updateCheckbox)document.getElementById("socketOn").checked=false;
+}
+
+function setSocketEnabled(on){
+  if(on)socketConnect();
+  else socketDisconnect(false);
+}
+
+function socketAnnounce(){
+  socketSend({kind:"hello",data:{ua:navigator.userAgent.slice(0,120),room:socketRoom}});
+  log("Socket hello sent.");
+}
+
+function scheduleSocketAutoStart(reason){
+  if(!document.getElementById("socketAutoStart").checked)return;
+  if(socketStartTimer)clearTimeout(socketStartTimer);
+  socketStartTimer=setTimeout(()=>socketMaybeStartOffer(reason),650+Math.floor(Math.random()*350));
+}
+
+async function socketMaybeStartOffer(reason){
+  if(!document.getElementById("socketAutoStart").checked)return;
+  if(!socketReady()||connected()||socketMadeOffer)return;
+  const peers=[...socketSawPeerIds].filter(id=>id&&id!==peerId).sort();
+  if(peers.length&&peerId.localeCompare(peers[0])>0){
+    log("Socket auto: peer "+peers[0]+" has lower id, waiting to answer.");
+    return;
+  }
+  log("Socket auto: starting host offer after "+reason+".");
+  await socketStartOfferNow();
+}
+
+async function socketStartOfferNow(){
+  if(!socketReady()){log("Socket host offer skipped: socket not open.");return}
+  if(connected()){log("Socket host offer skipped: already connected.");return}
+  await makeHostCode();
+  let offer;
+  try{offer=decodeCode(localCodeEl.value)}
+  catch(err){log("Socket could not decode local offer: "+err.message);return}
+  socketMadeOffer=true;
+  socketOfferId=Math.random().toString(36).slice(2);
+  socketSend({kind:"offer",id:socketOfferId,data:offer});
+  log("Socket offer sent: "+socketOfferId+" | "+shortCodeInfo(localCodeEl.value));
+}
+
+async function handleSocketMessage(raw){
+  let msg;
+  try{msg=JSON.parse(raw)}catch{log("Socket raw non-JSON: "+String(raw).slice(0,200));return}
+  if(msg.room&&msg.room!==socketRoom)return;
+  if(msg.from===peerId)return;
+  if(msg.from)socketSawPeerIds.add(msg.from);
+
+  if(msg.kind==="joined"){
+    log("Socket relay joined room.");
+    return;
+  }
+
+  if(msg.kind==="hello"){
+    log("Socket saw hello from "+(msg.from||"peer")+".");
+    socketSend({kind:"helloAck",to:msg.from,data:{ua:navigator.userAgent.slice(0,120)}});
+    scheduleSocketAutoStart("hello");
+    return;
+  }
+
+  if(msg.kind==="helloAck"){
+    log("Socket saw helloAck from "+(msg.from||"peer")+".");
+    scheduleSocketAutoStart("helloAck");
+    return;
+  }
+
+  if(msg.kind==="offer"&&msg.data&&msg.data.type==="offer"){
+    if(connected()){log("Socket offer ignored: already connected.");return}
+    if(socketMadeOffer&&peerId.localeCompare(msg.from)<0){
+      log("Socket offer collision: keeping my lower-id offer, ignoring "+msg.from+".");
+      return;
+    }
+    log("Socket offer received from "+msg.from+". Answering.");
+    clearConnectionOnly();
+    socketMadeOffer=false;
+    remoteCodeEl.value=encodeCode(msg.data);
+    await joinFromHostCode();
+    let answer;
+    try{answer=decodeCode(localCodeEl.value)}
+    catch(err){log("Socket could not decode answer: "+err.message);return}
+    socketSend({kind:"answer",to:msg.from,replyTo:msg.id,data:answer});
+    log("Socket answer sent to "+msg.from+".");
+    return;
+  }
+
+  if(msg.kind==="answer"&&msg.data&&msg.data.type==="answer"){
+    if(msg.to&&msg.to!==peerId)return;
+    if(!socketMadeOffer){log("Socket answer ignored: I did not make active offer.");return}
+    if(msg.replyTo&&socketOfferId&&msg.replyTo!==socketOfferId){log("Socket answer ignored: replyTo mismatch.");return}
+    if(connected()){log("Socket answer ignored: already connected.");return}
+    log("Socket answer received from "+msg.from+". Applying.");
+    remoteCodeEl.value=encodeCode(msg.data);
+    try{await finishHostConnection()}
+    catch(err){log("Socket finish failed: "+err.message)}
+    return;
+  }
+
+  log("Socket message ignored: "+String(msg.kind||"unknown"));
+}
+
+/* -----------------------------
+   Link relay: default note.ms adapter
+----------------------------- */
+
+const RELAY_START="STATIC_WEBRTC_RELAY_V1_START";
+const RELAY_END="STATIC_WEBRTC_RELAY_V1_END";
+
+let relayTimer=null;
+let relayBusy=false;
+let relayLastState=null;
+let relayHelloQueued=false;
+let relayMadeOffer=false;
+
+const relaySeen=new Set();
+const relayOutbox=[];
+const relayAnsweredOfferIds=new Set();
+const relayAppliedAnswerIds=new Set();
+
+function normalizeRelayUrl(url){
+  url=url.trim();
+  if(!/^https?:\/\//i.test(url))url="https://"+url;
+  return url;
+}
+function relayUrl(){return normalizeRelayUrl(document.getElementById("relayUrl").value)}
+
+function emptyRelayState(){
+  return {app:"static-webrtc-ping",version:1,updated:Date.now(),messages:[]};
+}
+
+function htmlDecode(text){
+  const box=document.createElement("textarea");
+  box.innerHTML=text;
+  return box.value;
+}
+
+function extractRelayContent(html){
+  try{
+    const obj=JSON.parse(html);
+    if(typeof obj.contents==="string")html=obj.contents;
+    else if(typeof obj.body==="string")html=obj.body;
+    else if(typeof obj.data==="string")html=obj.data;
+  }catch{}
+
+  let m=html.match(/<textarea[^>]*class=["'][^"']*\bcontent\b[^"']*["'][^>]*>([\s\S]*?)<\/textarea>/i);
+  if(!m)m=html.match(/<textarea[^>]*>([\s\S]*?)<\/textarea>/i);
+  if(m)return htmlDecode(m[1]);
+
+  if(html.includes(RELAY_START)&&html.includes(RELAY_END))return html;
+  return "";
+}
+
+function parseRelayState(text){
+  const start=text.indexOf(RELAY_START);
+  const end=text.indexOf(RELAY_END);
+
+  if(start>=0&&end>start){
+    const inside=text.slice(start+RELAY_START.length,end).trim();
+    try{
+      const obj=JSON.parse(inside);
+      if(obj&&obj.app==="static-webrtc-ping"){
+        if(!Array.isArray(obj.messages))obj.messages=[];
+        return obj;
+      }
+    }catch{}
+  }
+
+  const first=text.indexOf("{");
+  const last=text.lastIndexOf("}");
+  if(first>=0&&last>first){
+    try{
+      const obj=JSON.parse(text.slice(first,last+1));
+      if(obj&&obj.app==="static-webrtc-ping"){
+        if(!Array.isArray(obj.messages))obj.messages=[];
+        return obj;
+      }
+    }catch{}
+  }
+
+  return emptyRelayState();
+}
+
+function serializeRelayState(state){
+  const seen=new Set();
+  state.messages=state.messages
+    .filter(m=>m&&m.id&&!seen.has(m.id)&&seen.add(m.id))
+    .sort((a,b)=>a.ts-b.ts)
+    .slice(-60);
+  state.updated=Date.now();
+
+  return RELAY_START+"\n"+JSON.stringify(state,null,2)+"\n"+RELAY_END+"\n";
+}
+
+async function relayReadText(){
+  const url=relayUrl();
+  const sep=url.includes("?")?"&":"?";
+
+  const r=await fetch(url+sep+"_="+Date.now(),{
+    method:"GET",
+    cache:"no-store",
+    mode:"cors"
+  });
+
+  if(!r.ok)throw new Error("link read HTTP "+r.status);
+
+  const html=await r.text();
+  const content=extractRelayContent(html);
+  log("Relay read: page "+html.length+" chars, note/content "+content.length+" chars.");
+  return content;
+}
+
+function relayWriteByHiddenForm(text){
+  return new Promise(resolve=>{
+    const id="notePost_"+Math.random().toString(36).slice(2);
+    const iframe=document.createElement("iframe");
+    iframe.name=id;
+    iframe.style.display="none";
+
+    const form=document.createElement("form");
+    form.method="POST";
+    form.action=relayUrl();
+    form.target=id;
+    form.enctype="application/x-www-form-urlencoded";
+    form.style.display="none";
+
+    const input=document.createElement("textarea");
+    input.name="t";
+    input.value=text;
+
+    form.appendChild(input);
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+
+    let done=false;
+    const finish=why=>{
+      if(done)return;
+      done=true;
+      setTimeout(()=>{
+        try{form.remove()}catch{}
+        try{iframe.remove()}catch{}
+      },250);
+      log("Hidden form POST finished/assumed: "+why);
+      resolve();
+    };
+
+    iframe.onload=()=>finish("iframe load");
+    setTimeout(()=>finish("timeout fallback"),1800);
+    form.submit();
+  });
+}
+
+async function relayWriteText(text){
+  const url=relayUrl();
+  const body="t="+encodeURIComponent(text);
+
+  try{
+    const r=await fetch(url,{
+      method:"POST",
+      mode:"cors",
+      headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
+      body
+    });
+
+    if(r.ok){
+      log("Relay write: CORS POST confirmed.");
+      return;
+    }
+
+    log("Relay CORS POST returned HTTP "+r.status+". Trying hidden form POST.");
+  }catch(err){
+    log("Relay CORS POST blocked/failed: "+err.message+". Trying hidden form POST.");
+  }
+
+  await relayWriteByHiddenForm(text);
+}
+
+async function relayGetState(){
+  try{
+    const text=await relayReadText();
+    relayLastState=parseRelayState(text);
+    log("Relay parsed messages: "+relayLastState.messages.length);
+    return relayLastState;
+  }catch(err){
+    log("Relay read failed: "+err.message);
+    return relayLastState||emptyRelayState();
+  }
+}
+
+async function relaySaveState(state){
+  const text=serializeRelayState(state);
+  try{
+    await relayWriteText(text);
+    relayLastState=state;
+    return true;
+  }catch(err){
+    log("Relay write failed: "+err.message);
+    return false;
+  }
+}
+
+function relayQueue(kind,data,to="*",replyTo=null){
+  const msg={id:Math.random().toString(36).slice(2),from:peerId,to,kind,data,replyTo,ts:Date.now()};
+  relayOutbox.push(msg);
+  relaySeen.add(msg.id);
+  log("Relay queued "+kind+".");
+  return msg;
+}
+
+function relayMergeOutbox(state){
+  let changed=false;
+  const existing=new Set(state.messages.map(m=>m.id));
+  for(const msg of relayOutbox){
+    if(!existing.has(msg.id)){
+      state.messages.push(msg);
+      existing.add(msg.id);
+      changed=true;
+    }
+  }
+  return changed;
+}
+
+function relayQueueHelloOnce(){
+  if(relayHelloQueued)return;
+  relayHelloQueued=true;
+  relayQueue("hello",{ua:navigator.userAgent.slice(0,120),created:Date.now()});
+}
+
+function chooseCanonicalOffer(messages){
+  const offers=messages
+    .filter(m=>m.kind==="offer"&&m.data&&m.data.type==="offer")
+    .sort((a,b)=>String(a.from).localeCompare(String(b.from))||a.ts-b.ts);
+  return offers[0]||null;
+}
+
+async function relayProcessState(state){
+  relayQueueHelloOnce();
+  const canonicalOffer=chooseCanonicalOffer(state.messages);
+
+  if(!canonicalOffer){
+    if(!relayMadeOffer&&!pc&&!connected()){
+      log("Relay found no offer. I will become host and publish offer.");
+      await makeHostCode();
+
+      let offer;
+      try{offer=decodeCode(localCodeEl.value)}
+      catch(err){log("Could not decode my generated offer: "+err.message);return}
+
+      relayMadeOffer=true;
+      relayQueue("offer",offer);
+    }
+    return;
+  }
+
+  if(canonicalOffer.from!==peerId){
+    if(connected())return;
+    if(relayAnsweredOfferIds.has(canonicalOffer.id))return;
+
+    relayAnsweredOfferIds.add(canonicalOffer.id);
+    log("Relay saw canonical offer from "+canonicalOffer.from+". I will answer it.");
+
+    clearConnectionOnly();
+    remoteCodeEl.value=encodeCode(canonicalOffer.data);
+    await joinFromHostCode();
+
+    let answer;
+    try{answer=decodeCode(localCodeEl.value)}
+    catch(err){log("Could not decode my answer: "+err.message);return}
+
+    relayQueue("answer",answer,canonicalOffer.from,canonicalOffer.id);
+    return;
+  }
+
+  const answers=state.messages
+    .filter(m=>m.kind==="answer"&&m.to===peerId&&m.replyTo===canonicalOffer.id&&m.data&&m.data.type==="answer")
+    .sort((a,b)=>a.ts-b.ts);
+
+  for(const answer of answers){
+    if(relayAppliedAnswerIds.has(answer.id))continue;
+    if(connected())return;
+
+    relayAppliedAnswerIds.add(answer.id);
+    log("Relay saw answer from "+answer.from+". Applying as host.");
+    remoteCodeEl.value=encodeCode(answer.data);
+
+    try{await finishHostConnection()}
+    catch(err){log("Applying relay answer failed: "+err.message)}
+
+    return;
+  }
+}
+
+async function relayCheckOnce(){
+  if(relayBusy){log("Relay check skipped: previous check still running.");return}
+
+  relayBusy=true;
+  setRelayState("checking...");
+
+  try{
+    const state=await relayGetState();
+    await relayProcessState(state);
+
+    const changed=relayMergeOutbox(state);
+    if(changed){
+      setRelayState("writing...");
+      const saved=await relaySaveState(state);
+      if(saved)relayOutbox.length=0;
+    }
+
+    setRelayState("relay on | outbox "+relayOutbox.length+" | msgs "+state.messages.length);
+  }catch(err){
+    setRelayState("relay error");
+    log("Relay check failed: "+err.message);
+  }finally{
+    relayBusy=false;
+  }
+}
+
+function setRelayEnabled(on){
+  if(on){
+    if(relayTimer)clearInterval(relayTimer);
+    setRelayState("relay on");
+    log("Relay auto ON. Peer id: "+peerId+". Link: "+relayUrl());
+    relayTimer=setInterval(relayCheckOnce,1000);
+    relayCheckOnce();
+  }else{
+    if(relayTimer)clearInterval(relayTimer);
+    relayTimer=null;
+    setRelayState("relay off");
+    log("Relay auto OFF.");
+  }
+}
+
+async function relayPublishLocal(){
+  if(!localCodeEl.value.trim()){log("No local code to publish.");return}
+
+  let data;
+  try{data=decodeCode(localCodeEl.value)}
+  catch(err){log("Could not decode local code: "+err.message);return}
+
+  relayQueue(data.type,data);
+  await relayCheckOnce();
+}
+
+async function relayAutoStartAsHost(){
+  if(connected()){log("Already connected.");return}
+  if(!localCodeEl.value.trim())await makeHostCode();
+
+  let offer;
+  try{offer=decodeCode(localCodeEl.value)}
+  catch(err){log("Could not decode local offer: "+err.message);return}
+
+  if(offer.type!=="offer"){log("Local code is not an offer.");return}
+
+  relayMadeOffer=true;
+  relayQueue("offer",offer);
+  await relayCheckOnce();
+}
+
+async function relayClearRemote(){
+  const ok=confirm("Try to overwrite the relay note/link with an empty relay state?");
+  if(!ok)return;
+  const state=emptyRelayState();
+  relayLastState=state;
+  await relaySaveState(state);
+}
+
+async function relayNoteMsSelfTest(){
+  const marker="LINK_TEST_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+  const testText=RELAY_START+"\n"+JSON.stringify({
+    app:"static-webrtc-ping",
+    version:1,
+    updated:Date.now(),
+    messages:[{id:marker,from:peerId,to:"*",kind:"test",data:marker,ts:Date.now()}]
+  },null,2)+"\n"+RELAY_END+"\n";
+
+  log("Relay self-test: writing marker "+marker);
+  await relayWriteText(testText);
+
+  log("Relay self-test: waiting before read...");
+  await sleep(2500);
+
+  try{
+    const back=await relayReadText();
+    if(back.includes(marker))log("Relay self-test SUCCESS: marker came back.");
+    else log("Relay self-test PARTIAL: marker not found. Read length: "+back.length+". Check link manually.");
+  }catch(err){
+    log("Relay self-test READ FAILED: "+err.message);
+    log("If manual note changed, write works but read needs proxy/CORS.");
+  }
+}
+
+/* -----------------------------
+   Init
+----------------------------- */
+
+log("Loaded. Peer id: "+peerId);
+log("Manual copy/paste remains fallback.");
+log("QR make uses qrcodejs CDN. QR read uses native BarcodeDetector if supported.");
+log("Relay default: "+relayUrl());
+updateSocketRoomPreview();
+log("Socket relay ready. Room hashing default OFF, auto offer/answer ON.");
+log("Eval console ready. Remote eval checkbox default OFF.");
+</script>
+</body>
+</html>
