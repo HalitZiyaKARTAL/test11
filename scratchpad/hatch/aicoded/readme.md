@@ -1,4 +1,4 @@
-some apps here might be suboptimal, weird or half baked etc, 
+some apps in this folder might be suboptimal, weird or half baked etc, 
 i kinda use this folder to test some level of vibe coding thing,
 i usually force my design choices so its not too far from the aimed thing
 but sometimes i can try to ship fast and it can be suboptimally designed etc
