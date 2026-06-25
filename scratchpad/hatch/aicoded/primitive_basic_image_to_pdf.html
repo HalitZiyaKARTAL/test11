@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image & PDF Compiler</title>
+    
+    <!-- Libraries -->
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; background: #f4f4f9; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        button, label.btn { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; text-align: center; }
+        button:hover, label.btn:hover { background: #0056b3; }
+        input[type="file"] { display: none; }
+        
+        #file-list { list-style: none; padding: 0; }
+        .file-item { display: flex; align-items: center; justify-content: space-between; background: white; padding: 10px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: grab; }
+        .file-item img { max-width: 50px; max-height: 50px; margin-right: 15px; border-radius: 3px; }
+        .file-item.pdf-item img { content: url('https://cdn-icons-png.flaticon.com/512/337/337946.png'); } /* Generic PDF icon */
+        .file-info { flex-grow: 1; display: flex; align-items: center; overflow: hidden; }
+        .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+        .actions button { padding: 5px 10px; font-size: 12px; margin-left: 5px; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-success { background: #28a745; width: 100%; font-size: 18px; margin-top: 20px; }
+
+        /* Modal Styles */
+        #crop-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
+        .crop-container { width: 90%; max-width: 600px; height: 60vh; background: white; padding: 10px; }
+        .crop-container img { max-width: 100%; display: block; }
+        .modal-controls { margin-top: 15px; display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Document & Image Compiler</h2>
+    
+    <div class="controls">
+        <!-- Capture Image from Camera -->
+        <label class="btn">
+            Take Picture
+            <input type="file" accept="image/*" capture="environment" id="camera-input">
+        </label>
+        
+        <!-- Pick Images and PDFs -->
+        <label class="btn">
+            Choose Images / PDFs
+            <input type="file" accept="image/*,application/pdf" multiple id="file-input">
+        </label>
+    </div>
+
+    <!-- Drag and Drop List -->
+    <ul id="file-list"></ul>
+
+    <button class="btn-success" id="generate-pdf">Generate & Download PDF</button>
+
+    <!-- Cropper Modal -->
+    <div id="crop-modal">
+        <div class="crop-container">
+            <img id="crop-image" src="">
+        </div>
+        <div class="modal-controls">
+            <button id="save-crop" class="btn-success" style="margin-top:0;">Save Crop</button>
+            <button id="cancel-crop" class="btn-danger">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const fileListElement = document.getElementById('file-list');
+        let filesData = []; // Array to store our file objects
+        let currentCropId = null;
+        let cropper = null;
+
+        // Initialize Drag and Drop sorting
+        new Sortable(fileListElement, {
+            animation: 150,
+            onEnd: () => {
+                // Update array order based on new DOM order
+                const newOrderIds = Array.from(fileListElement.children).map(li => li.dataset.id);
+                filesData = newOrderIds.map(id => filesData.find(f => f.id === id));
+            }
+        });
+
+        // Handle File Uploads (both Camera and File Picker)
+        const handleFiles = async (event) => {
+            const files = event.target.files;
+            for (let file of files) {
+                const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                const isPDF = file.type === 'application/pdf';
+                
+                // Convert file to Data URL for preview and cropping
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    filesData.push({
+                        id: id,
+                        name: file.name,
+                        type: isPDF ? 'pdf' : 'image',
+                        data: e.target.result, // Data URL
+                        originalFile: file
+                    });
+                    renderList();
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = ''; // Reset input
+        };
+
+        document.getElementById('camera-input').addEventListener('change', handleFiles);
+        document.getElementById('file-input').addEventListener('change', handleFiles);
+
+        // Render the list of files
+        function renderList() {
+            fileListElement.innerHTML = '';
+            filesData.forEach(file => {
+                const li = document.createElement('li');
+                li.className = `file-item ${file.type === 'pdf' ? 'pdf-item' : ''}`;
+                li.dataset.id = file.id;
+
+                li.innerHTML = `
+                    <div class="file-info">
+                        <img src="${file.type === 'image' ? file.data : ''}" alt="">
+                        <span class="file-name">${file.name}</span>
+                    </div>
+                    <div class="actions">
+                        ${file.type === 'image' ? `<button onclick="openCropper('${file.id}')">Edit</button>` : ''}
+                        <button class="btn-danger" onclick="removeFile('${file.id}')">Delete</button>
+                    </div>
+                `;
+                fileListElement.appendChild(li);
+            });
+        }
+
+        // Remove a file
+        window.removeFile = (id) => {
+            filesData = filesData.filter(f => f.id !== id);
+            renderList();
+        };
+
+        // --- Cropper.js Logic ---
+        window.openCropper = (id) => {
+            currentCropId = id;
+            const file = filesData.find(f => f.id === id);
+            const imageEl = document.getElementById('crop-image');
+            imageEl.src = file.data;
+            document.getElementById('crop-modal').style.display = 'flex';
+
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(imageEl, {
+                viewMode: 2,
+                autoCropArea: 1,
+            });
+        };
+
+        document.getElementById('cancel-crop').addEventListener('click', () => {
+            document.getElementById('crop-modal').style.display = 'none';
+            if (cropper) cropper.destroy();
+        });
+
+        document.getElementById('save-crop').addEventListener('click', () => {
+            if (!cropper) return;
+            const canvas = cropper.getCroppedCanvas();
+            const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9); // Save as JPEG
+            
+            // Update array
+            const fileIndex = filesData.findIndex(f => f.id === currentCropId);
+            filesData[fileIndex].data = croppedDataUrl;
+            
+            document.getElementById('crop-modal').style.display = 'none';
+            cropper.destroy();
+            renderList();
+        });
+
+        // --- PDF Generation Logic (pdf-lib) ---
+        document.getElementById('generate-pdf').addEventListener('click', async () => {
+            if (filesData.length === 0) return alert('Please add some files first!');
+            
+            const { PDFDocument } = PDFLib;
+            const mergedPdf = await PDFDocument.create();
+
+            for (const file of filesData) {
+                if (file.type === 'pdf') {
+                    // Fetch the PDF as an ArrayBuffer
+                    const res = await fetch(file.data);
+                    const pdfBuffer = await res.arrayBuffer();
+                    const loadedPdf = await PDFDocument.load(pdfBuffer);
+                    
+                    // Copy all pages from uploaded PDF into merged PDF
+                    const copiedPages = await mergedPdf.copyPages(loadedPdf, loadedPdf.getPageIndices());
+                    copiedPages.forEach(page => mergedPdf.addPage(page));
+                } 
+                else if (file.type === 'image') {
+                    // Add image as a new page
+                    const imgBytes = await fetch(file.data).then(res => res.arrayBuffer());
+                    let embeddedImg;
+                    
+                    // Determine if PNG or JPEG
+                    if (file.data.includes('image/png')) {
+                        embeddedImg = await mergedPdf.embedPng(imgBytes);
+                    } else {
+                        embeddedImg = await mergedPdf.embedJpg(imgBytes);
+                    }
+
+                    const dims = embeddedImg.scale(1);
+                    const page = mergedPdf.addPage([dims.width, dims.height]);
+                    page.drawImage(embeddedImg, {
+                        x: 0,
+                        y: 0,
+                        width: dims.width,
+                        height: dims.height,
+                    });
+                }
+            }
+
+            // Save and Trigger Download
+            const pdfBytes = await mergedPdf.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Merged_Document.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
