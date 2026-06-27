@@ -1,0 +1,1474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Image/PDF Composer V8 Theme Compositor Lab Default 63</title>
+<style>
+:root{--bg:#061119;--panel:#0e1d27;--panel2:#193342;--text:#eefcf8;--muted:#a1b9be;--line:#385965;--accent:#8ee68d;--bad:#f87171;--ok:#86efac;--warn:#fde68a;--bgImage:radial-gradient(circle at 66% 18%, rgba(255,255,238,.90) 0 42px, rgba(255,255,238,.18) 43px 94px, transparent 145px), radial-gradient(circle at 14% 16%, rgba(255,255,255,.92) 0 1px, transparent 1.7px), radial-gradient(circle at 46% 23%, rgba(255,255,255,.76) 0 1px, transparent 1.5px), radial-gradient(circle at 88% 31%, rgba(255,255,255,.68) 0 1px, transparent 1.5px), linear-gradient(105deg, transparent 12%, rgba(82,255,170,.22) 35%, rgba(145,255,210,.12) 49%, rgba(110,120,255,.14) 60%, transparent 78%), radial-gradient(ellipse at 50% 80%, rgba(255,255,255,.13) 0 18%, transparent 44%), linear-gradient(180deg,#061119 0%,#102b44 55%,#23545c 77%,#527260 88%,#091713 100%);--bgSize:100% 100%,230px 230px,290px 290px,250px 250px,100% 100%,100% 100%,100% 100%;--bgAttachment:fixed;--bgBlend:screen,screen,screen,screen,screen,screen,normal;--atmoImage:radial-gradient(ellipse at 28% 63%, rgba(255,255,255,.16) 0 18%, transparent 48%), radial-gradient(ellipse at 72% 68%, rgba(255,255,255,.13) 0 18%, transparent 52%), linear-gradient(92deg, transparent 8%, rgba(150,255,210,.12) 33%, transparent 62%);--atmoSize:100% 100%,100% 100%,100% 100%;--atmoOpacity:.78;--atmoFilter:blur(15px);--atmoBlend:screen;--themeSaturate:1;--themeContrast:1}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;position:relative;isolation:isolate;background-color:var(--bg);background-image:var(--bgImage);background-size:var(--bgSize);background-attachment:var(--bgAttachment);background-blend-mode:var(--bgBlend);background-repeat:repeat;background-position:top left;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:var(--atmoImage);background-size:var(--atmoSize);background-position:var(--atmoPosition);background-repeat:repeat;opacity:var(--atmoOpacity);filter:var(--atmoFilter);mix-blend-mode:var(--atmoBlend);transform:translateZ(0)}body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,var(--uiScrimOpacity)) 0%,rgba(0,0,0,calc(var(--uiScrimOpacity)*.55)) 48%,rgba(0,0,0,calc(var(--uiScrimOpacity)*.9)) 100%);transform:translateZ(0)}main{max-width:1180px;margin:0 auto;padding:18px}h1{margin:.2rem 0 .5rem;font-size:1.55rem}.hint{color:var(--muted);line-height:1.45}.bar,.card{background:var(--panelGlass,var(--panel));border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0;box-shadow:var(--cardShadow)}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}button,label.fileBtn{background:var(--buttonGlass,#0b1220);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-weight:650;cursor:pointer;box-shadow:var(--themeGlow)}button:hover,label.fileBtn:hover{border-color:var(--accent)}button.primary{background:#075985;border-color:#0284c7}button.bad{border-color:#881337;color:#fecdd3}button.warn{border-color:#92400e;color:#fde68a}button:disabled{opacity:.45;cursor:not-allowed}input[type=file]{display:none}input,select{background:var(--buttonGlass,#0b1220);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px}input[type=checkbox]{width:auto}.drop{border:2px dashed #475569;border-radius:14px;padding:22px;text-align:center;color:var(--muted)}.drop.hot{border-color:var(--accent);color:var(--text);background:#082f49}.page{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);background:var(--panel2Glass,var(--panel2));border-radius:12px;padding:10px;margin:8px 0;box-shadow:var(--cardShadow)}.page.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(56,189,248,.22)}.thumb{width:84px;height:108px;object-fit:contain;border-radius:8px;border:1px solid #475569;background:#020617}.pdfThumb{display:grid;place-items:center;font-weight:800;color:#fecaca;background:#450a0a;text-align:center}.name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{color:var(--muted);font-size:.85rem}.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 8px;color:var(--muted);font-size:.8rem}.pill.ok{border-color:#065f46;color:#bbf7d0}.pill.warn{border-color:#92400e;color:#fde68a}.status{white-space:pre-wrap;color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:.85rem}.routeBox{border:1px dashed var(--line);border-radius:10px;padding:8px;margin-top:8px;color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:.82rem}.modal{position:fixed;inset:0;background:rgba(2,6,23,.84);display:none;align-items:center;justify-content:center;padding:12px;z-index:20}.modal.open{display:flex}.editor{width:min(100%,980px);max-height:95vh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:#020617;border:1px solid var(--line);border-radius:16px;padding:12px;gap:10px}.canvasWrap{min-height:260px;overflow:auto;text-align:center;border:1px solid var(--line);border-radius:12px;background:#020617;touch-action:none}.canvasWrap canvas{max-width:100%;height:auto;image-rendering:auto}.small{font-size:.85rem;color:var(--muted)}.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}.rangeLine{display:grid;grid-template-columns:90px minmax(80px,1fr) 48px;gap:8px;align-items:center}.dangerText{color:#fecdd3}.okText{color:#bbf7d0}.mono{font-family:ui-monospace,Consolas,monospace}.miniPreview{max-width:min(95vw,760px);max-height:75vh;border:1px solid var(--line);border-radius:12px;background:#020617}.hotVideo{width:min(100%,420px);max-height:55vh;border:1px solid var(--line);border-radius:12px;background:#020617}.hotBox{display:grid;grid-template-columns:minmax(240px,430px) minmax(250px,1fr);gap:12px;align-items:start}.bigAction{font-size:1.05rem;padding:13px 15px}.mailInput{width:min(100%,260px)}.hotBtn{border-color:#164e63;color:#bae6fd}.rowSelect{max-width:112px;padding:7px}.editorToolHint{color:#bae6fd;font-size:.85rem}.meter{height:10px;background:#020617;border:1px solid var(--line);border-radius:999px;overflow:hidden}.meter>span{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#eab308,#ef4444)}@media(max-width:820px){.hotBox{grid-template-columns:1fr}.hotVideo{width:100%}}@media(max-width:760px){.page{grid-template-columns:72px minmax(0,1fr)}.thumb{width:64px;height:84px}.actions{grid-column:1/-1;justify-content:flex-start}button,label.fileBtn{padding:8px 9px}.split{grid-template-columns:1fr}}
+
+.floatingFab{position:fixed;top:calc(10px + env(safe-area-inset-top));z-index:72;width:46px;height:46px;border-radius:999px;display:grid;place-items:center;font-size:1.35rem;background:var(--panel2);border:1px solid var(--accent);box-shadow:0 10px 30px rgba(0,0,0,.35);padding:0}.floatingFab:hover,.floatingFab[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(217,154,43,.22),0 10px 30px rgba(0,0,0,.42);transform:translateY(-1px)}.experimentFab{right:calc(10px + env(safe-area-inset-right))}.settingsFab{right:calc(64px + env(safe-area-inset-right));border-color:var(--line)}.floatingPanel{position:fixed;top:calc(64px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));z-index:71;width:min(94vw,720px);max-height:calc(100dvh - 82px - env(safe-area-inset-top));overflow:auto;display:none;margin:0;box-shadow:0 24px 70px rgba(0,0,0,.58);backdrop-filter:blur(10px)}.floatingPanel.open{display:block}.expFloatingPanel{width:min(94vw,680px)}.expPanelHeader{position:sticky;top:-14px;background:var(--panel);z-index:2;padding:2px 0 10px;border-bottom:1px solid var(--line)}.expCloseBtn{padding:6px 9px;border-radius:999px}.expCard details{background:var(--panel2Glass,var(--panel2));border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}.expCard summary{cursor:pointer;font-weight:800}.settingsPanel details{background:var(--panel2Glass,var(--panel2));border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}.settingsPanel summary{cursor:pointer;font-weight:800}.settingsGroupTitle{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.paletteGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin-top:10px}.paletteBtn{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;text-align:left;align-items:center}.paletteBtn span{height:18px;border-radius:5px;border:1px solid rgba(255,255,255,.16)}.paletteName{grid-column:1/-1;font-size:.82rem;color:var(--muted);margin-bottom:3px}.cssBox,.consoleInput,.consoleOutput{width:100%;min-height:120px;background:#020617;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px;font-family:ui-monospace,Consolas,monospace;font-size:.85rem}.consoleInput{min-height:96px}.consoleOutput{min-height:220px;max-height:45vh;resize:vertical;white-space:pre;overflow:auto}.expTiny{font-size:.78rem;color:var(--muted)}@media(max-width:760px){.floatingFab{width:44px;height:44px;top:calc(8px + env(safe-area-inset-top))}.experimentFab{right:calc(8px + env(safe-area-inset-right))}.settingsFab{right:calc(58px + env(safe-area-inset-right))}.floatingPanel{left:8px;right:8px;top:calc(58px + env(safe-area-inset-top));width:auto;max-height:calc(100dvh - 68px - env(safe-area-inset-top));padding:10px}.paletteGrid{grid-template-columns:1fr}.consoleInput,.consoleOutput,.cssBox{font-size:.8rem}.expCard details,.settingsPanel details{padding:9px}}
+
+.themeControls{display:grid;gap:8px;margin-top:10px}.themeSearchRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.themeSearchRow input{min-width:min(100%,260px);flex:1}.tagBank{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.tagChip{border:1px solid var(--line);background:rgba(15,23,42,.38);color:var(--muted);border-radius:999px;padding:5px 8px;font-size:.78rem;cursor:pointer;user-select:none}.tagChip:hover{border-color:var(--accent);color:var(--text)}.tagChip.active{border-color:var(--accent);color:var(--text);box-shadow:0 0 0 2px rgba(255,255,255,.06) inset}.paletteBtn{position:relative;overflow:hidden}.palettePreview{grid-column:1/-1;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.14);margin-bottom:5px;background-color:var(--previewBg);background-image:var(--previewImage);background-size:var(--previewSize);background-blend-mode:var(--previewBlend);background-position:center}.paletteTags{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.paletteTags em{font-style:normal;border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:2px 5px;font-size:.68rem;color:var(--muted);background:rgba(0,0,0,.14)}.themeDecisionBox{border:1px dashed var(--line);border-radius:10px;padding:8px;color:var(--muted);font-size:.84rem;white-space:pre-wrap}.themeFactoryMini{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.themeFactoryMini button{padding:7px 9px;font-size:.84rem}
+
+.themeCompositor{display:grid;gap:8px;border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(0,0,0,.12)}.themeSliderLine{display:grid;grid-template-columns:120px minmax(120px,1fr) 44px;gap:8px;align-items:center}.themeSceneBadge{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px 7px;font-size:.72rem;color:var(--muted);background:rgba(0,0,0,.14)}.themeComposerReadout{border:1px dashed var(--line);border-radius:10px;padding:7px;color:var(--muted);font-size:.8rem;white-space:pre-wrap}.paletteBtn.composedPick{border-color:var(--accent)}.palettePreview::after{content:"";display:block;width:100%;height:100%;background:linear-gradient(180deg,transparent 0 52%,rgba(0,0,0,.12) 100%);border-radius:inherit}@supports ((backdrop-filter:blur(4px)) or (-webkit-backdrop-filter:blur(4px))){.bar,.card,.floatingPanel,.page,.expCard details,.settingsPanel details{backdrop-filter:blur(var(--panelBlur));-webkit-backdrop-filter:blur(var(--panelBlur))}}
+
+</style>
+</head>
+<body>
+<button id="experimentFab" class="floatingFab experimentFab" type="button" aria-controls="experimentPanel" aria-expanded="false" title="Open experiment tools">🧪</button>
+<button id="settingsFab" class="floatingFab settingsFab" type="button" aria-controls="settingsPanel" aria-expanded="false" title="Open settings">⚙️</button>
+<main>
+  <h1>Local Image/PDF Composer <span class="pill ok">V8 atmospheric aurora theme lab · default 63</span></h1>
+  <div class="hint">Pick images, take rapid camera scans, pick PDFs, expand/reorder pages, crop/rotate image pages, rotate or raster-crop PDF pages, then export/download/share one PDF or image files. Files stay local in this browser. V8 keeps the fast scan path, adds preservation-first routing, exact PDF rename/copy when possible, original-image embedding for untouched images, qpdf-wasm merge for whole untouched PDF segments, and safe fallback warnings.</div>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <b>Fast scan hot path</b>
+      <span class="pill ok">camera → pages → PDF → native share/download</span>
+    </div>
+    <div class="hotBox" style="margin-top:10px">
+      <div>
+        <video id="hotVideo" class="hotVideo" playsinline muted></video>
+        <canvas id="hotCanvas" style="display:none"></canvas>
+      </div>
+      <div>
+        <div class="row">
+          <button id="startHotCamera" class="primary bigAction">Start camera</button>
+          <button id="captureHotPhoto" class="bigAction">Capture page</button>
+          <button id="stopHotCamera">Stop camera</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label>Optional auto-finish after <input id="hotTargetCount" type="number" min="0" max="999" placeholder="N" style="width:70px"> captures</label>
+          <label class="small"><input id="hotAutoPdf" type="checkbox"> auto-download PDF when N reached</label>
+          <button id="resetHotCount">Reset count</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="quickPdfDownload" class="primary">Download PDF now</button>
+          <button id="nativeSharePdf" class="primary">Native share PDF</button>
+          <button id="nativeShareCurrent">Share current mode</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label>Mail target <input id="mailTo" class="mailInput" placeholder="name@example.com"></label>
+          <label>Subject <input id="mailSubject" value="Scanned PDF" style="width:160px"></label>
+          <button id="openMailDraft">Open mail draft</button>
+        </div>
+        <div id="hotStatus" class="small" style="margin-top:8px">Fast path: start camera, capture as many pages as needed, then Download PDF or Native share PDF. Optional N only triggers auto-download; it is not a page limit.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <label class="fileBtn">Pick images/PDFs<input id="fileInput" type="file" multiple accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif"></label>
+      <label class="fileBtn">Take photo<input id="cameraInput" type="file" accept="image/*" capture="environment"></label>
+      <button class="primary" id="exportBtn">Export</button>
+      <button id="clearBtn" class="bad">Clear</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label>Insert added files
+        <select id="insertMode">
+          <option value="append">at end</option>
+          <option value="after">after selected page</option>
+          <option value="before">before selected page</option>
+          <option value="start">at start</option>
+        </select>
+      </label>
+      <label>PDF import pages <input id="pdfRange" value="all" placeholder="all, odd, even, 1-3,7" style="width:180px"></label>
+      <span class="small">PDF range applies when new PDFs are added.</span>
+    </div>
+    <div id="drop" class="drop" style="margin-top:12px">Drop images/PDFs here</div>
+  </section>
+
+  <section class="card split">
+    <div>
+      <div class="row" style="justify-content:space-between">
+        <b>Quick export</b>
+        <span class="pill">advanced options in ⚙️</span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Mode
+          <select id="exportMode">
+            <option value="pdf">PDF</option>
+            <option value="images">Image file(s)</option>
+          </select>
+        </label>
+        <label>Scope
+          <select id="exportScope">
+            <option value="all">all pages</option>
+            <option value="selected">selected page only</option>
+          </select>
+        </label>
+        <label>Filename <input id="outputName" value="merged-composed.pdf" style="width:210px"></label>
+        <label class="small"><input id="fixExtension" type="checkbox" checked> auto-fix extension</label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Image page size
+          <select id="pageSizeMode">
+            <option value="a4">A4 portrait</option>
+            <option value="letter">Letter portrait</option>
+            <option value="image">Image natural size</option>
+          </select>
+        </label>
+        <label>Quality <input id="quality" type="number" min="0.3" max="1" step="0.01" value="0.90" style="width:80px"></label>
+        <label>Image format
+          <select id="imageFormat">
+            <option value="jpeg">JPG</option>
+            <option value="png">PNG</option>
+            <option value="webp">WebP</option>
+          </select>
+        </label>
+      </div>
+      <div id="extensionHint" class="small" style="margin-top:6px">PDF export will use .pdf.</div>
+      <div class="small" style="margin-top:6px">Main UI keeps the common knobs. Use ⚙️ for matrix/backend details like image embedding, qpdf routing, raster size, password, recovery, and rare image-batch options.</div>
+    </div>
+    <div>
+      <div class="row" style="justify-content:space-between">
+        <b>Session</b>
+        <span id="counts" class="small">0 sources, 0 pages</span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="saveSessionBtn">Save session</button>
+        <button id="loadSessionBtn">Load session</button>
+        <button id="clearSavedBtn" class="warn">Clear saved</button>
+        <button id="openSettingsBtn" type="button">⚙️ settings</button>
+      </div>
+      <div id="status" class="status" style="margin-top:8px">Idle.</div>
+    </div>
+  </section>
+
+  <section class="card settingsPanel floatingPanel" id="settingsPanel" aria-hidden="true">
+    <div class="expPanelHeader">
+      <div class="row" style="justify-content:space-between">
+        <b>⚙️ Settings</b>
+        <button id="closeSettingsPanel" class="expCloseBtn" type="button" title="Close settings menu">✕</button>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:6px">
+        <span class="pill warn">full configuration surface</span>
+        <span class="small">main UI stays basic</span>
+      </div>
+    </div>
+    <div class="small" style="margin-top:6px">Common controls stay on the page; rare and preservation-sensitive controls live here to reduce clutter without removing configurability.</div>
+
+    <details open>
+      <summary>🧩 Matrix / output details</summary>
+      <div class="row" style="margin-top:8px">
+        <label>Multi-page image output
+          <select id="imageBatchMode">
+            <option value="combined">one combined grid image</option>
+            <option value="separate">individual files directly ↓</option>
+            <option value="zip">individual files in ZIP ↓</option>
+          </select>
+        </label>
+        <label>Image grid columns
+          <select id="imageGridCols">
+            <option value="auto">auto</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </label>
+        <label>Images per PDF page
+          <select id="imagesPerPdfPage">
+            <option value="1">1 image/page</option>
+            <option value="2">2 images/page</option>
+            <option value="4">4 images/page</option>
+            <option value="6">6 images/page</option>
+            <option value="9">9 images/page</option>
+          </select>
+        </label>
+        <label>PDF raster long side <input id="rasterLongSide" type="number" min="800" max="5000" step="100" value="2200" style="width:95px"></label>
+      </div>
+    </details>
+
+    <details open>
+      <summary>🛡️ Preservation / backend</summary>
+      <div class="row" style="margin-top:8px">
+        <label>PDF backend
+          <select id="pdfBackend">
+            <option value="auto">preserve-first auto</option>
+            <option value="preserve">preserve/qpdf only</option>
+            <option value="pdflib">compatibility pdf-lib</option>
+          </select>
+        </label>
+        <label>Image embedding
+          <select id="imageEmbedMode">
+            <option value="preserve">preserve original if untouched</option>
+            <option value="recompress">recompress using quality</option>
+          </select>
+        </label>
+      </div>
+      <div id="routePlan" class="routeBox">Route planner: add pages to see preservation route.</div>
+      <div class="small">Preservation rule: untouched PDFs use exact/qpdf routes when possible; untouched JPEG/PNG images are embedded from original bytes unless you choose recompress. Raster/Edit is explicitly destructive only for that page.</div>
+    </details>
+
+    <details>
+      <summary>🔐 Password / locked PDF</summary>
+      <div class="row" style="margin-top:8px">
+        <label>Open locked PDF password <input id="inputPdfPassword" type="password" placeholder="not saved" style="width:160px"></label>
+        <label>Protect output password <input id="outputPdfPassword" type="password" placeholder="not saved" style="width:160px"></label>
+        <label>Owner password <input id="ownerPdfPassword" type="password" placeholder="optional, not saved" style="width:160px"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="small"><input id="pdfDenyPrint" type="checkbox"> deny printing</label>
+        <label class="small"><input id="pdfDenyModify" type="checkbox"> deny modifying</label>
+        <label class="small"><input id="pdfDenyCopy" type="checkbox"> deny copying/text extraction</label>
+        <label class="small"><input id="pdfDenyAnnotate" type="checkbox"> deny annotations</label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>qpdf module URL <input id="qpdfModuleUrl" value="https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/qpdf.js" style="width:min(100%,520px)"></label>
+        <label>qpdf wasm URL <input id="qpdfWasmUrl" value="https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/qpdf.wasm" style="width:min(100%,520px)"></label>
+      </div>
+      <div class="small dangerText">Password values are intentionally not saved into settings/recovery. qpdf-wasm is loaded only if you use password open/protect. If a CDN/browser blocks WASM, use normal unencrypted PDF export or vendor qpdf beside this HTML.</div>
+    </details>
+
+    <details>
+      <summary>💾 Recovery / autosave</summary>
+      <div class="row" style="margin-top:8px">
+        <label class="small"><input id="autosaveEnabled" type="checkbox" checked> autosave recovery</label>
+        <label class="small"><input id="autoloadRecovery" type="checkbox" checked> auto-restore recovery</label>
+        <label class="small"><input id="clearRecoveryAfterExport" type="checkbox" checked> clear recovery after export/share</label>
+        <label class="small">Budget MB <input id="autosaveMaxMb" type="number" min="5" step="5" value="100" style="width:88px"></label>
+      </div>
+      <div class="meter" style="margin-top:8px"><span id="recoveryMeter" style="width:0%"></span></div>
+      <div id="sessionStatus" class="small" style="margin-top:6px">Recovery not measured yet.</div>
+    </details>
+  </section>
+
+  <section class="card expCard floatingPanel expFloatingPanel" id="experimentPanel" aria-hidden="true">
+    <div class="expPanelHeader">
+      <div class="row" style="justify-content:space-between">
+        <b>🧪 Experiment</b>
+        <button id="closeExperimentPanel" class="expCloseBtn" type="button" title="Close experiment menu">✕</button>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:6px">
+        <span class="pill warn">optional tools: composable atmosphere themes + mobile console</span>
+        <span class="small">floating lab menu</span>
+      </div>
+    </div>
+    <div class="small" style="margin-top:6px">This section stays out of the fast scan path. Open it when tuning the UI or debugging on mobile.</div>
+
+    <details id="colourExperiment">
+      <summary>🎨 Colours</summary>
+      <div class="row" style="margin-top:8px">
+        <button id="resetPaletteBtn">Reset current</button>
+        <button id="copyPaletteCssBtn">Copy selected :root</button>
+        <span id="activePaletteName" class="pill">default</span>
+      </div>
+      <div class="themeControls">
+        <div class="themeSearchRow">
+          <input id="paletteSearch" type="search" placeholder="Search themes/tags: clouds, mist, sun, stars, horizon, dark..." autocomplete="off">
+          <button id="clearPaletteFiltersBtn" type="button">All</button>
+          <button id="paletteRandomBtn" type="button">Random filtered</button>
+          <button id="paletteDeciderBtn" type="button">Smart decider</button>
+        </div>
+        <div class="themeFactoryMini">
+          <button id="paletteSymmetricBtn" type="button">Symmetric/calm</button>
+          <button id="paletteDramaBtn" type="button">Drama/sky</button>
+          <button id="paletteReadableBtn" type="button">Readable tool UI</button>
+          <button id="paletteMistBtn" type="button">Mist/cloud</button>
+          <button id="paletteSunBtn" type="button">Sun/horizon</button>
+          <button id="themeBuildAuroraBtn" type="button">Build aurora</button>
+          <button id="themeBuildSkyBlendBtn" type="button">Green-blue sky mix</button>
+          <span id="paletteFilterSummary" class="pill">0 filters</span>
+        </div>
+        <div class="themeCompositor" aria-label="Theme compositor controls">
+          <div class="row" style="justify-content:space-between">
+            <b>Scene compositor</b>
+            <span class="themeSceneBadge">CSS-only layers: sky · stars · moon · aurora · mist · material</span>
+          </div>
+          <label class="themeSliderLine"><span>Intensity</span><input id="themeIntensity" type="range" min="0" max="1" step="0.05" value="0.78"><span id="themeIntensityVal">0.78</span></label>
+          <label class="themeSliderLine"><span>Readability</span><input id="themeReadability" type="range" min="0" max="1" step="0.05" value="0.82"><span id="themeReadabilityVal">0.82</span></label>
+          <label class="themeSliderLine"><span>Detail</span><input id="themeDetail" type="range" min="0" max="1" step="0.05" value="0.68"><span id="themeDetailVal">0.68</span></label>
+          <div class="themeFactoryMini">
+            <button id="themeLessBusyBtn" type="button">Less busy</button>
+            <button id="themeMoreAtmosphereBtn" type="button">More atmosphere</button>
+            <button id="themeMoonStarsBtn" type="button">Moon + stars</button>
+            <button id="themeReadableApplyBtn" type="button">Apply readable material</button>
+          </div>
+          <div id="themeComposerReadout" class="themeComposerReadout">Scene compositor idle.</div>
+        </div>
+        <div id="paletteTagBank" class="tagBank" aria-label="Theme tag filters"></div>
+        <div id="paletteDecisionBox" class="themeDecisionBox">Theme factory idle. Pick tags or press a decider.</div>
+      </div>
+      <div id="paletteGrid" class="paletteGrid"></div>
+      <textarea id="paletteCssBox" class="cssBox" readonly spellcheck="false" aria-label="Selected palette CSS"></textarea>
+    </details>
+
+    <details id="consoleExperiment">
+      <summary>🧾 Console / eval</summary>
+      <div class="small" style="margin-top:8px">Captures <span class="mono">console.log/info/warn/error/debug</span>, page errors, and unhandled promise rejections. Eval runs locally inside this page, useful for mobile debugging.</div>
+      <textarea id="expConsoleInput" class="consoleInput" spellcheck="false" placeholder="Example:
+console.log('pages', state.pages.length);
+return {pages: state.pages.length, sources: state.sources.size};"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button id="runEvalBtn" class="primary">Run eval</button>
+        <button id="clearConsoleBtn">Clear console view</button>
+        <button id="copyConsoleBtn">Copy console</button>
+        <button id="logStateBtn">Log app state</button>
+      </div>
+      <textarea id="expConsoleOutput" class="consoleOutput" readonly spellcheck="false" aria-label="Captured console output"></textarea>
+      <div class="expTiny">Tip: use <span class="mono">return ...</span> inside eval if you want a result printed. This is intentionally a local power/debug feature.</div>
+    </details>
+  </section>
+
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <b>Pages</b>
+      <span class="pill">click row to select; order below = final output order</span>
+    </div>
+    <div id="pageList"></div>
+  </section>
+</main>
+
+<div id="modal" class="modal">
+  <div class="editor">
+    <div class="row" style="justify-content:space-between">
+      <div><b id="editorTitle">View/Edit image</b><div id="editorToolHint" class="editorToolHint">Choose a tool below.</div></div>
+      <button id="closeEditor">Close</button>
+    </div>
+    <div id="canvasWrap" class="canvasWrap"><canvas id="editCanvas"></canvas></div>
+    <div class="split">
+      <div>
+        <div class="row">
+          <button id="rotateLeft">⟲ 90°</button>
+          <button id="rotateRight">⟳ 90°</button>
+          <button id="resetCrop">Reset crop</button>
+          <button id="selectAll">Select all</button>
+        </div>
+        <p class="small">Drag on the image to choose a crop rectangle. Apply commits crop/rotation/filter to that page only.</p>
+      </div>
+      <div>
+        <div class="rangeLine"><span>Brightness</span><input id="brightness" type="range" min="0.2" max="2" step="0.01" value="1"><span id="brightnessVal">1.00</span></div>
+        <div class="rangeLine"><span>Contrast</span><input id="contrast" type="range" min="0.2" max="2" step="0.01" value="1"><span id="contrastVal">1.00</span></div>
+        <label class="small"><input id="grayscale" type="checkbox"> grayscale</label>
+      </div>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button id="cancelEdit">Cancel</button>
+      <button id="applyEdit" class="primary">Apply edit</button>
+    </div>
+  </div>
+</div>
+
+<div id="previewModal" class="modal">
+  <div class="editor" style="width:min(100%,860px)">
+    <div class="row" style="justify-content:space-between">
+      <b id="previewTitle">Preview</b>
+      <button id="closePreview">Close</button>
+    </div>
+    <div class="canvasWrap" style="display:grid;place-items:center"><canvas id="previewCanvas" class="miniPreview"></canvas></div>
+    <div class="small">Preview is a raster rendering for inspection only. PDF export still preserves original PDF page content unless the page was rasterized.</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+const { PDFDocument, degrees } = PDFLib;
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const DB_NAME='local_doc_composer_v4', STORE='sessions', SESSION_KEY='default', SETTINGS_KEY='settings', RECOVERY_KEY='recovery';
+const state = { sources:new Map(), pages:[], thumbUrls:new Map(), selectedPageId:null };
+const cache = { pdfjs:new Map(), pdflib:new Map(), hotStream:null, hotCaptured:0, lastOutput:null, quickActions:{counts:{rotateRight:1,crop:1,downloadJpg:1},first:'rotateRight',last:'downloadJpg'}, editorFirstAction:null, recoveryDirty:false, recoveryTimer:null };
+
+
+const EXPERIMENT_PALETTES={
+  midnightCyan:{name:'1. Midnight cyan',vars:{bg:'#0f172a',panel:'#111827',panel2:'#1f2937',text:'#e5e7eb',muted:'#9ca3af',line:'#334155',accent:'#38bdf8',bad:'#fb7185',ok:'#34d399',warn:'#fbbf24'}},
+  purpleGreenCave:{name:'2. Purple + green terminal cave',vars:{bg:'#0b0023',panel:'#062318',panel2:'#1f2937',text:'#c8eafd',muted:'#86a5b8',line:'#284252',accent:'#8b5cf6',bad:'#ff5c8a',ok:'#4ade80',warn:'#facc15'}},
+  deepEmerald:{name:'3. Deep emerald scanner',vars:{bg:'#03140f',panel:'#08251c',panel2:'#12382c',text:'#d8fff0',muted:'#8fb8a8',line:'#1f5a46',accent:'#2dd4bf',bad:'#fb7185',ok:'#22c55e',warn:'#eab308'}},
+  blackGlassBlue:{name:'4. Black glass + electric blue',vars:{bg:'#050816',panel:'#0b1020',panel2:'#111a2e',text:'#eaf6ff',muted:'#94a3b8',line:'#24324a',accent:'#00aaff',bad:'#ff4d6d',ok:'#00d084',warn:'#ffcc00'}},
+  warmDarkPaper:{name:'5. Warm dark paper',vars:{bg:'#17120d',panel:'#241a12',panel2:'#332417',text:'#fff1dd',muted:'#c7a98a',line:'#5c3f28',accent:'#f59e0b',bad:'#ef4444',ok:'#84cc16',warn:'#facc15'}},
+  softLight:{name:'6. Soft light mode',vars:{bg:'#f3f7fb',panel:'#ffffff',panel2:'#e8eef6',text:'#111827',muted:'#64748b',line:'#cbd5e1',accent:'#2563eb',bad:'#dc2626',ok:'#16a34a',warn:'#d97706'}},
+  amoledBlue:{name:'7. AMOLED red-blue hacker',vars:{bg:'#000000',panel:'#080b12',panel2:'#121826',text:'#dbeafe',muted:'#7f8ea3',line:'#1f2a3d',accent:'#3b82f6',bad:'#f43f5e',ok:'#10b981',warn:'#f59e0b'}},
+  violetLab:{name:'8. Violet document lab',vars:{bg:'#12091f',panel:'#1d1230',panel2:'#2b1b46',text:'#f1e8ff',muted:'#b8a6d9',line:'#49326f',accent:'#a78bfa',bad:'#fb7185',ok:'#34d399',warn:'#fbbf24'}},
+  emeraldAmberLab:{name:'9. Emerald amber lab',vars:{bg:'#080f0a',panel:'#122016',panel2:'#2a2417',text:'#f2ffe8',muted:'#b8aa83',line:'#3f5534',accent:'#d99a2b',bad:'#ef4444',ok:'#84cc16',warn:'#facc15'}},
+  mossPaper:{name:'10. Moss paper',vars:{bg:'#10140a',panel:'#1c2412',panel2:'#2b3018',text:'#f5f2d8',muted:'#b7b08a',line:'#4c5630',accent:'#c8a24a',bad:'#e66b5c',ok:'#8fbc3f',warn:'#e0b84d'}},
+  forestCopperScan:{name:'11. Forest copper scan',vars:{bg:'#06110c',panel:'#0d2319',panel2:'#251d12',text:'#e8ffe9',muted:'#9db493',line:'#2e5038',accent:'#b87333',bad:'#f87171',ok:'#3fce73',warn:'#f59e0b'}},
+  oliveNight:{name:'12. Olive night',vars:{bg:'#0d1007',panel:'#161d0f',panel2:'#222819',text:'#eef6dc',muted:'#a7b083',line:'#3c4728',accent:'#a3be3c',bad:'#dc5f5f',ok:'#7fbf3f',warn:'#d6a83a'}},
+  sepiaEmerald:{name:'13. Sepia emerald glass',vars:{bg:'#130f08',panel:'#1f2112',panel2:'#0f2a20',text:'#fff7d6',muted:'#bfae78',line:'#4f5130',accent:'#34d399',bad:'#f87171',ok:'#86efac',warn:'#fbbf24'}},
+  darkFern:{name:'14. Dark fern document',vars:{bg:'#020d09',panel:'#071a13',panel2:'#15261c',text:'#dffbe9',muted:'#86a48f',line:'#244333',accent:'#65a30d',bad:'#fb7185',ok:'#22c55e',warn:'#ca8a04'}},
+  dawnMist:{name:'15. Dawn mist sky',vars:{bg:'#dcecf8',panel:'#f7fbff',panel2:'#d8e9f3',text:'#163042',muted:'#628197',line:'#a3c0d0',accent:'#4a90c2',bad:'#d34b5c',ok:'#2e946c',warn:'#d59d2d'}},
+  sunsetCanyon:{name:'16. Sunset canyon',vars:{bg:'#2b1322',panel:'#472035',panel2:'#65304a',text:'#fff0de',muted:'#d0a596',line:'#8c5d56',accent:'#ff9f43',bad:'#ff6b6b',ok:'#8fd694',warn:'#ffd166'}},
+  alpineLake:{name:'17. Alpine lake',vars:{bg:'#071a24',panel:'#0e2a36',panel2:'#173f4d',text:'#e7fbff',muted:'#8fb3bc',line:'#2d6271',accent:'#4cc9f0',bad:'#f07178',ok:'#56c596',warn:'#f2c14e'}},
+  cloudyDay:{name:'18. Cloudy day',vars:{bg:'#cfd8df',panel:'#edf3f6',panel2:'#d7e2e8',text:'#1e2933',muted:'#677786',line:'#aab8c3',accent:'#4f86c6',bad:'#cc5a71',ok:'#3b9b7a',warn:'#c68b2c'}},
+  auroraPineStars:{name:'19. Aurora pine stars',vars:{bg:'#03121d',panel:'#092331',panel2:'#123548',text:'#e8fff9',muted:'#93b6c6',line:'#24506a',accent:'#67e8f9',bad:'#ff7a90',ok:'#6ee7b7',warn:'#fde047',bgImage:'radial-gradient(circle at 14% 16%, rgba(255,255,255,.95) 0 1px, transparent 1.6px), radial-gradient(circle at 77% 24%, rgba(255,255,255,.8) 0 1.2px, transparent 1.8px), radial-gradient(circle at 58% 76%, rgba(255,255,255,.8) 0 1px, transparent 1.6px), radial-gradient(circle at 30% 68%, rgba(255,255,255,.72) 0 1px, transparent 1.5px), linear-gradient(180deg,#04111d 0%,#07253a 45%,#123d45 72%,#071811 100%)',bgSize:'260px 260px, 320px 320px, 280px 280px, 240px 240px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,normal'}},
+  moonlitDesertStars:{name:'20. Moonlit desert stars',vars:{bg:'#100d16',panel:'#1f1a29',panel2:'#2e2432',text:'#fff4e6',muted:'#c7b1a6',line:'#5d4c55',accent:'#d4a373',bad:'#ff7b7b',ok:'#90be6d',warn:'#ffd166',bgImage:'radial-gradient(circle at 18% 22%, rgba(255,255,255,.95) 0 1px, transparent 1.6px), radial-gradient(circle at 64% 12%, rgba(255,255,255,.75) 0 1px, transparent 1.6px), radial-gradient(circle at 86% 46%, rgba(255,255,255,.7) 0 1px, transparent 1.6px), radial-gradient(circle at 38% 74%, rgba(255,255,255,.62) 0 1px, transparent 1.5px), linear-gradient(180deg,#120d1d 0%,#2b1f33 58%,#544032 100%)',bgSize:'240px 240px, 300px 300px, 340px 340px, 280px 280px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,normal'}},
+  twilightMeadow:{name:'21. Twilight meadow',vars:{bg:'#0f1d17',panel:'#1a2d24',panel2:'#263c31',text:'#efffe8',muted:'#a1b8a5',line:'#456356',accent:'#84cc16',bad:'#f87171',ok:'#4ade80',warn:'#facc15'}},
+  rainyBlueForest:{name:'22. Rainy blue forest',vars:{bg:'#07131b',panel:'#0f2430',panel2:'#183846',text:'#ebf8ff',muted:'#98afbe',line:'#335b6e',accent:'#5dade2',bad:'#ef6b73',ok:'#5bc0a4',warn:'#d9b44a'}},
+  glacierNightStars:{name:'23. Glacier night stars',vars:{bg:'#04101a',panel:'#0b1e2b',panel2:'#113244',text:'#eefbff',muted:'#98b4c8',line:'#29506a',accent:'#7dd3fc',bad:'#fb7185',ok:'#67e8f9',warn:'#fde68a',bgImage:'radial-gradient(circle at 12% 12%, rgba(255,255,255,.96) 0 1px, transparent 1.6px), radial-gradient(circle at 52% 34%, rgba(255,255,255,.8) 0 1px, transparent 1.5px), radial-gradient(circle at 81% 18%, rgba(255,255,255,.75) 0 1px, transparent 1.6px), radial-gradient(circle at 72% 78%, rgba(255,255,255,.6) 0 1px, transparent 1.5px), linear-gradient(180deg,#05101b 0%,#0a2536 55%,#11384c 78%,#14324a 100%)',bgSize:'260px 260px, 310px 310px, 290px 290px, 250px 250px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,normal'}},
+  peachSkyGarden:{name:'24. Peach sky garden',vars:{bg:'#fff0ea',panel:'#fff8f5',panel2:'#f8dfd2',text:'#3d2a2a',muted:'#9c7971',line:'#e1b7ab',accent:'#f97360',bad:'#d94f70',ok:'#63b45f',warn:'#d99b2b'}},
+  mossyCreek:{name:'25. Mossy creek',vars:{bg:'#0b1410',panel:'#13211b',panel2:'#1d3028',text:'#ebf8ef',muted:'#9ab3a5',line:'#375548',accent:'#4ade80',bad:'#e57373',ok:'#7bd389',warn:'#eab308'}},
+  stormCoast:{name:'26. Storm coast',vars:{bg:'#0a1118',panel:'#121f2a',panel2:'#1b3140',text:'#edf6ff',muted:'#9caebe',line:'#355164',accent:'#60a5fa',bad:'#f87171',ok:'#34d399',warn:'#fbbf24'}},
+  lavenderDawnStars:{name:'27. Lavender dawn stars',vars:{bg:'#120d22',panel:'#201836',panel2:'#30264d',text:'#f8f2ff',muted:'#bca9d3',line:'#5a4c7e',accent:'#c4b5fd',bad:'#fb7185',ok:'#86efac',warn:'#fcd34d',bgImage:'radial-gradient(circle at 10% 20%, rgba(255,255,255,.92) 0 1px, transparent 1.6px), radial-gradient(circle at 70% 12%, rgba(255,255,255,.85) 0 1px, transparent 1.5px), radial-gradient(circle at 84% 58%, rgba(255,255,255,.72) 0 1px, transparent 1.6px), radial-gradient(circle at 24% 74%, rgba(255,255,255,.62) 0 1px, transparent 1.6px), linear-gradient(180deg,#130d20 0%,#2d2147 58%,#5c4d87 82%,#a38ad8 100%)',bgSize:'250px 250px, 320px 320px, 280px 280px, 260px 260px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,normal'}},
+  greenCanopy:{name:'28. Green canopy',vars:{bg:'#08100b',panel:'#112015',panel2:'#1b3020',text:'#eefcec',muted:'#9eb89c',line:'#36573a',accent:'#65a30d',bad:'#fb7185',ok:'#4ade80',warn:'#facc15'}},
+  skyCopperHorizon:{name:'29. Sky copper horizon',vars:{bg:'#15121d',panel:'#231d2d',panel2:'#32273a',text:'#f9f4ee',muted:'#c6b5ac',line:'#63556a',accent:'#f59e0b',bad:'#fb7185',ok:'#86efac',warn:'#fcd34d',bgImage:'linear-gradient(180deg,#12233e 0%,#264f73 42%,#cc7a43 100%)',bgSize:'100% 100%',bgAttachment:'fixed',bgBlend:'normal'}},
+  snowPineLight:{name:'30. Snow pine light',vars:{bg:'#eef7f3',panel:'#ffffff',panel2:'#ddece4',text:'#17322a',muted:'#67877c',line:'#b7cec2',accent:'#2ea67d',bad:'#d4585a',ok:'#3ca66b',warn:'#c6912c'}},
+  starlitOceanHorizon:{name:'31. Starlit ocean horizon',vars:{bg:'#07111c',panel:'#0d1c2b',panel2:'#173044',text:'#eef8ff',muted:'#9db6c8',line:'#35546b',accent:'#6dd3ff',bad:'#fb7185',ok:'#67e8f9',warn:'#fcd34d',bgImage:'radial-gradient(circle at 12% 14%, rgba(255,255,255,.96) 0 1px, transparent 1.7px), radial-gradient(circle at 78% 18%, rgba(255,255,255,.84) 0 1px, transparent 1.6px), radial-gradient(circle at 56% 32%, rgba(255,255,255,.72) 0 1px, transparent 1.5px), linear-gradient(180deg,#06101c 0%,#102846 54%,#1b5c7a 74%,#4ea5b8 84%,#082535 100%)',bgSize:'260px 260px, 320px 320px, 290px 290px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal'}},
+  alpineMoonrise:{name:'32. Alpine moonrise',vars:{bg:'#08111a',panel:'#111c29',panel2:'#1b2f3c',text:'#eef7ff',muted:'#a1b4c3',line:'#40586a',accent:'#a5d8ff',bad:'#f87171',ok:'#7dd3fc',warn:'#fde68a',bgImage:'radial-gradient(circle at 73% 20%, rgba(255,250,230,.88) 0 38px, rgba(255,250,230,.18) 39px, transparent 66px), radial-gradient(circle at 18% 18%, rgba(255,255,255,.95) 0 1px, transparent 1.6px), radial-gradient(circle at 84% 32%, rgba(255,255,255,.75) 0 1px, transparent 1.5px), linear-gradient(180deg,#09111a 0%,#1a2d49 58%,#4d6a89 78%,#c6a57e 89%,#162433 100%)',bgSize:'100% 100%, 260px 260px, 310px 310px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal'}},
+  desertDuskConstellation:{name:'33. Desert dusk constellation',vars:{bg:'#140f18',panel:'#231a27',panel2:'#352634',text:'#fff5e9',muted:'#ccb3a8',line:'#6a5156',accent:'#ffb86b',bad:'#ff7b7b',ok:'#9ad17b',warn:'#ffd166',bgImage:'radial-gradient(circle at 15% 15%, rgba(255,255,255,.96) 0 1px, transparent 1.7px), radial-gradient(circle at 41% 11%, rgba(255,255,255,.76) 0 1px, transparent 1.5px), radial-gradient(circle at 67% 21%, rgba(255,255,255,.92) 0 1px, transparent 1.5px), radial-gradient(circle at 69% 21%, rgba(255,255,255,.66) 0 1px, transparent 1.7px), radial-gradient(circle at 71% 19%, rgba(255,255,255,.62) 0 1px, transparent 1.6px), linear-gradient(180deg,#130d1d 0%,#342340 55%,#8e5a50 81%,#d89a58 92%,#3a241d 100%)',bgSize:'260px 260px, 320px 320px, 360px 360px, 360px 360px, 360px 360px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,normal'}},
+  auroraLakeHorizon:{name:'34. Aurora lake horizon',vars:{bg:'#041119',panel:'#0c2028',panel2:'#15363f',text:'#e9fff8',muted:'#9ab9bb',line:'#2f575b',accent:'#5eead4',bad:'#fb7185',ok:'#6ee7b7',warn:'#fde047',bgImage:'radial-gradient(circle at 22% 12%, rgba(255,255,255,.92) 0 1px, transparent 1.6px), radial-gradient(circle at 74% 18%, rgba(255,255,255,.7) 0 1px, transparent 1.5px), linear-gradient(115deg, rgba(102,255,204,.0) 18%, rgba(102,255,204,.18) 33%, rgba(123,97,255,.22) 50%, rgba(0,255,170,.16) 62%, rgba(102,255,204,0) 78%), linear-gradient(180deg,#041119 0%,#0c2231 46%,#16394d 72%,#2d665b 84%,#0b1d20 100%)',bgSize:'260px 260px, 330px 330px, 100% 100%, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal'}},
+  snowyPassStars:{name:'35. Snowy pass stars',vars:{bg:'#08111a',panel:'#101a25',panel2:'#162936',text:'#f6fbff',muted:'#a6bac9',line:'#3f5a6f',accent:'#8ed1fc',bad:'#f87171',ok:'#93c5fd',warn:'#fde68a',bgImage:'radial-gradient(circle at 14% 12%, rgba(255,255,255,.95) 0 1px, transparent 1.6px), radial-gradient(circle at 46% 27%, rgba(255,255,255,.78) 0 1px, transparent 1.6px), radial-gradient(circle at 84% 19%, rgba(255,255,255,.72) 0 1px, transparent 1.5px), linear-gradient(180deg,#08111a 0%,#18283d 58%,#435c7a 78%,#d9e4ee 92%,#536473 100%)',bgSize:'250px 250px, 320px 320px, 290px 290px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal'}},
+  tropicalNightLagoon:{name:'36. Tropical night lagoon',vars:{bg:'#06131a',panel:'#0f1f29',panel2:'#153544',text:'#ebffff',muted:'#91b7c0',line:'#2f5768',accent:'#22d3ee',bad:'#fb7185',ok:'#34d399',warn:'#fcd34d',bgImage:'radial-gradient(circle at 10% 18%, rgba(255,255,255,.93) 0 1px, transparent 1.7px), radial-gradient(circle at 82% 14%, rgba(255,255,255,.75) 0 1px, transparent 1.6px), linear-gradient(180deg,#06131a 0%,#0c2a42 48%,#116a74 76%,#28a59c 86%,#072029 100%)',bgSize:'260px 260px, 320px 320px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal'}},
+  emberHorizonStars:{name:'37. Ember horizon stars',vars:{bg:'#120d14',panel:'#201821',panel2:'#31222c',text:'#fff1e8',muted:'#ccb1a5',line:'#694f59',accent:'#fb923c',bad:'#fb7185',ok:'#86efac',warn:'#fde047',bgImage:'radial-gradient(circle at 18% 16%, rgba(255,255,255,.96) 0 1px, transparent 1.6px), radial-gradient(circle at 64% 11%, rgba(255,255,255,.76) 0 1px, transparent 1.5px), radial-gradient(circle at 83% 22%, rgba(255,255,255,.68) 0 1px, transparent 1.5px), linear-gradient(180deg,#140d17 0%,#2b1d2d 52%,#613540 73%,#d66a3d 88%,#2a1a17 100%)',bgSize:'250px 250px, 320px 320px, 290px 290px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal'}},
+  mistyBlueRidge:{name:'38. Misty blue ridge',vars:{bg:'#dfeaf2',panel:'#f8fbff',panel2:'#dbe8ef',text:'#1c3340',muted:'#6a8593',line:'#afc4d0',accent:'#5b9bd5',bad:'#d15b70',ok:'#4fa37d',warn:'#d4a441',bgImage:'linear-gradient(180deg,#eef6fd 0%,#dbe9f6 42%,#aac2d8 69%,#6f8ea3 87%,#485d6d 100%)',bgSize:'100% 100%',bgAttachment:'fixed',bgBlend:'normal'}},
+  pineValleyDawn:{name:'39. Pine valley dawn',vars:{bg:'#0d1410',panel:'#16231b',panel2:'#20342a',text:'#f1fff0',muted:'#a7b8a8',line:'#496050',accent:'#84cc16',bad:'#f87171',ok:'#4ade80',warn:'#facc15',bgImage:'linear-gradient(180deg,#101922 0%,#35455a 54%,#d1a173 82%,#f5d4aa 92%,#172118 100%)',bgSize:'100% 100%',bgAttachment:'fixed',bgBlend:'normal'}},
+  cosmicPlumHorizon:{name:'40. Cosmic plum horizon',vars:{bg:'#130d1f',panel:'#201535',panel2:'#31224b',text:'#f8f2ff',muted:'#b9abd0',line:'#5f4f82',accent:'#c084fc',bad:'#fb7185',ok:'#86efac',warn:'#fcd34d',bgImage:'radial-gradient(circle at 20% 16%, rgba(255,255,255,.95) 0 1px, transparent 1.6px), radial-gradient(circle at 76% 13%, rgba(255,255,255,.77) 0 1px, transparent 1.5px), linear-gradient(180deg,#130d1f 0%,#291b46 56%,#5f3b7a 78%,#b56ca5 91%,#331a2f 100%)',bgSize:'260px 260px, 320px 320px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal'}},
+  moonlitForestClearing:{name:'41. Moonlit forest clearing',vars:{bg:'#07100d',panel:'#101c17',panel2:'#183026',text:'#effbf3',muted:'#9ab3a3',line:'#365547',accent:'#7dd3a7',bad:'#fb7185',ok:'#4ade80',warn:'#fde047',bgImage:'radial-gradient(circle at 72% 18%, rgba(255,255,245,.88) 0 34px, rgba(255,255,245,.18) 35px, transparent 60px), radial-gradient(circle at 16% 18%, rgba(255,255,255,.93) 0 1px, transparent 1.6px), radial-gradient(circle at 82% 12%, rgba(255,255,255,.75) 0 1px, transparent 1.6px), linear-gradient(180deg,#09100d 0%,#14261e 58%,#274437 82%,#0f1714 100%)',bgSize:'100% 100%, 260px 260px, 320px 320px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal'}},
+  copperCloudEvening:{name:'42. Copper cloud evening',vars:{bg:'#20161a',panel:'#2b1d22',panel2:'#3c2a30',text:'#fff3eb',muted:'#cfb1a4',line:'#77565a',accent:'#f59e0b',bad:'#fb7185',ok:'#a3e635',warn:'#fcd34d',bgImage:'linear-gradient(180deg,#273a54 0%,#5d6c83 34%,#d28a60 76%,#f2c6a0 92%,#55362b 100%)',bgSize:'100% 100%',bgAttachment:'fixed',bgBlend:'normal'}},
+  sunriseCloudSea:{name:'43. Sunrise cloud sea',vars:{bg:'#2a1a22',panel:'#31242d',panel2:'#493444',text:'#fff6ec',muted:'#d6b7a9',line:'#765968',accent:'#ffb45c',bad:'#fb7185',ok:'#9ee493',warn:'#fde68a',bgImage:'radial-gradient(circle at 76% 18%, rgba(255,224,150,.92) 0 42px, rgba(255,190,90,.32) 43px 78px, transparent 112px), radial-gradient(ellipse at 18% 74%, rgba(255,255,255,.28) 0 15%, transparent 34%), radial-gradient(ellipse at 48% 80%, rgba(255,244,225,.32) 0 17%, transparent 38%), radial-gradient(ellipse at 80% 76%, rgba(255,231,198,.26) 0 14%, transparent 34%), linear-gradient(180deg,#1b1b3a 0%,#4b3a6b 45%,#e58f63 75%,#ffe0aa 88%,#5b3c37 100%)',bgSize:'100% 100%, 80% 35%, 90% 38%, 70% 32%, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 30% 78%, rgba(255,255,255,.24) 0 18%, transparent 42%), radial-gradient(ellipse at 70% 82%, rgba(255,255,255,.18) 0 16%, transparent 40%)',atmoSize:'100% 100%, 100% 100%',atmoOpacity:'.82',atmoFilter:'blur(10px)',atmoBlend:'screen'}},
+  foggyMeadowMorning:{name:'44. Foggy meadow morning',vars:{bg:'#d8e8d8',panel:'#f6fbf5',panel2:'#dcebdd',text:'#1f3527',muted:'#6f8874',line:'#b5cbb8',accent:'#72a66a',bad:'#c95b66',ok:'#4d9b6b',warn:'#c69a36',bgImage:'linear-gradient(180deg,#e8f3f2 0%,#d7e6dc 48%,#a9c19c 78%,#657a57 100%)',bgSize:'100% 100%',bgAttachment:'fixed',bgBlend:'normal',atmoImage:'radial-gradient(ellipse at 20% 65%, rgba(255,255,255,.62) 0 18%, transparent 42%), radial-gradient(ellipse at 70% 58%, rgba(255,255,255,.48) 0 22%, transparent 46%), repeating-linear-gradient(0deg, rgba(255,255,255,.12) 0 2px, transparent 2px 18px)',atmoSize:'100% 100%, 100% 100%, 100% 100%',atmoOpacity:'.7',atmoFilter:'blur(12px)',atmoBlend:'screen'}},
+  stormBreakSun:{name:'45. Storm break sun',vars:{bg:'#111821',panel:'#182431',panel2:'#243544',text:'#edf8ff',muted:'#a7b5c0',line:'#4a6070',accent:'#facc15',bad:'#fb7185',ok:'#6ee7b7',warn:'#fde047',bgImage:'radial-gradient(circle at 82% 24%, rgba(255,220,80,.72) 0 34px, rgba(255,220,80,.16) 35px 90px, transparent 130px), linear-gradient(110deg, transparent 0 42%, rgba(255,240,150,.20) 48%, transparent 58%), linear-gradient(180deg,#101820 0%,#1e344a 44%,#6f7f88 72%,#d2aa68 90%,#243038 100%)',bgSize:'100% 100%, 100% 100%, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal',atmoImage:'radial-gradient(ellipse at 22% 22%, rgba(255,255,255,.16) 0 16%, transparent 42%), radial-gradient(ellipse at 55% 28%, rgba(255,255,255,.12) 0 20%, transparent 48%)',atmoSize:'100% 100%, 100% 100%',atmoOpacity:'.65',atmoFilter:'blur(16px)',atmoBlend:'screen'}},
+  moonCloudVeil:{name:'46. Moon cloud veil',vars:{bg:'#0b1020',panel:'#12192b',panel2:'#1d2940',text:'#eef5ff',muted:'#a6b4ca',line:'#3c4d6a',accent:'#a5b4fc',bad:'#fb7185',ok:'#93c5fd',warn:'#fde68a',bgImage:'radial-gradient(circle at 72% 18%, rgba(239,246,255,.85) 0 34px, rgba(239,246,255,.18) 35px 82px, transparent 120px), radial-gradient(circle at 14% 15%, rgba(255,255,255,.85) 0 1px, transparent 1.7px), radial-gradient(circle at 82% 40%, rgba(255,255,255,.60) 0 1px, transparent 1.5px), linear-gradient(180deg,#070b16 0%,#121d35 55%,#26344a 82%,#0b1020 100%)',bgSize:'100% 100%, 260px 260px, 320px 320px, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 64% 28%, rgba(255,255,255,.22) 0 18%, transparent 44%), radial-gradient(ellipse at 38% 34%, rgba(255,255,255,.14) 0 22%, transparent 50%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.75',atmoFilter:'blur(14px)',atmoBlend:'screen'}},
+  goldenHazeFields:{name:'47. Golden haze fields',vars:{bg:'#2a2012',panel:'#302617',panel2:'#46351e',text:'#fff4d8',muted:'#d0b98b',line:'#705935',accent:'#f2b544',bad:'#e76f73',ok:'#9ccf59',warn:'#ffd166',bgImage:'radial-gradient(circle at 70% 22%, rgba(255,210,90,.9) 0 44px, rgba(255,198,80,.22) 45px 120px, transparent 160px), linear-gradient(180deg,#43365c 0%,#a06f5b 54%,#e2aa56 80%,#6b4a22 100%)',bgSize:'100% 100%, 100% 100%',bgAttachment:'fixed',bgBlend:'screen,normal',atmoImage:'repeating-linear-gradient(100deg, rgba(255,230,150,.12) 0 8px, transparent 8px 28px), radial-gradient(ellipse at 46% 72%, rgba(255,248,210,.22) 0 22%, transparent 48%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.62',atmoFilter:'blur(6px)',atmoBlend:'screen'}},
+  overcastSoftClouds:{name:'48. Overcast soft clouds',vars:{bg:'#cbd5df',panel:'#f6f8fb',panel2:'#dfe7ee',text:'#1f2933',muted:'#687887',line:'#b6c2cd',accent:'#5c8db8',bad:'#c95b72',ok:'#4f9b78',warn:'#bd8b32',bgImage:'radial-gradient(ellipse at 18% 20%, rgba(255,255,255,.74) 0 15%, transparent 38%), radial-gradient(ellipse at 55% 16%, rgba(255,255,255,.58) 0 18%, transparent 44%), radial-gradient(ellipse at 88% 24%, rgba(255,255,255,.50) 0 13%, transparent 34%), linear-gradient(180deg,#dfe8ef 0%,#c4d0db 54%,#9dadbb 100%)',bgSize:'100% 100%,100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 32% 58%, rgba(255,255,255,.32) 0 20%, transparent 44%), radial-gradient(ellipse at 78% 62%, rgba(255,255,255,.26) 0 18%, transparent 42%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.55',atmoFilter:'blur(18px)',atmoBlend:'screen'}},
+  silverMistLake:{name:'49. Silver mist lake',vars:{bg:'#d8e3e9',panel:'#f7fbfc',panel2:'#dce8ec',text:'#20323a',muted:'#6d858d',line:'#b7cbd2',accent:'#6ca6b8',bad:'#cf6473',ok:'#55a582',warn:'#c59a3b',bgImage:'linear-gradient(180deg,#f0f7fa 0%,#d5e4ea 44%,#9fbcc4 68%,#d9eef2 72%,#8aa8b0 100%)',bgSize:'100% 100%',bgAttachment:'fixed',bgBlend:'normal',atmoImage:'radial-gradient(ellipse at 25% 60%, rgba(255,255,255,.52) 0 18%, transparent 44%), radial-gradient(ellipse at 68% 62%, rgba(255,255,255,.38) 0 21%, transparent 50%), repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 1px, transparent 1px 12px)',atmoSize:'100% 100%,100% 100%,100% 100%',atmoOpacity:'.68',atmoFilter:'blur(10px)',atmoBlend:'screen'}},
+  solarAurora:{name:'50. Solar aurora',vars:{bg:'#06111a',panel:'#0d2028',panel2:'#183542',text:'#ecfff8',muted:'#9bb8bd',line:'#2f5862',accent:'#facc15',bad:'#fb7185',ok:'#5eead4',warn:'#fde047',bgImage:'radial-gradient(circle at 74% 19%, rgba(255,218,85,.86) 0 38px, rgba(255,218,85,.18) 39px 110px, transparent 155px), linear-gradient(105deg, transparent 8%, rgba(94,234,212,.18) 34%, rgba(192,132,252,.16) 54%, transparent 78%), linear-gradient(180deg,#06111a 0%,#0a2232 52%,#1b5960 76%,#f2b45e 92%,#102021 100%)',bgSize:'100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal',atmoImage:'linear-gradient(70deg, transparent 10%, rgba(94,234,212,.12) 42%, rgba(255,255,255,.05) 50%, transparent 72%)',atmoSize:'100% 100%',atmoOpacity:'.8',atmoFilter:'blur(8px)',atmoBlend:'screen'}},
+  cloudedLavenderSunset:{name:'51. Clouded lavender sunset',vars:{bg:'#21182a',panel:'#2b2136',panel2:'#3e2d4d',text:'#fff4ff',muted:'#c7afd0',line:'#715984',accent:'#f0abfc',bad:'#fb7185',ok:'#86efac',warn:'#fde047',bgImage:'radial-gradient(circle at 22% 24%, rgba(255,195,120,.70) 0 36px, rgba(255,195,120,.16) 37px 100px, transparent 150px), radial-gradient(ellipse at 70% 28%, rgba(255,255,255,.18) 0 16%, transparent 40%), linear-gradient(180deg,#21182a 0%,#4d376b 52%,#b66a8d 78%,#f6b079 92%,#321d2c 100%)',bgSize:'100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal',atmoImage:'radial-gradient(ellipse at 30% 34%, rgba(255,255,255,.18) 0 18%, transparent 44%), radial-gradient(ellipse at 74% 36%, rgba(255,255,255,.16) 0 20%, transparent 48%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.7',atmoFilter:'blur(13px)',atmoBlend:'screen'}},
+  rainWindowEvening:{name:'52. Rain window evening',vars:{bg:'#0b121b',panel:'#121e2c',panel2:'#1b2e3f',text:'#eef7ff',muted:'#9caebe',line:'#36566b',accent:'#60a5fa',bad:'#fb7185',ok:'#34d399',warn:'#fbbf24',bgImage:'linear-gradient(180deg,#0b121b 0%,#172a3a 55%,#4b5d67 82%,#1a2430 100%)',bgSize:'100% 100%',bgAttachment:'fixed',bgBlend:'normal',atmoImage:'repeating-linear-gradient(105deg, rgba(255,255,255,.16) 0 1px, transparent 1px 16px), radial-gradient(ellipse at 70% 25%, rgba(255,220,160,.16) 0 10%, transparent 35%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.45',atmoFilter:'blur(.4px)',atmoBlend:'screen'}},
+  blueHourCloudRim:{name:'53. Blue hour cloud rim',vars:{bg:'#0a1420',panel:'#111f2e',panel2:'#1b3044',text:'#eff8ff',muted:'#9db2c4',line:'#39576c',accent:'#93c5fd',bad:'#fb7185',ok:'#67e8f9',warn:'#fde68a',bgImage:'radial-gradient(ellipse at 42% 70%, rgba(255,255,255,.18) 0 14%, transparent 34%), radial-gradient(ellipse at 72% 75%, rgba(255,255,255,.14) 0 15%, transparent 36%), linear-gradient(180deg,#0a1420 0%,#152d4a 58%,#446d91 78%,#d0b18b 92%,#17232d 100%)',bgSize:'100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal',atmoImage:'radial-gradient(ellipse at 52% 74%, rgba(255,255,255,.22) 0 16%, transparent 42%)',atmoSize:'100% 100%',atmoOpacity:'.56',atmoFilter:'blur(11px)',atmoBlend:'screen'}},
+  sunThroughPineFog:{name:'54. Sun through pine fog',vars:{bg:'#101810',panel:'#172417',panel2:'#243420',text:'#f5ffe9',muted:'#aab795',line:'#516348',accent:'#d9a441',bad:'#e76f73',ok:'#8ccf5f',warn:'#fde047',bgImage:'radial-gradient(circle at 68% 24%, rgba(255,218,120,.76) 0 38px, rgba(255,218,120,.18) 39px 115px, transparent 165px), linear-gradient(180deg,#172037 0%,#5d6b58 56%,#d1a65d 84%,#1d2919 100%)',bgSize:'100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,normal',atmoImage:'repeating-linear-gradient(82deg, rgba(255,235,170,.12) 0 10px, transparent 10px 34px), radial-gradient(ellipse at 45% 60%, rgba(255,255,255,.18) 0 22%, transparent 54%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.72',atmoFilter:'blur(7px)',atmoBlend:'screen'}},
+  paleNimbus:{name:'55. Pale nimbus',vars:{bg:'#eef2f4',panel:'#ffffff',panel2:'#e3ebef',text:'#1e2931',muted:'#6f7f89',line:'#bdc9d0',accent:'#6b9cc3',bad:'#c95b6a',ok:'#4d9b77',warn:'#bd8b36',bgImage:'radial-gradient(ellipse at 20% 22%, rgba(255,255,255,.92) 0 18%, transparent 42%), radial-gradient(ellipse at 62% 18%, rgba(255,255,255,.72) 0 22%, transparent 50%), linear-gradient(180deg,#f7fafc 0%,#e5edf2 54%,#c9d4dc 100%)',bgSize:'100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal',atmoImage:'radial-gradient(ellipse at 52% 46%, rgba(255,255,255,.36) 0 24%, transparent 58%)',atmoSize:'100% 100%',atmoOpacity:'.5',atmoFilter:'blur(18px)',atmoBlend:'screen'}},
+  redSunDust:{name:'56. Red sun dust',vars:{bg:'#21120f',panel:'#2d1c18',panel2:'#442820',text:'#fff0df',muted:'#cba18d',line:'#704f40',accent:'#f97316',bad:'#ef4444',ok:'#a3e635',warn:'#facc15',bgImage:'radial-gradient(circle at 76% 23%, rgba(255,105,75,.74) 0 48px, rgba(255,105,75,.20) 49px 130px, transparent 180px), linear-gradient(180deg,#2b1720 0%,#74333a 55%,#c4663f 80%,#5a2d1e 100%)',bgSize:'100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,normal',atmoImage:'repeating-linear-gradient(8deg, rgba(255,213,160,.08) 0 3px, transparent 3px 20px), radial-gradient(ellipse at 50% 68%, rgba(255,215,160,.14) 0 22%, transparent 50%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.72',atmoFilter:'blur(4px)',atmoBlend:'screen'}},
+  mintCloudMorning:{name:'57. Mint cloud morning',vars:{bg:'#e5f7ef',panel:'#fbfffd',panel2:'#d7f0e4',text:'#17352a',muted:'#6b8b7d',line:'#acd1bf',accent:'#2dd4bf',bad:'#cf5f70',ok:'#39a96b',warn:'#c69632',bgImage:'radial-gradient(ellipse at 18% 22%, rgba(255,255,255,.76) 0 17%, transparent 42%), radial-gradient(ellipse at 72% 20%, rgba(255,255,255,.62) 0 20%, transparent 48%), linear-gradient(180deg,#f2fffb 0%,#d7f2e7 54%,#9fcbb7 100%)',bgSize:'100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal',atmoImage:'radial-gradient(ellipse at 42% 62%, rgba(255,255,255,.32) 0 20%, transparent 48%)',atmoSize:'100% 100%',atmoOpacity:'.55',atmoFilter:'blur(14px)',atmoBlend:'screen'}},
+  eclipseMist:{name:'58. Eclipse mist',vars:{bg:'#090b12',panel:'#121522',panel2:'#202537',text:'#eef2ff',muted:'#a5adc1',line:'#43495f',accent:'#c084fc',bad:'#fb7185',ok:'#86efac',warn:'#fde047',bgImage:'radial-gradient(circle at 50% 22%, rgba(255,255,220,.75) 0 56px, rgba(15,15,25,.96) 57px 70px, rgba(255,255,220,.18) 71px 132px, transparent 190px), linear-gradient(180deg,#090b12 0%,#171c2c 56%,#453d5f 82%,#18131d 100%)',bgSize:'100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,normal',atmoImage:'radial-gradient(ellipse at 50% 42%, rgba(255,255,255,.10) 0 28%, transparent 60%)',atmoSize:'100% 100%',atmoOpacity:'.68',atmoFilter:'blur(18px)',atmoBlend:'screen'}},
+  rainbowAfterRain:{name:'59. Rainbow after rain',vars:{bg:'#dbeaf2',panel:'#f7fbff',panel2:'#dceaf2',text:'#1c3340',muted:'#6d8290',line:'#b5c7d2',accent:'#60a5fa',bad:'#dc5f72',ok:'#4da66d',warn:'#c68f31',bgImage:'linear-gradient(120deg, transparent 0 36%, rgba(255,99,132,.16) 40%, rgba(255,205,86,.15) 45%, rgba(75,192,192,.14) 50%, rgba(54,162,235,.13) 55%, transparent 64%), linear-gradient(180deg,#edf7ff 0%,#c9ddeb 54%,#90b2c5 78%,#dbe7ed 100%)',bgSize:'100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,normal',atmoImage:'radial-gradient(ellipse at 28% 25%, rgba(255,255,255,.55) 0 18%, transparent 45%), radial-gradient(ellipse at 75% 28%, rgba(255,255,255,.40) 0 18%, transparent 44%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.56',atmoFilter:'blur(12px)',atmoBlend:'screen'}},
+  blackSunsetClouds:{name:'60. Black sunset clouds',vars:{bg:'#0d0c11',panel:'#15131b',panel2:'#211d2a',text:'#fff1e8',muted:'#c3a99f',line:'#51444d',accent:'#f97316',bad:'#fb7185',ok:'#84cc16',warn:'#fde047',bgImage:'radial-gradient(circle at 82% 27%, rgba(255,153,72,.78) 0 40px, rgba(255,153,72,.18) 41px 130px, transparent 190px), radial-gradient(ellipse at 18% 38%, rgba(20,20,28,.68) 0 20%, transparent 48%), radial-gradient(ellipse at 66% 42%, rgba(18,18,26,.62) 0 22%, transparent 54%), linear-gradient(180deg,#0d0c11 0%,#231831 54%,#9b4b38 82%,#191116 100%)',bgSize:'100% 100%,100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,multiply,multiply,normal',atmoImage:'radial-gradient(ellipse at 45% 42%, rgba(255,255,255,.08) 0 20%, transparent 52%)',atmoSize:'100% 100%',atmoOpacity:'.48',atmoFilter:'blur(16px)',atmoBlend:'screen'}},
+  blueGreenAuroraMoonMist:{name:'61. Blue-green aurora moon mist',vars:{bg:'#031220',panel:'#0a2030',panel2:'#12364a',text:'#eafffb',muted:'#9fc0c9',line:'#2b6071',accent:'#4ade80',bad:'#fb7185',ok:'#6ee7b7',warn:'#fde047',bgImage:'radial-gradient(circle at 74% 16%, rgba(245,255,230,.92) 0 34px, rgba(245,255,230,.20) 35px 82px, transparent 135px), radial-gradient(circle at 9% 12%, rgba(255,255,255,.96) 0 1px, transparent 1.5px), radial-gradient(circle at 23% 24%, rgba(255,255,255,.85) 0 1px, transparent 1.6px), radial-gradient(circle at 43% 10%, rgba(255,255,255,.72) 0 1px, transparent 1.5px), radial-gradient(circle at 82% 31%, rgba(255,255,255,.72) 0 1px, transparent 1.6px), linear-gradient(115deg, transparent 0 19%, rgba(79,255,160,.22) 30%, rgba(46,213,255,.16) 45%, rgba(151,71,255,.14) 58%, transparent 74%), linear-gradient(180deg,#031220 0%,#073152 50%,#0b5a76 75%,#104738 92%,#05120e 100%)',bgSize:'100% 100%,210px 210px,260px 260px,300px 300px,240px 240px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 34% 30%, rgba(180,255,220,.12) 0 18%, transparent 48%), radial-gradient(ellipse at 62% 36%, rgba(255,255,255,.10) 0 20%, transparent 56%), linear-gradient(86deg, transparent 12%, rgba(116,255,190,.16) 36%, rgba(80,210,255,.10) 48%, transparent 70%)',atmoSize:'100% 100%,100% 100%,100% 100%',atmoOpacity:'.92',atmoFilter:'blur(10px)',atmoBlend:'screen'}},
+  cyanAuroraStarVeil:{name:'62. Cyan aurora star veil',vars:{bg:'#04101c',panel:'#0b1c2b',panel2:'#123044',text:'#effaff',muted:'#9bb8c8',line:'#315a70',accent:'#22d3ee',bad:'#fb7185',ok:'#34d399',warn:'#facc15',bgImage:'radial-gradient(circle at 17% 17%, rgba(255,255,255,.95) 0 1px, transparent 1.5px), radial-gradient(circle at 38% 12%, rgba(255,255,255,.8) 0 1px, transparent 1.6px), radial-gradient(circle at 61% 28%, rgba(255,255,255,.72) 0 1px, transparent 1.5px), radial-gradient(circle at 86% 18%, rgba(255,255,255,.86) 0 1px, transparent 1.6px), linear-gradient(130deg, transparent 4%, rgba(64,255,185,.0) 20%, rgba(64,255,185,.23) 40%, rgba(66,153,225,.20) 57%, rgba(160,100,255,.16) 69%, transparent 86%), linear-gradient(180deg,#04101c 0%,#082844 54%,#103b5c 72%,#1d5c67 90%,#06151c 100%)',bgSize:'210px 210px,260px 260px,310px 310px,240px 240px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,normal',atmoImage:'linear-gradient(75deg, transparent 10%, rgba(72,255,206,.18) 32%, rgba(255,255,255,.08) 45%, rgba(86,180,255,.14) 56%, transparent 78%), radial-gradient(ellipse at 50% 32%, rgba(255,255,255,.11) 0 22%, transparent 58%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.88',atmoFilter:'blur(12px)',atmoBlend:'screen'}},
+  moonAuroraCloudShelf:{name:'63. Moon aurora cloud shelf',vars:{bg:'#061119',panel:'#0e1d27',panel2:'#193342',text:'#eefcf8',muted:'#a1b9be',line:'#385965',accent:'#8ee68d',bad:'#f87171',ok:'#86efac',warn:'#fde68a',bgImage:'radial-gradient(circle at 66% 18%, rgba(255,255,238,.90) 0 42px, rgba(255,255,238,.18) 43px 94px, transparent 145px), radial-gradient(circle at 14% 16%, rgba(255,255,255,.92) 0 1px, transparent 1.7px), radial-gradient(circle at 46% 23%, rgba(255,255,255,.76) 0 1px, transparent 1.5px), radial-gradient(circle at 88% 31%, rgba(255,255,255,.68) 0 1px, transparent 1.5px), linear-gradient(105deg, transparent 12%, rgba(82,255,170,.22) 35%, rgba(145,255,210,.12) 49%, rgba(110,120,255,.14) 60%, transparent 78%), radial-gradient(ellipse at 50% 80%, rgba(255,255,255,.13) 0 18%, transparent 44%), linear-gradient(180deg,#061119 0%,#102b44 55%,#23545c 77%,#527260 88%,#091713 100%)',bgSize:'100% 100%,230px 230px,290px 290px,250px 250px,100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 28% 63%, rgba(255,255,255,.16) 0 18%, transparent 48%), radial-gradient(ellipse at 72% 68%, rgba(255,255,255,.13) 0 18%, transparent 52%), linear-gradient(92deg, transparent 8%, rgba(150,255,210,.12) 33%, transparent 62%)',atmoSize:'100% 100%,100% 100%,100% 100%',atmoOpacity:'.78',atmoFilter:'blur(15px)',atmoBlend:'screen'}},
+  blueSkyGreenAuroraDawn:{name:'64. Blue sky green aurora dawn',vars:{bg:'#091a24',panel:'#102a36',panel2:'#1c4150',text:'#effffa',muted:'#a2bac1',line:'#3d6770',accent:'#5ee98f',bad:'#ef6f7c',ok:'#6ee7b7',warn:'#fcd34d',bgImage:'radial-gradient(circle at 20% 18%, rgba(255,255,255,.84) 0 1px, transparent 1.6px), radial-gradient(circle at 73% 14%, rgba(255,255,255,.74) 0 1px, transparent 1.6px), linear-gradient(112deg, transparent 18%, rgba(48,255,135,.20) 36%, rgba(80,210,255,.13) 54%, transparent 78%), linear-gradient(180deg,#081521 0%,#0b3154 46%,#1b78a1 68%,#7fc2b9 84%,#f2c887 95%,#10241a 100%)',bgSize:'250px 250px,310px 310px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 35% 46%, rgba(255,255,255,.12) 0 22%, transparent 52%), radial-gradient(ellipse at 70% 54%, rgba(182,255,230,.13) 0 20%, transparent 55%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.72',atmoFilter:'blur(13px)',atmoBlend:'screen'}},
+  borealRibbonLake:{name:'65. Boreal ribbon lake',vars:{bg:'#03150f',panel:'#0b211a',panel2:'#15372c',text:'#edfff4',muted:'#9ac0aa',line:'#2f634d',accent:'#34d399',bad:'#fb7185',ok:'#86efac',warn:'#fde047',bgImage:'radial-gradient(circle at 12% 15%, rgba(255,255,255,.90) 0 1px, transparent 1.6px), radial-gradient(circle at 35% 27%, rgba(255,255,255,.76) 0 1px, transparent 1.5px), radial-gradient(circle at 69% 18%, rgba(255,255,255,.82) 0 1px, transparent 1.6px), linear-gradient(72deg, transparent 8%, rgba(54,255,140,.14) 23%, rgba(90,255,180,.30) 42%, rgba(48,180,255,.16) 54%, transparent 76%), linear-gradient(180deg,#03121d 0%,#073052 50%,#0c5d6f 70%,#0e5240 82%,#03150f 100%)',bgSize:'220px 220px,280px 280px,320px 320px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,normal',atmoImage:'linear-gradient(82deg, transparent 14%, rgba(90,255,180,.18) 36%, rgba(255,255,255,.07) 47%, rgba(94,234,212,.14) 59%, transparent 78%), radial-gradient(ellipse at 50% 74%, rgba(255,255,255,.09) 0 16%, transparent 48%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.86',atmoFilter:'blur(9px)',atmoBlend:'screen'}},
+  violetGreenAuroraNight:{name:'66. Violet green aurora night',vars:{bg:'#090b1a',panel:'#12172a',panel2:'#211f3d',text:'#f4f1ff',muted:'#ada6cf',line:'#4d4a72',accent:'#86efac',bad:'#fb7185',ok:'#6ee7b7',warn:'#fde047',bgImage:'radial-gradient(circle at 13% 13%, rgba(255,255,255,.96) 0 1px, transparent 1.5px), radial-gradient(circle at 41% 24%, rgba(255,255,255,.72) 0 1px, transparent 1.6px), radial-gradient(circle at 79% 17%, rgba(255,255,255,.82) 0 1px, transparent 1.5px), linear-gradient(118deg, transparent 12%, rgba(40,255,140,.20) 28%, rgba(141,92,246,.27) 48%, rgba(14,165,233,.15) 62%, transparent 84%), linear-gradient(180deg,#090b1a 0%,#171c3c 58%,#243f68 78%,#402f66 92%,#100918 100%)',bgSize:'210px 210px,270px 270px,330px 330px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,normal',atmoImage:'linear-gradient(70deg, transparent 8%, rgba(40,255,160,.15) 34%, rgba(180,120,255,.16) 48%, rgba(80,180,255,.12) 64%, transparent 82%)',atmoSize:'100% 100%',atmoOpacity:'.9',atmoFilter:'blur(11px)',atmoBlend:'screen'}},
+  frostMoonAurora:{name:'67. Frost moon aurora',vars:{bg:'#06111e',panel:'#0d1f31',panel2:'#18364e',text:'#f0fbff',muted:'#9eb9c8',line:'#315b72',accent:'#7dd3fc',bad:'#fb7185',ok:'#a7f3d0',warn:'#fde68a',bgImage:'radial-gradient(circle at 78% 18%, rgba(245,250,255,.92) 0 35px, rgba(245,250,255,.18) 36px 88px, transparent 136px), radial-gradient(circle at 15% 12%, rgba(255,255,255,.94) 0 1px, transparent 1.6px), radial-gradient(circle at 37% 26%, rgba(255,255,255,.72) 0 1px, transparent 1.5px), radial-gradient(circle at 86% 36%, rgba(255,255,255,.72) 0 1px, transparent 1.5px), linear-gradient(105deg, transparent 18%, rgba(115,255,210,.18) 36%, rgba(130,210,255,.20) 54%, transparent 80%), linear-gradient(180deg,#06111e 0%,#0c2c4d 55%,#276a88 78%,#d7e7ef 93%,#173142 100%)',bgSize:'100% 100%,230px 230px,280px 280px,330px 330px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 45% 63%, rgba(255,255,255,.16) 0 20%, transparent 58%), linear-gradient(82deg, transparent 12%, rgba(150,255,230,.10) 40%, transparent 70%)',atmoSize:'100% 100%,100% 100%',atmoOpacity:'.76',atmoFilter:'blur(14px)',atmoBlend:'screen'}},
+  emeraldNebulaHorizon:{name:'68. Emerald nebula horizon',vars:{bg:'#040c14',panel:'#0b1a25',panel2:'#132c3a',text:'#eafefa',muted:'#99b9c0',line:'#2f5664',accent:'#22c55e',bad:'#fb7185',ok:'#6ee7b7',warn:'#facc15',bgImage:'radial-gradient(circle at 16% 18%, rgba(255,255,255,.94) 0 1px, transparent 1.5px), radial-gradient(circle at 52% 12%, rgba(255,255,255,.68) 0 1px, transparent 1.5px), radial-gradient(circle at 82% 29%, rgba(255,255,255,.78) 0 1px, transparent 1.6px), radial-gradient(ellipse at 36% 34%, rgba(34,197,94,.16) 0 18%, transparent 52%), radial-gradient(ellipse at 60% 38%, rgba(59,130,246,.14) 0 22%, transparent 58%), linear-gradient(180deg,#040c14 0%,#0a2848 55%,#134c65 74%,#1b6c4a 88%,#06130c 100%)',bgSize:'220px 220px,300px 300px,260px 260px,100% 100%,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,normal',atmoImage:'linear-gradient(100deg, transparent 20%, rgba(34,197,94,.17) 38%, rgba(80,180,255,.10) 52%, transparent 76%)',atmoSize:'100% 100%',atmoOpacity:'.82',atmoFilter:'blur(16px)',atmoBlend:'screen'}},
+  auroraCloudMirror:{name:'69. Aurora cloud mirror',vars:{bg:'#04151c',panel:'#0c242d',panel2:'#153944',text:'#edfffb',muted:'#9dbbc0',line:'#335b62',accent:'#2dd4bf',bad:'#fb7185',ok:'#86efac',warn:'#fde047',bgImage:'radial-gradient(circle at 18% 15%, rgba(255,255,255,.92) 0 1px, transparent 1.5px), radial-gradient(circle at 73% 23%, rgba(255,255,255,.73) 0 1px, transparent 1.5px), linear-gradient(112deg, transparent 16%, rgba(54,255,160,.22) 34%, rgba(94,234,212,.18) 49%, transparent 75%), linear-gradient(180deg,#04151c 0%,#0b314c 52%,#0d5d70 70%,#2f8f85 82%,#0b2a30 87%,#031013 100%)',bgSize:'230px 230px,310px 310px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 35% 33%, rgba(255,255,255,.11) 0 20%, transparent 48%), radial-gradient(ellipse at 68% 76%, rgba(94,234,212,.13) 0 16%, transparent 44%), linear-gradient(85deg, transparent 14%, rgba(90,255,180,.14) 42%, transparent 70%)',atmoSize:'100% 100%,100% 100%,100% 100%',atmoOpacity:'.82',atmoFilter:'blur(12px)',atmoBlend:'screen'}},
+  arcticSkyCurtains:{name:'70. Arctic sky curtains',vars:{bg:'#04111c',panel:'#0b1d2c',panel2:'#14334a',text:'#effbff',muted:'#9fb8c8',line:'#31566d',accent:'#67e8f9',bad:'#fb7185',ok:'#a7f3d0',warn:'#fde047',bgImage:'radial-gradient(circle at 15% 13%, rgba(255,255,255,.92) 0 1px, transparent 1.6px), radial-gradient(circle at 34% 20%, rgba(255,255,255,.8) 0 1px, transparent 1.5px), radial-gradient(circle at 66% 15%, rgba(255,255,255,.78) 0 1px, transparent 1.5px), radial-gradient(circle at 89% 26%, rgba(255,255,255,.65) 0 1px, transparent 1.5px), linear-gradient(96deg, transparent 10%, rgba(120,255,220,.16) 27%, rgba(80,220,255,.18) 42%, rgba(120,120,255,.16) 58%, transparent 78%), linear-gradient(180deg,#04111c 0%,#0b2845 55%,#1b5579 76%,#9ac8d8 92%,#122839 100%)',bgSize:'220px 220px,270px 270px,330px 330px,290px 290px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,normal',atmoImage:'linear-gradient(83deg, transparent 8%, rgba(120,255,220,.13) 28%, transparent 34%, rgba(80,220,255,.15) 48%, transparent 57%, rgba(160,170,255,.12) 70%, transparent 84%)',atmoSize:'100% 100%',atmoOpacity:'.9',atmoFilter:'blur(8px)',atmoBlend:'screen'}},
+  quietAuroraWorkMode:{name:'71. Quiet aurora work mode',vars:{bg:'#07131a',panel:'#0e2028',panel2:'#182f38',text:'#edf9f6',muted:'#9aadb1',line:'#344e55',accent:'#5eead4',bad:'#f87171',ok:'#86efac',warn:'#fcd34d',bgImage:'radial-gradient(circle at 20% 16%, rgba(255,255,255,.70) 0 1px, transparent 1.6px), radial-gradient(circle at 75% 20%, rgba(255,255,255,.55) 0 1px, transparent 1.5px), linear-gradient(118deg, transparent 22%, rgba(80,255,180,.13) 42%, rgba(80,180,255,.09) 55%, transparent 78%), linear-gradient(180deg,#07131a 0%,#112b3a 58%,#174d5a 80%,#0e201d 100%)',bgSize:'280px 280px,340px 340px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal',atmoImage:'radial-gradient(ellipse at 50% 42%, rgba(255,255,255,.08) 0 24%, transparent 58%)',atmoSize:'100% 100%',atmoOpacity:'.5',atmoFilter:'blur(15px)',atmoBlend:'screen'}},
+  electricAuroraConsole:{name:'72. Electric aurora console',vars:{bg:'#020610',panel:'#07111f',panel2:'#0d2130',text:'#e7fbff',muted:'#8fb3c0',line:'#22485f',accent:'#00f5d4',bad:'#ff4d6d',ok:'#00d084',warn:'#ffcc00',bgImage:'radial-gradient(circle at 10% 12%, rgba(255,255,255,.95) 0 1px, transparent 1.5px), radial-gradient(circle at 31% 24%, rgba(255,255,255,.74) 0 1px, transparent 1.5px), radial-gradient(circle at 62% 15%, rgba(255,255,255,.82) 0 1px, transparent 1.5px), radial-gradient(circle at 87% 29%, rgba(255,255,255,.68) 0 1px, transparent 1.5px), linear-gradient(105deg, transparent 8%, rgba(0,245,212,.20) 26%, rgba(57,255,20,.24) 42%, rgba(59,130,246,.20) 58%, transparent 80%), linear-gradient(180deg,#020610 0%,#061a30 55%,#093f5a 74%,#06251f 100%)',bgSize:'200px 200px,260px 260px,320px 320px,240px 240px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,screen,screen,normal',atmoImage:'linear-gradient(82deg, transparent 8%, rgba(0,245,212,.18) 29%, transparent 34%, rgba(57,255,20,.16) 45%, transparent 58%, rgba(59,130,246,.14) 69%, transparent 82%)',atmoSize:'100% 100%',atmoOpacity:'.86',atmoFilter:'blur(7px)',atmoBlend:'screen'}}
+};
+const DEFAULT_EXPERIMENT_PALETTE='moonAuroraCloudShelf';
+const EXPERIMENT_PALETTE_KEY='docComposerExperimentPalette';
+const EXPERIMENT_PALETTE_VAR_KEYS=[...new Set(Object.values(EXPERIMENT_PALETTES).flatMap(p=>Object.keys(p.vars)))];
+const expConsole={entries:[],installed:false,originals:{}};
+let CURRENT_EXPERIMENT_PALETTE=DEFAULT_EXPERIMENT_PALETTE;
+const THEME_COMPOSITOR_KEY='docComposerThemeCompositorSettings';
+const THEME_RUNTIME_VAR_KEYS=['panelGlass','panel2Glass','buttonGlass','panelBlur','cardShadow','uiScrimOpacity','themeGlow','themeSaturate','themeContrast'];
+
+const PALETTE_FILTER_STATE={query:'',tags:new Set(),lastVisible:[]};
+function hexToRgb(hex){const m=String(hex||'').match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i); return m?{r:parseInt(m[1],16),g:parseInt(m[2],16),b:parseInt(m[3],16)}:null;}
+function hexToRgba(hex,a=1){const c=hexToRgb(hex); a=Math.max(0,Math.min(1,Number(a)||0)); return c?`rgba(${c.r},${c.g},${c.b},${a.toFixed(3)})`:String(hex||'rgba(0,0,0,'+a+')');}
+function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0));}
+function luma(hex){const c=hexToRgb(hex); return c?0.2126*c.r+0.7152*c.g+0.0722*c.b:90;}
+function accentFamily(hex){const c=hexToRgb(hex); if(!c) return 'neutral'; const max=Math.max(c.r,c.g,c.b), min=Math.min(c.r,c.g,c.b); if(max-min<28) return 'neutral'; if(c.b===max&&c.g>120) return 'cyan'; if(c.b===max) return 'blue'; if(c.g===max&&c.r>150) return 'lime'; if(c.g===max) return 'green'; if(c.r===max&&c.b>140) return 'purple'; if(c.r===max&&c.g>120) return 'warm'; if(c.r===max) return 'red'; return 'neutral';}
+function paletteSearchBlob(key,p){return [key,p.name,...Object.keys(p.vars),...Object.values(p.vars)].join(' ').toLowerCase();}
+function autoPaletteTags(key,p){
+  const blob=paletteSearchBlob(key,p), v=p.vars, tags=new Set(['theme']);
+  const bgL=luma(v.bg), panelL=luma(v.panel), textL=luma(v.text), accent=accentFamily(v.accent);
+  if(bgL<45) tags.add('dark'); else if(bgL>180) tags.add('light'); else tags.add('mid');
+  if(Math.abs(luma(v.text)-panelL)>135) tags.add('readable');
+  if(v.bgImage){tags.add('gradient'); tags.add('atmosphere');}
+  if(v.atmoImage){tags.add('mist'); tags.add('cloud'); tags.add('atmosphere');}
+  if(/radial-gradient|white|255,255,255/.test(String(v.bgImage||''))) tags.add('stars');
+  if(/linear-gradient\(180deg/.test(String(v.bgImage||''))||/horizon|dawn|dusk|sunset|moonrise|evening|ridge|ocean|lake|coast|lagoon/.test(blob)) tags.add('horizon');
+  if(/aurora/.test(blob)) tags.add('aurora');
+  if(/sun|sunrise|sunset|solar|golden|rays|ember|haze/.test(blob)) tags.add('sun');
+  if(/moon|moonrise|moonlit|eclipse/.test(blob)) tags.add('moon');
+  if(/fog|mist|haze|veil|nimbus|cloud|clouds|overcast/.test(blob)) tags.add('clouds');
+  if(/sky|cloud|storm|rain|glacier|snow|moon|dawn|dusk|sunset|twilight|evening|night|sunrise|nimbus|overcast|blue hour/.test(blob)) tags.add('sky');
+  if(/forest|pine|fern|moss|meadow|canopy|creek|garden|valley|nature|lake|ocean|coast|lagoon|alpine|desert|canyon|field/.test(blob)) tags.add('nature');
+  if(/ocean|lake|coast|lagoon|rain|blue|glacier/.test(blob)) tags.add('water');
+  if(/paper|document|scanner|scan|lab|tool|light mode/.test(blob)) tags.add('tool');
+  if(/console|terminal|hacker|amoled/.test(blob)) tags.add('console');
+  if(/warm|paper|amber|copper|sunset|ember|peach|sepia|desert|canyon|sun|golden|red sun/.test(blob)) tags.add('warm');
+  if(/blue|cyan|glacier|storm|rain|ocean|lake|sky/.test(blob)) tags.add('cool');
+  if(/green|emerald|forest|moss|fern|pine|canopy|meadow/.test(blob)) tags.add('green');
+  if(/violet|purple|plum|lavender|cosmic/.test(blob)) tags.add('purple');
+  if(/calm|mist|fog|soft|cloudy|snow|dawn|light|morning|silver|pale/.test(blob)) tags.add('calm');
+  if(/drama|ember|cosmic|aurora|stars|dusk|horizon|moon|eclipse|storm|black sunset/.test(blob)||tags.has('stars')) tags.add('dramatic');
+  tags.add(accent); tags.add(bgL<45?'low-glow':bgL>180?'paper':'balanced');
+  return [...tags].filter(Boolean).sort();
+}
+function paletteTags(key,p){if(!p.tags) p.tags=autoPaletteTags(key,p); return p.tags;}
+function allPaletteTags(){const counts={}; for(const [key,p] of Object.entries(EXPERIMENT_PALETTES)) for(const t of paletteTags(key,p)) counts[t]=(counts[t]||0)+1; return Object.keys(counts).sort((a,b)=>(counts[b]-counts[a])||a.localeCompare(b)).map(tag=>({tag,count:counts[tag]}));}
+function paletteMatchesFilter(key,p){const q=PALETTE_FILTER_STATE.query.trim().toLowerCase(), tags=paletteTags(key,p); if(q&&!paletteSearchBlob(key,p).includes(q)&&!tags.some(t=>t.includes(q))) return false; for(const t of PALETTE_FILTER_STATE.tags) if(!tags.includes(t)) return false; return true;}
+function renderPaletteTags(){const bank=$('paletteTagBank'); if(!bank) return; bank.innerHTML=''; const priority=['stars','sun','moon','clouds','mist','horizon','gradient','aurora','atmosphere','dark','light','nature','sky','water','warm','cool','green','blue','purple','calm','dramatic','readable','tool','console']; const all=allPaletteTags(); const ordered=[...priority.filter(t=>all.some(x=>x.tag===t)),...all.map(x=>x.tag).filter(t=>!priority.includes(t))]; for(const tag of ordered){const count=all.find(x=>x.tag===tag)?.count||0; const chip=document.createElement('button'); chip.type='button'; chip.className='tagChip'+(PALETTE_FILTER_STATE.tags.has(tag)?' active':''); chip.textContent=`${tag} ${count}`; chip.title='Filter by '+tag; chip.onclick=()=>{PALETTE_FILTER_STATE.tags.has(tag)?PALETTE_FILTER_STATE.tags.delete(tag):PALETTE_FILTER_STATE.tags.add(tag); renderPaletteGrid();}; bank.appendChild(chip);}}
+function describeThemeChoice(key,why=''){const p=EXPERIMENT_PALETTES[key]; const msg=`${p?.name||key}\nTags: ${paletteTags(key,p).join(', ')}${why?'\nWhy: '+why:''}`; if($('paletteDecisionBox')) $('paletteDecisionBox').textContent=msg; console.log('theme choice',msg);}
+function scorePalette(key,mode='smart'){const p=EXPERIMENT_PALETTES[key], tags=paletteTags(key,p); let s=0; const has=t=>tags.includes(t); if(mode==='smart'){['readable','dark','gradient','horizon','nature'].forEach(t=>s+=has(t)?2:0); s+=has('stars')?1:0; s-=has('light')?1:0;} if(mode==='symmetric'){['calm','readable','balanced','nature','tool'].forEach(t=>s+=has(t)?2:0); ['dramatic','stars'].forEach(t=>s-=has(t)?1:0);} if(mode==='drama'){['stars','horizon','gradient','dramatic','sky','aurora'].forEach(t=>s+=has(t)?2:0);} if(mode==='readable'){['readable','tool','dark','balanced'].forEach(t=>s+=has(t)?2:0); ['dramatic','stars'].forEach(t=>s-=has(t)?1:0);}
+  if(mode==='mist'){['clouds','mist','calm','light','readable','sky'].forEach(t=>s+=has(t)?2:0); ['dramatic'].forEach(t=>s-=has(t)?1:0);}
+  if(mode==='sun'){['sun','horizon','gradient','warm','sky'].forEach(t=>s+=has(t)?2:0); s+=has('clouds')?1:0;} if(mode==='moonstars'){['moon','stars','sky','dark','gradient'].forEach(t=>s+=has(t)?2:0); s+=has('mist')?1:0;} if(mode==='aurora'){['aurora','green','blue','stars','moon','mist','sky'].forEach(t=>s+=has(t)?2:0);}
+  return s+Math.random()*0.001;}
+function choosePalette(mode='smart'){const keys=PALETTE_FILTER_STATE.lastVisible.length?PALETTE_FILTER_STATE.lastVisible:Object.keys(EXPERIMENT_PALETTES); if(!keys.length) return; const best=[...keys].sort((a,b)=>scorePalette(b,mode)-scorePalette(a,mode))[0]; applyExperimentPalette(best,true); describeThemeChoice(best,mode+' decider over '+keys.length+' visible themes');}
+function randomPaletteFromFilter(){const keys=PALETTE_FILTER_STATE.lastVisible.length?PALETTE_FILTER_STATE.lastVisible:Object.keys(EXPERIMENT_PALETTES); if(!keys.length) return; const key=keys[Math.floor(Math.random()*keys.length)]; applyExperimentPalette(key,true); describeThemeChoice(key,'random from current filter');}
+
+function paletteToCss(p){return ':root {\n'+Object.entries(p.vars).map(([k,v])=>`  --${k}: ${v};`).join('\n')+'\n}'}
+function setPaletteBox(key){const p=EXPERIMENT_PALETTES[key]||EXPERIMENT_PALETTES[DEFAULT_EXPERIMENT_PALETTE]; if($('paletteCssBox')) $('paletteCssBox').value=paletteToCss(p); if($('activePaletteName')) $('activePaletteName').textContent=p.name;}
+function getThemeComposerValues(){return {intensity:clamp01($('themeIntensity')?.value??0.78),readability:clamp01($('themeReadability')?.value??0.82),detail:clamp01($('themeDetail')?.value??0.68)};}
+function setThemeComposerValues(next={},save=true){['Intensity','Readability','Detail'].forEach(name=>{const key=name.toLowerCase(), el=$('theme'+name), val=$('theme'+name+'Val'); if(el&&next[key]!=null) el.value=String(next[key]); if(val&&el) val.textContent=Number(el.value).toFixed(2);}); if(save) localStorage.setItem(THEME_COMPOSITOR_KEY,JSON.stringify(getThemeComposerValues())); applyThemeCompositorModifiers(EXPERIMENT_PALETTES[CURRENT_EXPERIMENT_PALETTE]);}
+function loadThemeComposerValues(){try{const v=JSON.parse(localStorage.getItem(THEME_COMPOSITOR_KEY)||'{}'); setThemeComposerValues({intensity:v.intensity??0.78,readability:v.readability??0.82,detail:v.detail??0.68},false);}catch(_e){setThemeComposerValues({intensity:0.78,readability:0.82,detail:0.68},false);}}
+function applyThemeCompositorModifiers(p=EXPERIMENT_PALETTES[DEFAULT_EXPERIMENT_PALETTE]){if(!p) return; const cfg=getThemeComposerValues(), tags=paletteTags(CURRENT_EXPERIMENT_PALETTE,p); const root=document.documentElement; for(const k of THEME_RUNTIME_VAR_KEYS) root.style.removeProperty('--'+k); const sceneHeavy=tags.includes('stars')||tags.includes('aurora')||tags.includes('horizon')||tags.includes('atmosphere'); const panelA=Math.min(.97,.62+cfg.readability*.30+(sceneHeavy?.06:0)); const panel2A=Math.min(.96,.54+cfg.readability*.32+(sceneHeavy?.06:0)); const btnA=Math.min(.94,.58+cfg.readability*.24); root.style.setProperty('--panelGlass',hexToRgba(p.vars.panel,panelA)); root.style.setProperty('--panel2Glass',hexToRgba(p.vars.panel2,panel2A)); root.style.setProperty('--buttonGlass',hexToRgba('#0b1220',btnA)); root.style.setProperty('--panelBlur',Math.round(2+10*(1-cfg.readability)+7*cfg.detail)+'px'); root.style.setProperty('--uiScrimOpacity',String(Math.max(.03, cfg.intensity*(sceneHeavy?.20:.10)-cfg.readability*.05).toFixed(3))); root.style.setProperty('--themeGlow', cfg.intensity>.72&&cfg.detail>.45?`0 0 ${Math.round(10+18*cfg.intensity)}px ${hexToRgba(p.vars.accent,.12+.14*cfg.detail)}`:'0 0 0 transparent'); root.style.setProperty('--cardShadow',`0 ${Math.round(6+12*cfg.detail)}px ${Math.round(18+34*cfg.detail)}px rgba(0,0,0,${(.18+.25*cfg.intensity).toFixed(2)})`); const baseAtmo=parseFloat(p.vars.atmoOpacity||0); if(p.vars.atmoImage) root.style.setProperty('--atmoOpacity',String(Math.min(1,baseAtmo*(.35+cfg.intensity*.85)*(.55+cfg.detail*.65)).toFixed(3))); if($('themeComposerReadout')) $('themeComposerReadout').textContent=`Applied ${p.name}\nintensity ${cfg.intensity.toFixed(2)} · readability ${cfg.readability.toFixed(2)} · detail ${cfg.detail.toFixed(2)}\nscene tags: ${tags.filter(t=>['stars','aurora','moon','sun','mist','clouds','horizon','sky','nature','atmosphere'].includes(t)).join(', ')||'simple'}`;}
+function applyExperimentPalette(key,save=true){const p=EXPERIMENT_PALETTES[key]||EXPERIMENT_PALETTES[DEFAULT_EXPERIMENT_PALETTE]; CURRENT_EXPERIMENT_PALETTE=EXPERIMENT_PALETTES[key]?key:DEFAULT_EXPERIMENT_PALETTE; for(const k of EXPERIMENT_PALETTE_VAR_KEYS) document.documentElement.style.removeProperty('--'+k); for(const [k,v] of Object.entries(p.vars)) document.documentElement.style.setProperty('--'+k,v); setPaletteBox(CURRENT_EXPERIMENT_PALETTE); applyThemeCompositorModifiers(p); if(save) localStorage.setItem(EXPERIMENT_PALETTE_KEY,CURRENT_EXPERIMENT_PALETTE);}
+function resetExperimentPalette(){localStorage.removeItem(EXPERIMENT_PALETTE_KEY); for(const k of [...EXPERIMENT_PALETTE_VAR_KEYS,...THEME_RUNTIME_VAR_KEYS]) document.documentElement.style.removeProperty('--'+k); setThemeComposerValues({intensity:.78,readability:.82,detail:.68},true); applyExperimentPalette(DEFAULT_EXPERIMENT_PALETTE,false); describeThemeChoice(DEFAULT_EXPERIMENT_PALETTE,'reset default');}
+function makeFactoryTheme(kind='aurora'){const serial=Object.keys(EXPERIMENT_PALETTES).filter(k=>k.startsWith('factory')).length+1; const starA='radial-gradient(circle at 12% 14%, rgba(255,255,255,.96) 0 1px, transparent 1.6px), radial-gradient(circle at 36% 26%, rgba(255,255,255,.78) 0 1px, transparent 1.5px), radial-gradient(circle at 72% 18%, rgba(255,255,255,.88) 0 1px, transparent 1.5px), radial-gradient(circle at 88% 42%, rgba(255,255,255,.62) 0 1px, transparent 1.5px)'; const moon='radial-gradient(circle at 76% 18%, rgba(245,250,255,.92) 0 34px, rgba(245,250,255,.18) 35px 92px, transparent 138px)'; const aurora='linear-gradient(108deg, transparent 10%, rgba(44,255,150,.24) 28%, rgba(93,224,255,.18) 43%, rgba(124,92,246,.18) 58%, transparent 80%)'; const mist='radial-gradient(ellipse at 38% 38%, rgba(255,255,255,.12) 0 22%, transparent 56%), radial-gradient(ellipse at 72% 62%, rgba(120,255,220,.10) 0 18%, transparent 48%)'; const skyAurora={name:`Factory ${serial}. Blue-green aurora moonfield`,vars:{bg:'#04111d',panel:'#0b1e2b',panel2:'#143247',text:'#eefbff',muted:'#9eb7c6',line:'#31586e',accent:'#5eead4',bad:'#fb7185',ok:'#86efac',warn:'#fde047',bgImage:[moon,starA,aurora,'linear-gradient(180deg,#04111d 0%,#0d2e50 54%,#176579 78%,#102c35 100%)'].join(', '),bgSize:'100% 100%,220px 220px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,screen,normal',atmoImage:mist,atmoSize:'100% 100%,100% 100%',atmoOpacity:'.82',atmoFilter:'blur(13px)',atmoBlend:'screen'}}; const skyBlend={name:`Factory ${serial}. Green-blue open sky mix`,vars:{bg:'#071923',panel:'#102631',panel2:'#183b46',text:'#edfffb',muted:'#9bb9bb',line:'#365d64',accent:'#42e3c4',bad:'#f87171',ok:'#86efac',warn:'#fcd34d',bgImage:[starA,'linear-gradient(112deg, transparent 16%, rgba(54,255,160,.18) 35%, rgba(80,180,255,.16) 58%, transparent 82%)','linear-gradient(180deg,#08243e 0%,#0b4d66 48%,#42a7aa 77%,#b8d8c8 92%,#10251f 100%)'].join(', '),bgSize:'260px 260px,100% 100%,100% 100%',bgAttachment:'fixed',bgBlend:'screen,screen,normal',atmoImage:'radial-gradient(ellipse at 54% 32%, rgba(255,255,255,.10) 0 24%, transparent 56%)',atmoSize:'100% 100%',atmoOpacity:'.52',atmoFilter:'blur(15px)',atmoBlend:'screen'}}; const theme=kind==='skyBlend'?skyBlend:skyAurora; const key='factoryTheme'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); EXPERIMENT_PALETTES[key]=theme; renderPaletteGrid(); applyExperimentPalette(key,false); describeThemeChoice(key,'factory-built composed scene');}
+async function copyTextSafe(text){try{await navigator.clipboard.writeText(text); return true}catch(_e){return false}}
+function renderPaletteGrid(){
+  const grid=$('paletteGrid'); if(!grid) return; grid.innerHTML=''; renderPaletteTags();
+  const entries=Object.entries(EXPERIMENT_PALETTES).filter(([key,p])=>paletteMatchesFilter(key,p));
+  PALETTE_FILTER_STATE.lastVisible=entries.map(([key])=>key);
+  if($('paletteFilterSummary')) $('paletteFilterSummary').textContent=`${entries.length}/${Object.keys(EXPERIMENT_PALETTES).length} themes`+(PALETTE_FILTER_STATE.tags.size?` · ${[...PALETTE_FILTER_STATE.tags].join(' + ')}`:'');
+  for(const [key,p] of entries){
+    const tags=paletteTags(key,p);
+    const btn=document.createElement('button'); btn.className='paletteBtn'; btn.type='button'; btn.title='Apply '+p.name+' · '+tags.join(', ');
+    const previewLayers=[p.vars.atmoImage,p.vars.bgImage||'linear-gradient(135deg,'+p.vars.bg+','+p.vars.panel2+')'].filter(Boolean).join(', ');
+    const previewSize=[p.vars.atmoSize,p.vars.bgSize||'100% 100%'].filter(Boolean).join(', ');
+    const previewBlend=[p.vars.atmoBlend,p.vars.bgBlend||'normal'].filter(Boolean).join(', ');
+    const previewStyle=`--previewBg:${p.vars.bg};--previewImage:${previewLayers};--previewSize:${previewSize};--previewBlend:${previewBlend}`;
+    btn.innerHTML=`<div class="paletteName">${p.name}</div><div class="palettePreview" style="${previewStyle}"></div>`+['bg','panel','panel2','text','accent','ok','warn','bad','line','muted'].map(k=>`<span style="background:${p.vars[k]}" title="--${k}: ${p.vars[k]}"></span>`).join('')+`<div class="paletteTags">${tags.slice(0,8).map(t=>`<em>${t}</em>`).join('')}</div>`;
+    btn.onclick=()=>{applyExperimentPalette(key,true); describeThemeChoice(key,'manual pick')}; grid.appendChild(btn)
+  }
+  if(!entries.length){const empty=document.createElement('div'); empty.className='small'; empty.textContent='No themes match. Clear tags or search.'; grid.appendChild(empty)}
+}
+function formatConsoleArg(v){
+  try{
+    if(v instanceof Error) return v.stack||v.message||String(v);
+    if(typeof v==='string') return v;
+    if(typeof v==='undefined') return 'undefined';
+    if(typeof v==='function') return v.toString();
+    return JSON.stringify(v,(k,val)=>{if(val instanceof Map)return Object.fromEntries(val); if(val instanceof Set)return [...val]; if(val instanceof ArrayBuffer)return `[ArrayBuffer ${val.byteLength} bytes]`; if(ArrayBuffer.isView(val))return `[${val.constructor.name} ${val.byteLength} bytes]`; return val},2);
+  }catch(_e){return String(v)}
+}
+function pushExperimentConsole(level,args){
+  const line=`[${new Date().toLocaleTimeString()}] ${String(level).toUpperCase()} `+[...args].map(formatConsoleArg).join(' ');
+  expConsole.entries.push(line);
+  if(expConsole.entries.length>500) expConsole.entries.splice(0,expConsole.entries.length-500);
+  renderExperimentConsole();
+}
+function renderExperimentConsole(){const out=$('expConsoleOutput'); if(!out) return; out.value=expConsole.entries.join('\n'); out.scrollTop=out.scrollHeight;}
+function installExperimentConsole(){
+  if(expConsole.installed) return; expConsole.installed=true;
+  ['log','info','warn','error','debug'].forEach(method=>{
+    const original=(console[method]||console.log).bind(console); expConsole.originals[method]=original;
+    console[method]=(...args)=>{try{pushExperimentConsole(method,args)}catch(_e){} original(...args)};
+  });
+  window.addEventListener('error',e=>pushExperimentConsole('page-error',[e.message,e.filename+':'+e.lineno+':'+e.colno,e.error]));
+  window.addEventListener('unhandledrejection',e=>pushExperimentConsole('unhandled-rejection',[e.reason]));
+}
+async function runExperimentEval(){
+  const code=$('expConsoleInput')?.value||''; if(!code.trim()) return;
+  pushExperimentConsole('eval',['> '+code]);
+  try{const result=await eval(`(async()=>{\n${code}\n})()`); if(typeof result!=='undefined') console.log('eval result:', result);}
+  catch(err){console.error('eval error:',err)}
+}
+
+function setFloatingMenuOpen(panelId,fabId,open){
+  const panel=$(panelId), fab=$(fabId);
+  if(!panel||!fab) return;
+  panel.classList.toggle('open',!!open);
+  panel.setAttribute('aria-hidden',open?'false':'true');
+  fab.setAttribute('aria-expanded',open?'true':'false');
+  if(open){setTimeout(()=>{const first=panel.querySelector('summary,button,textarea,select,input'); first?.focus?.({preventScroll:true});},0)}
+}
+function setExperimentMenuOpen(open){
+  if(open) setSettingsMenuOpen(false);
+  setFloatingMenuOpen('experimentPanel','experimentFab',open);
+}
+function setSettingsMenuOpen(open){
+  if(open) setFloatingMenuOpen('experimentPanel','experimentFab',false);
+  setFloatingMenuOpen('settingsPanel','settingsFab',open);
+}
+function toggleExperimentMenu(){const panel=$('experimentPanel'); setExperimentMenuOpen(!panel?.classList.contains('open'));}
+function toggleSettingsMenu(){const panel=$('settingsPanel'); setSettingsMenuOpen(!panel?.classList.contains('open'));}
+function installFloatingMenus(){
+  const expFab=$('experimentFab'), expPanel=$('experimentPanel'), expClose=$('closeExperimentPanel');
+  const setFab=$('settingsFab'), setPanel=$('settingsPanel'), setClose=$('closeSettingsPanel'), openSettings=$('openSettingsBtn');
+  expFab?.addEventListener('click',e=>{e.stopPropagation(); toggleExperimentMenu();});
+  setFab?.addEventListener('click',e=>{e.stopPropagation(); toggleSettingsMenu();});
+  openSettings?.addEventListener('click',e=>{e.stopPropagation(); setSettingsMenuOpen(true);});
+  expClose?.addEventListener('click',()=>setExperimentMenuOpen(false));
+  setClose?.addEventListener('click',()=>setSettingsMenuOpen(false));
+  expPanel?.addEventListener('click',e=>e.stopPropagation());
+  setPanel?.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',e=>{
+    if(expPanel?.classList.contains('open')&&!expPanel.contains(e.target)&&!expFab?.contains(e.target)) setExperimentMenuOpen(false);
+    if(setPanel?.classList.contains('open')&&!setPanel.contains(e.target)&&!setFab?.contains(e.target)&&!openSettings?.contains(e.target)) setSettingsMenuOpen(false);
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){setExperimentMenuOpen(false);setSettingsMenuOpen(false);}});
+}
+function installExperimentTools(){
+  installFloatingMenus(); installExperimentConsole(); renderPaletteGrid();
+  const stored=localStorage.getItem(EXPERIMENT_PALETTE_KEY); if(stored&&EXPERIMENT_PALETTES[stored]) applyExperimentPalette(stored,false); else setPaletteBox(DEFAULT_EXPERIMENT_PALETTE);
+  $('resetPaletteBtn')?.addEventListener('click',resetExperimentPalette);
+  $('copyPaletteCssBtn')?.addEventListener('click',async()=>{const ok=await copyTextSafe($('paletteCssBox').value); console.log(ok?'palette css copied':'clipboard write failed; select/copy palette css manually')});
+  $('paletteSearch')?.addEventListener('input',e=>{PALETTE_FILTER_STATE.query=e.target.value||''; renderPaletteGrid();});
+  $('clearPaletteFiltersBtn')?.addEventListener('click',()=>{PALETTE_FILTER_STATE.query=''; PALETTE_FILTER_STATE.tags.clear(); if($('paletteSearch')) $('paletteSearch').value=''; renderPaletteGrid(); if($('paletteDecisionBox')) $('paletteDecisionBox').textContent='Theme filters cleared.';});
+  $('paletteRandomBtn')?.addEventListener('click',randomPaletteFromFilter);
+  $('paletteDeciderBtn')?.addEventListener('click',()=>choosePalette('smart'));
+  $('paletteSymmetricBtn')?.addEventListener('click',()=>choosePalette('symmetric'));
+  $('paletteDramaBtn')?.addEventListener('click',()=>choosePalette('drama'));
+  $('paletteReadableBtn')?.addEventListener('click',()=>choosePalette('readable'));
+  $('paletteMistBtn')?.addEventListener('click',()=>choosePalette('mist'));
+  $('paletteSunBtn')?.addEventListener('click',()=>choosePalette('sun'));
+  $('themeBuildAuroraBtn')?.addEventListener('click',()=>makeFactoryTheme('aurora'));
+  $('themeBuildSkyBlendBtn')?.addEventListener('click',()=>makeFactoryTheme('skyBlend'));
+  $('themeLessBusyBtn')?.addEventListener('click',()=>setThemeComposerValues({intensity:.42,readability:.92,detail:.32},true));
+  $('themeMoreAtmosphereBtn')?.addEventListener('click',()=>setThemeComposerValues({intensity:.94,readability:.74,detail:.9},true));
+  $('themeMoonStarsBtn')?.addEventListener('click',()=>choosePalette('moonstars'));
+  $('themeReadableApplyBtn')?.addEventListener('click',()=>setThemeComposerValues({readability:.96,detail:Math.min(getThemeComposerValues().detail,.58)},true));
+  ['themeIntensity','themeReadability','themeDetail'].forEach(id=>$(id)?.addEventListener('input',()=>setThemeComposerValues({},true)));
+  loadThemeComposerValues();
+  $('runEvalBtn')?.addEventListener('click',runExperimentEval);
+  $('clearConsoleBtn')?.addEventListener('click',()=>{expConsole.entries=[]; renderExperimentConsole();});
+  $('copyConsoleBtn')?.addEventListener('click',async()=>{const ok=await copyTextSafe(expConsole.entries.join('\n')); console.log(ok?'console copied':'clipboard write failed; select/copy console manually')});
+  $('logStateBtn')?.addEventListener('click',()=>console.log('app state snapshot',{pages:state.pages.length,sources:state.sources.size,selectedPageId:state.selectedPageId,lastOutput:cache.lastOutput?{name:cache.lastOutput.name,bytes:cache.lastOutput.bytes?.byteLength,type:cache.lastOutput.type}:null,settings:settingsFromUi()}));
+  console.log('Experiment console installed.');
+}
+
+const DEFAULT_SETTINGS={exportMode:'pdf',exportScope:'all',outputName:'merged-composed.pdf',fixExtension:true,pageSizeMode:'a4',quality:'0.90',imageFormat:'jpeg',imageBatchMode:'combined',imageGridCols:'auto',rasterLongSide:'2200',imagesPerPdfPage:'1',pdfBackend:'auto',imageEmbedMode:'preserve',insertMode:'append',pdfRange:'all',hotTargetCount:'0',hotAutoPdf:false,mailTo:'',mailSubject:'Scanned PDF',autosaveEnabled:true,autoloadRecovery:true,clearRecoveryAfterExport:true,autosaveMaxMb:'100',qpdfModuleUrl:'https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/qpdf.js',qpdfWasmUrl:'https://cdn.jsdelivr.net/npm/@neslinesli93/qpdf-wasm@0.3.0/dist/qpdf.wasm',quickActions:{counts:{rotateRight:1,crop:1,downloadJpg:1},first:'rotateRight',last:'downloadJpg'}};
+const $ = id => document.getElementById(id);
+const fileInput=$('fileInput'), cameraInput=$('cameraInput'), drop=$('drop'), pageList=$('pageList'), statusBox=$('status');
+const hotVideo=$('hotVideo'), hotCanvas=$('hotCanvas'), hotStatus=$('hotStatus');
+fileInput.onchange = e => addFiles([...e.target.files]);
+cameraInput.onchange = e => addFiles([...e.target.files]);
+$('exportBtn').onclick = exportOutput;
+$('startHotCamera').onclick = startHotCamera;
+$('stopHotCamera').onclick = stopHotCamera;
+$('captureHotPhoto').onclick = captureHotPhoto;
+$('resetHotCount').onclick = () => { cache.hotCaptured=0; updateHotStatus(); scheduleRecoverySave(); };
+$('quickPdfDownload').onclick = quickPdfDownload;
+$('nativeSharePdf').onclick = nativeSharePdf;
+$('nativeShareCurrent').onclick = nativeShareCurrent;
+$('openMailDraft').onclick = openMailDraft;
+$('clearBtn').onclick = clearAll;
+$('saveSessionBtn').onclick = saveSession;
+$('loadSessionBtn').onclick = loadSession;
+$('clearSavedBtn').onclick = clearSavedSession;
+$('exportMode').onchange = updateExtensionHint;
+$('exportScope').onchange = updateExtensionHint;
+$('imageFormat').onchange = updateExtensionHint;
+$('imageBatchMode').onchange = updateExtensionHint;
+$('imageGridCols').onchange = updateExtensionHint;
+$('pdfBackend').onchange = updateExtensionHint;
+$('imageEmbedMode').onchange = updateExtensionHint;
+$('outputName').oninput = updateExtensionHint;
+$('fixExtension').onchange = updateExtensionHint;
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot')}));
+drop.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
+function uid(prefix){return prefix+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4)}
+function log(msg){statusBox.textContent = msg}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function cleanName(s){return (String(s||'output').trim()||'output').replace(/[\\/:*?"<>|\x00-\x1F]/g,'_').slice(0,180)}
+function stripKnownExt(name){return name.replace(/\.(pdf|zip|jpe?g|png|webp|gif|bmp|avif)$/i,'')}
+function ensureExt(name, ext){name=cleanName(name); if(!$('fixExtension').checked) return name; return stripKnownExt(name)+ext}
+function imageExt(){return ({jpeg:'.jpg',png:'.png',webp:'.webp'})[$('imageFormat').value]||'.jpg'}
+function imageMime(){return ({jpeg:'image/jpeg',png:'image/png',webp:'image/webp'})[$('imageFormat').value]||'image/jpeg'}
+function exportPages(){if($('exportScope').value==='selected'&&state.selectedPageId){const p=state.pages.find(x=>x.id===state.selectedPageId);return p?[p]:[]}return state.pages}
+function currentOutputSignature(pages=exportPages()){return JSON.stringify({mode:$('exportMode').value,scope:$('exportScope').value,name:$('outputName').value,fix:$('fixExtension').checked,pageSize:$('pageSizeMode').value,quality:$('quality').value,imageFormat:$('imageFormat').value,imageBatchMode:$('imageBatchMode').value,imageGridCols:$('imageGridCols').value,rasterLongSide:$('rasterLongSide').value,imagesPerPdfPage:$('imagesPerPdfPage').value,pdfBackend:$('pdfBackend').value,imageEmbedMode:$('imageEmbedMode').value,protectOutput:!!$('outputPdfPassword').value,pages:pages.map(p=>[p.id,p.kind,p.sourceId,p.pdfPageIndex,p.edits])})}
+function selectedIndex(){return state.pages.findIndex(p=>p.id===state.selectedPageId)}
+function byteView(bytes){return bytes instanceof Uint8Array?bytes:new Uint8Array(bytes)}
+function sourceBytes(src){return byteView(src.bytes)}
+function pageHasImageEdits(page){
+  const e=page.edits||{};
+  return !!(e.crop || (e.rotate||0)%360 || Math.abs((e.brightness??1)-1)>.001 || Math.abs((e.contrast??1)-1)>.001 || e.grayscale);
+}
+function pageHasPdfEdits(page){return !!((page.edits?.rotate||0)%360)}
+function canEmbedOriginalImage(page){
+  if($('imageEmbedMode').value!=='preserve' || page.kind!=='image-page' || pageHasImageEdits(page)) return false;
+  const src=state.sources.get(page.sourceId), mime=(src?.mime||'').toLowerCase();
+  return mime==='image/jpeg' || mime==='image/jpg' || mime==='image/png';
+}
+function isExactWholePdfCandidate(pages){
+  if($('exportMode').value!=='pdf' || $('outputPdfPassword').value || $('ownerPdfPassword').value || pages.length<1) return null;
+  const first=pages[0]; if(first.kind!=='pdf-page' || pageHasPdfEdits(first)) return null;
+  const src=state.sources.get(first.sourceId); if(!src || src.kind!=='pdf' || src.decrypted || pages.length!==src.pageCount) return null;
+  for(let i=0;i<pages.length;i++){
+    const p=pages[i];
+    if(p.kind!=='pdf-page' || p.sourceId!==src.id || p.pdfPageIndex!==i || pageHasPdfEdits(p)) return null;
+  }
+  return src;
+}
+function findWholePdfSegment(pages,start){
+  const p=pages[start]; if(!p || p.kind!=='pdf-page' || pageHasPdfEdits(p)) return null;
+  const src=state.sources.get(p.sourceId); if(!src || src.kind!=='pdf' || src.decrypted) return null;
+  for(let k=0;k<src.pageCount;k++){
+    const q=pages[start+k];
+    if(!q || q.kind!=='pdf-page' || q.sourceId!==src.id || q.pdfPageIndex!==k || pageHasPdfEdits(q)) return null;
+  }
+  return {src,count:src.pageCount};
+}
+function describeOutputRoute(pages=exportPages()){
+  if(!pages.length) return 'Route planner: no pages yet.';
+  if($('exportMode').value!=='pdf') return `Route planner: image output; PDF preservation not involved; ${pages.length} page(s) raster/exported as image output.`;
+  const exact=isExactWholePdfCandidate(pages);
+  if(exact) return `Route planner: EXACT PDF copy/rename possible for ${exact.name}; original bytes can be downloaded unchanged.`;
+  const backend=$('pdfBackend').value;
+  let whole=0,img=0,otherPdf=0;
+  for(let i=0;i<pages.length;i++){
+    const seg=findWholePdfSegment(pages,i);
+    if(seg){whole++; i+=seg.count-1; continue;}
+    if(pages[i].kind==='image-page') img++; else otherPdf++;
+  }
+  const imageMode=$('imageEmbedMode').value==='preserve'?'untouched JPEG/PNG original bytes embedded when possible':'images recompressed using current quality';
+  if(backend==='pdflib') return `Route planner: compatibility pdf-lib rebuild; ${imageMode}; advanced PDF data may be lost.`;
+  if(otherPdf===0 && whole>0) return `Route planner: qpdf merge candidate: ${whole} whole untouched PDF segment(s) + ${img} image page(s); ${imageMode}. Fallback depends on backend mode.`;
+  return `Route planner: mixed/partial PDF route; fallback pdf-lib copy needed for ${otherPdf} partial/rotated PDF page(s); ${imageMode}.`;
+}
+function isPdf(file){return file.type==='application/pdf'||/\.pdf$/i.test(file.name)}
+function isImage(file){return file.type.startsWith('image/')||/\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(file.name)}
+function updateExtensionHint(){
+  const pages=exportPages(), mode=$('exportMode').value, ext=imageExt();
+  let finalName, note='';
+  if(mode==='pdf') finalName=ensureExt($('outputName').value,'.pdf');
+  else if(pages.length<=1){ finalName=ensureExt($('outputName').value,ext); note='selected/single page image'; }
+  else if($('imageBatchMode').value==='combined'){ finalName=ensureExt($('outputName').value,ext); note='one combined grid image from '+pages.length+' page(s)'; }
+  else if($('imageBatchMode').value==='zip'){ finalName=ensureExt($('outputName').value,'.zip'); note='ZIP containing '+pages.length+' individual '+ext.slice(1).toUpperCase()+' file(s); JSZip loads only when used'; }
+  else { finalName=stripKnownExt(cleanName($('outputName').value))+`-page-001${ext}, ...`; note='individual page downloads directly, no ZIP'; }
+  $('extensionHint').textContent = `Will download: ${finalName}${note?' ('+note+')':''}`;
+  if($('routePlan')) $('routePlan').textContent = describeOutputRoute(pages);
+}
+function updateHotStatus(extra=''){
+  const target=+$('hotTargetCount').value||0;
+  const camera=cache.hotStream?'camera on':'camera off';
+  const auto=target>0?`optional auto at ${target} capture(s)`:'no auto target';
+  hotStatus.textContent = `Fast path: ${camera}; captured ${cache.hotCaptured} page(s) this run; ${auto}. ${extra}`.trim();
+}
+async function startHotCamera(){
+  if(!navigator.mediaDevices?.getUserMedia){alert('Live camera needs a browser with mediaDevices.getUserMedia, usually on HTTPS. Use Take photo fallback above.'); updateHotStatus('Live camera API unavailable.'); return;}
+  try{
+    stopHotCamera(false);
+    const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1800},height:{ideal:2400}}});
+    cache.hotStream=stream;
+    hotVideo.srcObject=stream;
+    await hotVideo.play();
+    updateHotStatus('Ready: point at a page and press Capture page.');
+  }catch(err){console.error(err);alert('Could not start camera: '+err.message);updateHotStatus('Camera failed: '+err.message)}
+}
+function stopHotCamera(writeStatus=true){
+  if(cache.hotStream){for(const track of cache.hotStream.getTracks()) track.stop(); cache.hotStream=null;}
+  if(hotVideo) hotVideo.srcObject=null;
+  if(writeStatus) updateHotStatus('Stopped.');
+}
+async function captureHotPhoto(){
+  if(!cache.hotStream){await startHotCamera(); if(!cache.hotStream) return;}
+  const w=hotVideo.videoWidth||1280, h=hotVideo.videoHeight||720;
+  hotCanvas.width=w; hotCanvas.height=h;
+  hotCanvas.getContext('2d').drawImage(hotVideo,0,0,w,h);
+  const quality=Math.max(.3,Math.min(1,+$('quality').value||.9));
+  const blob=await canvasToBlob(hotCanvas,'image/jpeg',quality);
+  cache.hotCaptured++;
+  const file=new File([blob],`scan-page-${String(cache.hotCaptured).padStart(3,'0')}.jpg`,{type:'image/jpeg'});
+  await addFiles([file]);
+  updateHotStatus('Captured page '+cache.hotCaptured+'.');
+  const target=+$('hotTargetCount').value||0;
+  if($('hotAutoPdf').checked && target>0 && cache.hotCaptured>=target){await quickPdfDownload();}
+}
+async function quickPdfDownload(){
+  const oldMode=$('exportMode').value;
+  $('exportMode').value='pdf'; updateExtensionHint();
+  try{await exportOutput();}
+  finally{$('exportMode').value=oldMode; updateExtensionHint();}
+}
+function shareSupportedPayload(out){
+  if(!navigator.share || typeof File==='undefined') return null;
+  const files=out.files?out.files.map(f=>new File([f.blob],f.name,{type:f.blob.type||'application/octet-stream'})):[new File([out.blob],out.name,{type:out.blob.type||'application/octet-stream'})];
+  const title=out.files?`${out.files.length} image files`:out.name;
+  const payload={files,title,text:`Generated file${files.length>1?'s':''}: ${files.map(f=>f.name).join(', ')}${$('mailTo').value?'\nTarget email: '+$('mailTo').value:''}`};
+  return navigator.canShare && !navigator.canShare(payload) ? null : payload;
+}
+async function nativeSharePdf(){
+  const oldMode=$('exportMode').value;
+  $('exportMode').value='pdf'; updateExtensionHint();
+  try{await shareCurrentOutput();}
+  finally{$('exportMode').value=oldMode; updateExtensionHint();}
+}
+async function nativeShareCurrent(){await shareCurrentOutput();}
+async function shareCurrentOutput(){
+  const pages=exportPages(); if(!pages.length){alert('Add/select at least one page first.');return}
+  $('nativeSharePdf').disabled=$('nativeShareCurrent').disabled=true;
+  try{
+    let out=cache.lastOutput;
+    if(!out || out.signature!==currentOutputSignature(pages)) out=await buildCurrentOutput(pages);
+    cache.lastOutput=out;
+    const payload=shareSupportedPayload(out);
+    if(payload){await navigator.share(payload); log('Shared '+out.name+' through native share sheet.'); return;}
+    if(out.files){for(const f of out.files) downloadBlob(f.blob,f.name);} else downloadBlob(out.blob,out.name);
+    alert('Native file share is not available in this browser/context. I downloaded the file(s) instead. You can attach manually, or open this page over HTTPS on Android/Chrome for best share support.');
+  }catch(err){console.error(err);alert('Share failed: '+err.message);log('Share failed: '+err.message)}
+  finally{$('nativeSharePdf').disabled=$('nativeShareCurrent').disabled=false;}
+}
+function openMailDraft(){
+  const to=encodeURIComponent($('mailTo').value.trim());
+  const subject=encodeURIComponent($('mailSubject').value||'Scanned PDF');
+  const body=encodeURIComponent('I generated the PDF locally in the browser. If the attachment is not already present, attach the downloaded/shared file manually.');
+  location.href=`mailto:${to}?subject=${subject}&body=${body}`;
+}
+async function addFiles(files){
+  if(!files.length)return;
+  cache.lastOutput=null;
+  const newPages=[];
+  log('Reading '+files.length+' file(s)...');
+  for(const file of files){
+    try{
+      const bytes = await file.arrayBuffer();
+      if(isImage(file)) newPages.push(...await makeImageSource(file, bytes));
+      else if(isPdf(file)) newPages.push(...await makePdfSource(file, bytes));
+      else log('Skipped unsupported file: '+file.name);
+    }catch(err){console.error(err);log('Failed to read '+file.name+': '+err.message)}
+  }
+  insertPages(newPages);
+  render();
+  log('Ready. Added '+newPages.length+' page(s).');
+}
+async function makeImageSource(file, bytes){
+  const sourceId=uid('src_'), name=file.name||'camera-image.jpg', mime=file.type||guessMime(name)||'image/jpeg';
+  // Decode once to verify browser support. Unsupported HEIC/AVIF etc will be caught here.
+  await loadImageFromBytes(bytes,mime);
+  state.sources.set(sourceId,{id:sourceId,kind:'image',name,mime,bytes});
+  return [{id:uid('pg_'),kind:'image-page',sourceId,edits:{rotate:0,crop:null,brightness:1,contrast:1,grayscale:false}}];
+}
+async function makePdfSource(file, bytes){
+  const sourceId=uid('src_');
+  const openPassword=$('inputPdfPassword').value;
+  let workingBytes=bytes, decrypted=false;
+  if(openPassword){ workingBytes=(await qpdfTransform(new Uint8Array(bytes), buildDecryptArgs(openPassword))).buffer; decrypted=true; }
+  const pdf=await PDFDocument.load(workingBytes,{ignoreEncryption:true});
+  const pageCount=pdf.getPageCount();
+  state.sources.set(sourceId,{id:sourceId,kind:'pdf',name:file.name,pageCount,bytes:workingBytes,decrypted});
+  const indices=parsePageRange($('pdfRange').value,pageCount);
+  return indices.map(i=>({id:uid('pg_'),kind:'pdf-page',sourceId,pdfPageIndex:i,edits:{rotate:0}}));
+}
+function guessMime(name){const e=(name.split('.').pop()||'').toLowerCase();return {jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',bmp:'image/bmp',avif:'image/avif'}[e]||''}
+function parsePageRange(text,count){
+  text=String(text||'all').trim().toLowerCase();
+  if(!text||text==='all')return Array.from({length:count},(_,i)=>i);
+  if(text==='odd')return Array.from({length:count},(_,i)=>i).filter(i=>(i+1)%2===1);
+  if(text==='even')return Array.from({length:count},(_,i)=>i).filter(i=>(i+1)%2===0);
+  const out=[];
+  for(const raw of text.split(',')){
+    const part=raw.trim(); if(!part)continue;
+    const m=part.match(/^(\d+)\s*-\s*(\d+)$/);
+    if(m){let a=+m[1],b=+m[2]; const step=a<=b?1:-1; for(let p=a;p!==b+step;p+=step) if(p>=1&&p<=count) out.push(p-1); continue;}
+    const n=+part; if(Number.isInteger(n)&&n>=1&&n<=count) out.push(n-1);
+  }
+  return [...new Set(out)].length?[...new Set(out)]:Array.from({length:count},(_,i)=>i);
+}
+function invalidateOutput(){cache.lastOutput=null}
+function insertPages(newPages){
+  if(!newPages.length)return;
+  invalidateOutput();
+  const mode=$('insertMode').value;
+  let index=state.pages.length;
+  const sel=selectedIndex();
+  if(mode==='start') index=0;
+  if(mode==='before'&&sel>=0) index=sel;
+  if(mode==='after'&&sel>=0) index=sel+1;
+  state.pages.splice(index,0,...newPages);
+  state.selectedPageId=newPages[0].id;
+}
+function render(){
+  $('counts').textContent = state.sources.size+' source(s), '+state.pages.length+' page(s)';
+  pageList.innerHTML = state.pages.map((p,i)=>pageRow(p,i)).join('') || '<p class="hint">No pages yet.</p>';
+  for(const p of state.pages) ensureThumb(p);
+  updateExtensionHint();
+}
+function pageRow(p,i){
+  const src=state.sources.get(p.sourceId);
+  const selected=p.id===state.selectedPageId?' selected':'';
+  const title=p.kind==='pdf-page'?`${src.name} / page ${p.pdfPageIndex+1}`:src.name;
+  const meta=p.kind==='pdf-page'?`PDF page ${p.pdfPageIndex+1} of ${src.pageCount}; rotation ${(p.edits?.rotate||0)}°`:`Image page; rotation ${(p.edits?.rotate||0)}°`;
+  const thumb=`<img id="thumb_${p.id}" class="thumb" alt="thumbnail"><div id="fallback_${p.id}" class="thumb pdfThumb" style="display:none">${p.kind==='pdf-page'?'PDF<br>p'+(p.pdfPageIndex+1):'IMG'}</div>`;
+  return `<div class="page${selected}" draggable="true" onclick="selectPage(${i})" ondragstart="dragPageStart(event,${i})" ondragover="dragPageOver(event)" ondrop="dropPage(event,${i})">
+    ${thumb}
+    <div><div class="name">${escapeHtml(title)}</div><div class="meta">${meta}</div>${selected?'<span class="pill ok">selected insert/export target</span>':''}</div>
+    <div class="actions" onclick="event.stopPropagation()">
+      <button onclick="previewPage(${i})">Preview</button>
+      ${p.kind==='image-page'?`<button onclick="openEditor('${p.id}')">View/Edit</button>${hotActionButtons(i)}<select class="rowSelect" onchange="downloadPageImage(${i},this.value);this.value=''">
+        <option value="">Save as…</option><option value="jpeg">JPG ↓</option><option value="png">PNG ↓</option><option value="webp">WebP ↓</option>
+      </select>`:`<button onclick="rotatePdfPage(${i})">Rotate PDF 90°</button><button class="warn" onclick="rasterizePdfPage(${i})">Raster/Edit</button><select class="rowSelect" onchange="downloadPageImage(${i},this.value);this.value=''"><option value="">Raster save…</option><option value="jpeg">JPG ↓</option><option value="png">PNG ↓</option><option value="webp">WebP ↓</option></select>`}
+      <button onclick="duplicatePage(${i})">Duplicate</button>
+      <button onclick="movePageTo(${i},0)" ${i===0?'disabled':''}>⇧</button>
+      <button onclick="movePage(${i},-1)" ${i===0?'disabled':''}>↑</button>
+      <button onclick="movePage(${i},1)" ${i===state.pages.length-1?'disabled':''}>↓</button>
+      <button onclick="movePageTo(${i},state.pages.length-1)" ${i===state.pages.length-1?'disabled':''}>⇩</button>
+      <button class="bad" onclick="removePage(${i})">Remove</button>
+    </div>
+  </div>`;
+}
+
+const QUICK_ACTIONS={
+  rotateRight:{label:'↻ Rotate',kind:'instant'}, rotateLeft:{label:'↺ Rotate',kind:'instant'},
+  crop:{label:'Crop',kind:'editor'}, viewEdit:{label:'View',kind:'editor'},
+  downloadJpg:{label:'JPG↓',kind:'download'}, downloadPng:{label:'PNG↓',kind:'download'}, downloadWebp:{label:'WebP↓',kind:'download'},
+  brightness:{label:'Bright',kind:'editor'}, contrast:{label:'Contrast',kind:'editor'}
+};
+function uniqueHotActions(){
+  const counts=cache.quickActions.counts||{};
+  const most=Object.keys(counts).sort((a,b)=>(counts[b]||0)-(counts[a]||0))[0]||'rotateRight';
+  const seed=[most,cache.quickActions.first,cache.quickActions.last,'rotateRight','crop','downloadJpg'].filter(Boolean);
+  return [...new Set(seed)].slice(0,3);
+}
+function hotActionButtons(i){return uniqueHotActions().map(a=>`<button class="hotBtn" onclick="runQuickImageAction(${i},'${a}')">${QUICK_ACTIONS[a]?.label||a}</button>`).join('')}
+function recordQuickAction(action){
+  if(!action)return;
+  const qa=cache.quickActions;
+  qa.counts[action]=(qa.counts[action]||0)+1;
+  qa.last=action;
+  if(cache.editorFirstAction===null){cache.editorFirstAction=action; qa.first=action;}
+  if(typeof saveSettings==='function') saveSettings();
+}
+async function runQuickImageAction(i,action){
+  const page=state.pages[i]; if(!page)return;
+  recordQuickAction(action);
+  if(action==='rotateRight'||action==='rotateLeft'){
+    if(page.kind!=='image-page') return;
+    invalidateOutput(); page.edits=page.edits||{};
+    page.edits.rotate=((page.edits.rotate||0)+(action==='rotateRight'?90:270))%360;
+    state.selectedPageId=page.id; render(); scheduleRecoverySave(); return;
+  }
+  if(['crop','viewEdit','brightness','contrast'].includes(action)){ if(page.kind==='image-page') return openEditor(page.id,action); }
+  if(action==='downloadJpg') return downloadPageImage(i,'jpeg');
+  if(action==='downloadPng') return downloadPageImage(i,'png');
+  if(action==='downloadWebp') return downloadPageImage(i,'webp');
+}
+
+function selectPage(i){if(!state.pages[i])return;state.selectedPageId=state.pages[i].id;render()}
+async function ensureThumb(page){
+  const img=$('thumb_'+page.id), fallback=$('fallback_'+page.id); if(!img)return;
+  try{
+    const canvas=await pageToCanvas(page,260);
+    img.src=canvas.toDataURL('image/jpeg',0.76); img.style.display='block'; if(fallback)fallback.style.display='none';
+  }catch(err){console.warn('thumb failed',err); img.style.display='none'; if(fallback)fallback.style.display='grid';}
+}
+let draggedPageIndex=null;
+function dragPageStart(e,i){draggedPageIndex=i;e.dataTransfer.effectAllowed='move'}
+function dragPageOver(e){e.preventDefault();e.dataTransfer.dropEffect='move'}
+function dropPage(e,j){e.preventDefault();if(draggedPageIndex===null||draggedPageIndex===j)return;invalidateOutput();const [p]=state.pages.splice(draggedPageIndex,1);state.pages.splice(j,0,p);draggedPageIndex=null;state.selectedPageId=p.id;render()}
+function movePage(i,d){const j=i+d;if(j<0||j>=state.pages.length)return;invalidateOutput();[state.pages[i],state.pages[j]]=[state.pages[j],state.pages[i]];state.selectedPageId=state.pages[j].id;render()}
+function movePageTo(i,j){if(i===j||i<0||j<0||i>=state.pages.length||j>=state.pages.length)return;invalidateOutput();const [p]=state.pages.splice(i,1);state.pages.splice(j,0,p);state.selectedPageId=p.id;render()}
+function removePage(i){invalidateOutput();const removed=state.pages.splice(i,1)[0];if(removed?.id===state.selectedPageId)state.selectedPageId=state.pages[Math.min(i,state.pages.length-1)]?.id||null;render()}
+function duplicatePage(i){invalidateOutput();const copy=structuredClone({...state.pages[i],id:uid('pg_')});state.pages.splice(i+1,0,copy);state.selectedPageId=copy.id;render()}
+function rotatePdfPage(i){const page=state.pages[i]; if(!page || page.kind!=='pdf-page') return; invalidateOutput(); page.edits=page.edits||{}; page.edits.rotate=((page.edits.rotate||0)+90)%360; render();}
+function clearAll(){invalidateOutput();cache.hotCaptured=0;for(const u of state.thumbUrls.values()) URL.revokeObjectURL(u);state.sources.clear();state.pages=[];state.thumbUrls.clear();state.selectedPageId=null;cache.pdfjs.clear();cache.pdflib.clear();render();updateHotStatus();scheduleRecoverySave();log('Cleared current tab state.')}
+
+const modal=$('modal'), canvas=$('editCanvas'), ctx=canvas.getContext('2d'), wrap=$('canvasWrap');
+let edit={page:null,img:null,rotate:0,crop:null,drag:false,start:null,brightness:1,contrast:1,grayscale:false};
+$('closeEditor').onclick=$('cancelEdit').onclick=()=>modal.classList.remove('open');
+$('rotateLeft').onclick=()=>{recordQuickAction('rotateLeft');edit.rotate=(edit.rotate+270)%360;drawEditor()};
+$('rotateRight').onclick=()=>{recordQuickAction('rotateRight');edit.rotate=(edit.rotate+90)%360;drawEditor()};
+$('resetCrop').onclick=()=>{recordQuickAction('crop');edit.crop=null;drawEditor()};
+$('selectAll').onclick=()=>{recordQuickAction('crop');edit.crop={x:0,y:0,w:canvas.width,h:canvas.height};drawEditor()};
+['brightness','contrast','grayscale'].forEach(id=>$(id).oninput=()=>{recordQuickAction(id==='grayscale'?'viewEdit':id);edit.brightness=+$('brightness').value;edit.contrast=+$('contrast').value;edit.grayscale=$('grayscale').checked;$('brightnessVal').textContent=edit.brightness.toFixed(2);$('contrastVal').textContent=edit.contrast.toFixed(2);drawEditor()});
+$('applyEdit').onclick=()=>{invalidateOutput();const p=edit.page;p.edits={rotate:edit.rotate,crop:edit.crop,brightness:edit.brightness,contrast:edit.contrast,grayscale:edit.grayscale};modal.classList.remove('open');cache.editorFirstAction=null;render();scheduleRecoverySave()};
+async function openEditor(pageId,preferredTool='viewEdit'){
+  recordQuickAction(preferredTool); cache.editorFirstAction=null;
+  const page=state.pages.find(p=>p.id===pageId), src=state.sources.get(page.sourceId);
+  const img=await loadImageFromBytes(src.bytes,src.mime);
+  edit={page,img,rotate:page.edits.rotate||0,crop:page.edits.crop,drag:false,start:null,brightness:page.edits.brightness??1,contrast:page.edits.contrast??1,grayscale:!!page.edits.grayscale};
+  $('editorTitle').textContent='View/Edit '+src.name;
+  $('editorToolHint').textContent=preferredTool==='crop'?'Crop hot path: drag a rectangle, then Apply edit.':'Viewing full image. Use crop/rotate/filter tools below.';
+  $('brightness').value=edit.brightness; $('contrast').value=edit.contrast; $('grayscale').checked=edit.grayscale;
+  $('brightnessVal').textContent=edit.brightness.toFixed(2); $('contrastVal').textContent=edit.contrast.toFixed(2);
+  modal.classList.add('open'); drawEditor();
+}
+function loadImageFromBytes(bytes,mime){return new Promise((res,rej)=>{const url=URL.createObjectURL(new Blob([bytes],{type:mime}));const img=new Image();img.onload=()=>{URL.revokeObjectURL(url);res(img)};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Browser could not decode this image type'))};img.src=url})}
+function rotatedSize(img,rot){return rot%180?[img.height,img.width]:[img.width,img.height]}
+function drawRotatedImage(ctx,img,rot,w,h){
+  ctx.save();
+  if(rot===90){ctx.translate(w,0);ctx.rotate(Math.PI/2)}
+  else if(rot===180){ctx.translate(w,h);ctx.rotate(Math.PI)}
+  else if(rot===270){ctx.translate(0,h);ctx.rotate(3*Math.PI/2)}
+  ctx.drawImage(img,0,0);ctx.restore();
+}
+function drawEditor(){
+  if(!edit.img)return;
+  const [w,h]=rotatedSize(edit.img,edit.rotate); canvas.width=w; canvas.height=h;
+  ctx.filter=`brightness(${edit.brightness}) contrast(${edit.contrast})${edit.grayscale?' grayscale(1)':''}`;
+  drawRotatedImage(ctx,edit.img,edit.rotate,w,h); ctx.filter='none';
+  if(edit.crop){ctx.save();ctx.strokeStyle='#38bdf8';ctx.lineWidth=Math.max(4,Math.round(Math.min(w,h)/250));ctx.setLineDash([14,10]);ctx.strokeRect(edit.crop.x,edit.crop.y,edit.crop.w,edit.crop.h);ctx.fillStyle='rgba(56,189,248,.12)';ctx.fillRect(edit.crop.x,edit.crop.y,edit.crop.w,edit.crop.h);ctx.restore()}
+}
+function canvasPoint(e){const r=canvas.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return {x:Math.max(0,Math.min(canvas.width,(t.clientX-r.left)*canvas.width/r.width)),y:Math.max(0,Math.min(canvas.height,(t.clientY-r.top)*canvas.height/r.height))}}
+function startCrop(e){e.preventDefault();edit.drag=true;edit.start=canvasPoint(e);edit.crop={x:edit.start.x,y:edit.start.y,w:0,h:0};drawEditor()}
+function moveCrop(e){if(!edit.drag)return;e.preventDefault();const p=canvasPoint(e),x=Math.min(edit.start.x,p.x),y=Math.min(edit.start.y,p.y);edit.crop={x,y,w:Math.abs(p.x-edit.start.x),h:Math.abs(p.y-edit.start.y)};drawEditor()}
+function endCrop(){if(!edit.drag)return;edit.drag=false;if(edit.crop&&edit.crop.w<8&&edit.crop.h<8)edit.crop=null;drawEditor()}
+canvas.addEventListener('mousedown',startCrop);canvas.addEventListener('mousemove',moveCrop);window.addEventListener('mouseup',endCrop);
+canvas.addEventListener('touchstart',startCrop,{passive:false});canvas.addEventListener('touchmove',moveCrop,{passive:false});window.addEventListener('touchend',endCrop);
+async function renderEditedImageCanvas(page){
+  const src=state.sources.get(page.sourceId), img=await loadImageFromBytes(src.bytes,src.mime), ed=page.edits||{};
+  const [rw,rh]=rotatedSize(img,ed.rotate||0);
+  const temp=document.createElement('canvas'), t=temp.getContext('2d'); temp.width=rw; temp.height=rh;
+  t.filter=`brightness(${ed.brightness??1}) contrast(${ed.contrast??1})${ed.grayscale?' grayscale(1)':''}`;
+  drawRotatedImage(t,img,ed.rotate||0,rw,rh); t.filter='none';
+  const c=ed.crop&&ed.crop.w>0&&ed.crop.h>0?ed.crop:{x:0,y:0,w:rw,h:rh};
+  const out=document.createElement('canvas'), o=out.getContext('2d'); out.width=Math.max(1,Math.round(c.w)); out.height=Math.max(1,Math.round(c.h));
+  o.drawImage(temp,c.x,c.y,c.w,c.h,0,0,out.width,out.height);
+  return out;
+}
+function scaleCanvas(srcCanvas,longSide){
+  const max=Math.max(srcCanvas.width,srcCanvas.height); if(!longSide||max<=longSide)return srcCanvas;
+  const scale=longSide/max, out=document.createElement('canvas'), o=out.getContext('2d');
+  out.width=Math.max(1,Math.round(srcCanvas.width*scale)); out.height=Math.max(1,Math.round(srcCanvas.height*scale));
+  o.drawImage(srcCanvas,0,0,out.width,out.height); return out;
+}
+async function getPdfJsDoc(sourceId){
+  if(!window.pdfjsLib) throw new Error('PDF.js did not load; PDF preview/raster export unavailable.');
+  if(!cache.pdfjs.has(sourceId)){
+    const src=state.sources.get(sourceId);
+    cache.pdfjs.set(sourceId, pdfjsLib.getDocument({data:new Uint8Array(src.bytes.slice(0))}).promise);
+  }
+  return cache.pdfjs.get(sourceId);
+}
+async function renderPdfPageCanvas(page,longSide=1200){
+  const doc=await getPdfJsDoc(page.sourceId), pdfPage=await doc.getPage(page.pdfPageIndex+1);
+  const rot=(page.edits?.rotate||0)%360;
+  const base=pdfPage.getViewport({scale:1,rotation:rot});
+  const scale=(longSide||1200)/Math.max(base.width,base.height);
+  const viewport=pdfPage.getViewport({scale,rotation:rot});
+  const c=document.createElement('canvas'), cx=c.getContext('2d'); c.width=Math.ceil(viewport.width); c.height=Math.ceil(viewport.height);
+  await pdfPage.render({canvasContext:cx,viewport}).promise;
+  return c;
+}
+async function pageToCanvas(page,longSide){return page.kind==='image-page'?scaleCanvas(await renderEditedImageCanvas(page),longSide):renderPdfPageCanvas(page,longSide)}
+async function canvasToBlob(canvas,mime,quality){
+  return new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('Canvas export failed')),mime,quality));
+}
+function imagePageSize(imgW,imgH){
+  const mode=$('pageSizeMode').value;
+  if(mode==='letter')return [612,792];
+  if(mode==='image')return [imgW*72/144,imgH*72/144];
+  return [595.28,841.89];
+}
+async function renderEditedImageToJpeg(page,quality){const c=await renderEditedImageCanvas(page);return (await canvasToBlob(c,'image/jpeg',quality)).arrayBuffer()}
+async function previewPage(i){
+  const page=state.pages[i], src=state.sources.get(page.sourceId); if(!page)return;
+  $('previewTitle').textContent=(page.kind==='pdf-page'?`${src.name} / page ${page.pdfPageIndex+1}`:src.name);
+  $('previewModal').classList.add('open'); log('Rendering preview...');
+  const c=await pageToCanvas(page,1400), pc=$('previewCanvas'), pctx=pc.getContext('2d'); pc.width=c.width; pc.height=c.height; pctx.drawImage(c,0,0); log('Preview ready.');
+}
+$('closePreview').onclick=()=>$('previewModal').classList.remove('open');
+async function rasterizePdfPage(i){
+  const page=state.pages[i], src=state.sources.get(page.sourceId); if(!page||page.kind!=='pdf-page')return;
+  if(!confirm('Raster/Edit converts this PDF page into an image page so it can be cropped/filtered. Text/vector searchability for this page will be lost in PDF export. Continue?'))return;
+  log('Rasterizing PDF page for image editing...');
+  const c=await renderPdfPageCanvas(page,Math.max(800,Math.min(5000,+$('rasterLongSide').value||2200)));
+  const blob=await canvasToBlob(c,'image/jpeg',Math.max(.3,Math.min(1,+$('quality').value||.9)));
+  const bytes=await blob.arrayBuffer(), sourceId=uid('src_');
+  state.sources.set(sourceId,{id:sourceId,kind:'image',name:`${src.name}-page-${page.pdfPageIndex+1}-raster.jpg`,mime:'image/jpeg',bytes});
+  const newPage={id:uid('pg_'),kind:'image-page',sourceId,edits:{rotate:0,crop:null,brightness:1,contrast:1,grayscale:false,rasterizedFrom:{sourceId:page.sourceId,pageIndex:page.pdfPageIndex}}};
+  invalidateOutput(); state.pages.splice(i,1,newPage); state.selectedPageId=newPage.id; render(); log('PDF page converted to editable image page.'); openEditor(newPage.id);
+}
+async function exportOutput(){
+  const pages=exportPages(); if(!pages.length){alert('Add/select at least one page first.');return}
+  $('exportBtn').disabled=true;
+  try{
+    const out=await buildCurrentOutput(pages);
+    cache.lastOutput=out;
+    if(out.files){
+      for(const f of out.files) downloadBlob(f.blob,f.name);
+      await maybeClearRecoveryAfterSuccessfulOutput('download');
+      log(`Done. ${out.label}: downloaded ${out.files.length} file(s).`);
+    }else{
+      downloadBlob(out.blob,out.name);
+      await maybeClearRecoveryAfterSuccessfulOutput('download');
+      log(`Done. ${out.label} output size: ${(out.blob.size/1048576).toFixed(2)} MB`);
+    }
+  }catch(err){console.error(err);log('Export failed: '+err.message);alert('Export failed: '+err.message)}
+  finally{$('exportBtn').disabled=false; updateExtensionHint();}
+}
+async function buildCurrentOutput(pages=exportPages()){
+  if($('exportMode').value==='pdf') return buildMergedPdfOutput(pages);
+  return buildImagesOutput(pages);
+}
+async function buildMergedPdfOutput(pages){
+  log('Planning PDF export route...');
+  const exact=isExactWholePdfCandidate(pages);
+  if(exact){
+    log('Exact PDF copy/rename route: original bytes are downloaded unchanged.');
+    return {blob:new Blob([sourceBytes(exact)],{type:'application/pdf'}),name:ensureExt($('outputName').value,'.pdf'),label:'Exact PDF copy/rename',mode:'pdf',scope:$('exportScope').value,pageCount:pages.length,signature:currentOutputSignature(pages)};
+  }
+  const backend=$('pdfBackend').value;
+  if(backend!=='pdflib'){
+    try{return await buildPreserveFirstPdfOutput(pages)}
+    catch(err){
+      console.warn('Preserve-first route failed:',err);
+      if(backend==='preserve') throw err;
+      log('Preserve-first route failed; falling back to compatibility pdf-lib route: '+err.message);
+    }
+  }
+  return buildCompatibilityPdfOutput(pages);
+}
+async function buildPreserveFirstPdfOutput(pages){
+  log('Trying preserve-first PDF route...');
+  const chunks=[], quality=Math.max(.3,Math.min(1,+$('quality').value||.9)), perPage=Math.max(1,Math.min(9,+$('imagesPerPdfPage').value||1));
+  let imageGroup=[];
+  async function flushImages(){
+    if(!imageGroup.length) return;
+    const bytes=await buildImagePdfBytes(imageGroup.splice(0),quality,perPage);
+    chunks.push({name:'generated-images.pdf',bytes});
+  }
+  for(let i=0;i<pages.length;i++){
+    const whole=findWholePdfSegment(pages,i);
+    if(whole){
+      await flushImages();
+      chunks.push({name:whole.src.name||'source.pdf',bytes:sourceBytes(whole.src)});
+      i+=whole.count-1;
+      continue;
+    }
+    const page=pages[i];
+    if(page.kind==='image-page') imageGroup.push(page);
+    else throw new Error('Preserve-first route only handles whole untouched PDF segments plus image pages. Use pdf-lib fallback for partial/rotated PDF pages.');
+  }
+  await flushImages();
+  if(!chunks.length) return buildCompatibilityPdfOutput(pages);
+  let bytes = chunks.length===1 ? byteView(chunks[0].bytes) : await qpdfMergePdfs(chunks);
+  if($('outputPdfPassword').value || $('ownerPdfPassword').value){
+    log('Applying PDF password protection through qpdf-wasm...');
+    bytes=await qpdfTransform(byteView(bytes), buildEncryptArgs({userPassword:$('outputPdfPassword').value,ownerPassword:$('ownerPdfPassword').value,permissions:{printing:!$('pdfDenyPrint').checked,modifying:!$('pdfDenyModify').checked,copying:!$('pdfDenyCopy').checked,annotating:!$('pdfDenyAnnotate').checked}}));
+  }
+  return {blob:new Blob([byteView(bytes)],{type:'application/pdf'}),name:ensureExt($('outputName').value,'.pdf'),label:'Preserve-first PDF',mode:'pdf',scope:$('exportScope').value,pageCount:pages.length,signature:currentOutputSignature(pages)};
+}
+async function buildCompatibilityPdfOutput(pages){
+  log('Building PDF with compatibility pdf-lib route...');
+  const out=await PDFDocument.create(), pdfCache=new Map();
+  const quality=Math.max(.3,Math.min(1,+$('quality').value||.9));
+  const perPage=Math.max(1,Math.min(9,+$('imagesPerPdfPage').value||1));
+  let imageGroup=[];
+  async function flushImages(){
+    while(imageGroup.length){
+      const group=imageGroup.splice(0,perPage);
+      if(perPage===1) await appendSingleImagePdfPage(out,group[0],quality);
+      else await appendImageGridPdfPage(out,group,quality,perPage);
+    }
+  }
+  for(let i=0;i<pages.length;i++){
+    const page=pages[i]; log(`Building input item ${i+1}/${pages.length}...`);
+    if(page.kind==='pdf-page'){
+      await flushImages();
+      const src=state.sources.get(page.sourceId);
+      let pdf=pdfCache.get(page.sourceId); if(!pdf){pdf=await PDFDocument.load(src.bytes,{ignoreEncryption:true});pdfCache.set(page.sourceId,pdf)}
+      const [copied]=await out.copyPages(pdf,[page.pdfPageIndex]);
+      if(page.edits?.rotate) copied.setRotation(degrees(((copied.getRotation()?.angle||0)+page.edits.rotate)%360));
+      out.addPage(copied);
+    }else{
+      imageGroup.push(page);
+      if(imageGroup.length>=perPage) await flushImages();
+    }
+  }
+  await flushImages();
+  let bytes=await out.save();
+  if($('outputPdfPassword').value || $('ownerPdfPassword').value){
+    log('Applying PDF password protection through qpdf-wasm...');
+    bytes=await qpdfTransform(new Uint8Array(bytes), buildEncryptArgs({userPassword:$('outputPdfPassword').value,ownerPassword:$('ownerPdfPassword').value,permissions:{printing:!$('pdfDenyPrint').checked,modifying:!$('pdfDenyModify').checked,copying:!$('pdfDenyCopy').checked,annotating:!$('pdfDenyAnnotate').checked}}));
+  }
+  return {blob:new Blob([bytes],{type:'application/pdf'}),name:ensureExt($('outputName').value,'.pdf'),label:'Compatibility PDF',mode:'pdf',scope:$('exportScope').value,pageCount:pages.length,signature:currentOutputSignature(pages)};
+}
+async function buildImagePdfBytes(pages,quality,perPage){
+  const out=await PDFDocument.create(), queue=[...pages];
+  while(queue.length){
+    const group=queue.splice(0,perPage);
+    if(perPage===1) await appendSingleImagePdfPage(out,group[0],quality);
+    else await appendImageGridPdfPage(out,group,quality,perPage);
+  }
+  return out.save();
+}
+async function embedImageForPdf(out,page,quality){
+  const src=state.sources.get(page.sourceId);
+  if(canEmbedOriginalImage(page)){
+    const mime=(src.mime||'').toLowerCase(), bytes=sourceBytes(src);
+    log('Embedding untouched image bytes: '+src.name);
+    if(mime==='image/png') return out.embedPng(bytes);
+    return out.embedJpg(bytes);
+  }
+  const jpeg=await renderEditedImageToJpeg(page,quality);
+  return out.embedJpg(jpeg);
+}
+async function appendSingleImagePdfPage(out,page,quality){
+  const embedded=await embedImageForPdf(out,page,quality);
+  const [pw,ph]=imagePageSize(embedded.width,embedded.height), margin=24, maxW=pw-margin*2, maxH=ph-margin*2;
+  const scale=Math.min(maxW/embedded.width,maxH/embedded.height,1e9), w=embedded.width*scale,h=embedded.height*scale;
+  const p=out.addPage([pw,ph]); p.drawImage(embedded,{x:(pw-w)/2,y:(ph-h)/2,width:w,height:h});
+}
+async function appendImageGridPdfPage(out,pages,quality,perPage){
+  const mode=$('pageSizeMode').value;
+  const [pw,ph]=mode==='letter'?[612,792]:[595.28,841.89];
+  const cols=perPage===2?1:Math.ceil(Math.sqrt(perPage)), rows=Math.ceil(perPage/cols);
+  const margin=24,gap=12, cellW=(pw-margin*2-gap*(cols-1))/cols, cellH=(ph-margin*2-gap*(rows-1))/rows;
+  const p=out.addPage([pw,ph]);
+  for(let i=0;i<pages.length;i++){
+    const embedded=await embedImageForPdf(out,pages[i],quality);
+    const col=i%cols,row=Math.floor(i/cols), x0=margin+col*(cellW+gap), y0=ph-margin-(row+1)*cellH-row*gap;
+    const scale=Math.min(cellW/embedded.width,cellH/embedded.height), w=embedded.width*scale,h=embedded.height*scale;
+    p.drawImage(embedded,{x:x0+(cellW-w)/2,y:y0+(cellH-h)/2,width:w,height:h});
+  }
+}
+
+async function ensureJSZip(){
+  if(window.JSZip) return window.JSZip;
+  log('Loading JSZip only for ZIP image export...');
+  await new Promise((resolve,reject)=>{
+    const old=document.getElementById('lazyJsZipScript');
+    if(old){old.addEventListener('load',resolve,{once:true}); old.addEventListener('error',()=>reject(new Error('JSZip failed to load.')), {once:true}); return;}
+    const s=document.createElement('script');
+    s.id='lazyJsZipScript';
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload=resolve;
+    s.onerror=()=>reject(new Error('JSZip failed to load from CDN. Use direct downloads or vendor JSZip beside this HTML.'));
+    document.head.appendChild(s);
+  });
+  if(!window.JSZip) throw new Error('JSZip did not initialize.');
+  return window.JSZip;
+}
+async function buildImagesOutput(pages){
+  const mime=imageMime(), ext=imageExt(), quality=Math.max(.3,Math.min(1,+$('quality').value||.9));
+  const base=stripKnownExt(cleanName($('outputName').value));
+  log('Building image output...');
+  if(pages.length===1){
+    const blob=await renderPageToImageBlob(pages[0],mime,quality);
+    const actualExt=blob.type==='image/png'?'.png':blob.type==='image/webp'?'.webp':ext;
+    return {blob,name:ensureExt(base,actualExt),label:'Image',mode:'images',scope:$('exportScope').value,pageCount:pages.length,signature:currentOutputSignature(pages)};
+  }
+  if($('imageBatchMode').value==='combined'){
+    const c=await buildImageGridCanvas(pages,Math.max(800,Math.min(5000,+$('rasterLongSide').value||2200)));
+    const blob=await canvasToBlob(c,mime,quality);
+    const actualExt=blob.type==='image/png'?'.png':blob.type==='image/webp'?'.webp':ext;
+    return {blob,name:ensureExt(base,actualExt),label:'Combined image grid',mode:'images',scope:$('exportScope').value,pageCount:pages.length,signature:currentOutputSignature(pages)};
+  }
+  const files=[];
+  for(let i=0;i<pages.length;i++){
+    log(`Rendering page image ${i+1}/${pages.length}...`);
+    const blob=await renderPageToImageBlob(pages[i],mime,quality);
+    const actualExt=blob.type==='image/png'?'.png':blob.type==='image/webp'?'.webp':ext;
+    files.push({blob,name:`${base}-page-${String(i+1).padStart(3,'0')}${actualExt}`});
+  }
+  if($('imageBatchMode').value==='zip'){
+    const JSZip=await ensureJSZip(), zip=new JSZip();
+    for(const f of files) zip.file(f.name,f.blob);
+    const zipBlob=await zip.generateAsync({type:'blob',compression:'DEFLATE',streamFiles:true},m=>{if(m.currentFile)log(`Zipping ${m.percent.toFixed(1)}%: ${m.currentFile}`)});
+    return {blob:zipBlob,name:ensureExt(base,'.zip'),label:'ZIP of individual images',mode:'images',scope:$('exportScope').value,pageCount:pages.length,signature:currentOutputSignature(pages)};
+  }
+  return {files,label:'Direct individual image downloads',mode:'images',scope:$('exportScope').value,pageCount:pages.length,signature:currentOutputSignature(pages)};
+}
+async function renderPageToImageBlob(page,mime=imageMime(),quality=Math.max(.3,Math.min(1,+$('quality').value||.9))){
+  const c=await pageToCanvas(page,Math.max(800,Math.min(5000,+$('rasterLongSide').value||2200)));
+  return canvasToBlob(c,mime,quality);
+}
+async function buildImageGridCanvas(pages,longSide){
+  const canvases=[];
+  for(let i=0;i<pages.length;i++){ log(`Rendering grid cell ${i+1}/${pages.length}...`); canvases.push(await pageToCanvas(pages[i],longSide)); }
+  const chosen=$('imageGridCols').value;
+  const cols=chosen==='auto'?Math.ceil(Math.sqrt(canvases.length)):Math.max(1,Math.min(4,+chosen||1));
+  const rows=Math.ceil(canvases.length/cols), gap=20, pad=24;
+  const cellW=Math.max(...canvases.map(c=>c.width)), cellH=Math.max(...canvases.map(c=>c.height));
+  const out=document.createElement('canvas'); out.width=pad*2+cols*cellW+(cols-1)*gap; out.height=pad*2+rows*cellH+(rows-1)*gap;
+  const ctx=out.getContext('2d'); ctx.fillStyle='white'; ctx.fillRect(0,0,out.width,out.height);
+  for(let i=0;i<canvases.length;i++){
+    const c=canvases[i], col=i%cols,row=Math.floor(i/cols), x=pad+col*(cellW+gap)+(cellW-c.width)/2, y=pad+row*(cellH+gap)+(cellH-c.height)/2;
+    ctx.drawImage(c,x,y);
+  }
+  return out;
+}
+async function downloadPageImage(i,format){
+  if(!format)return;
+  const page=state.pages[i]; if(!page)return;
+  recordQuickAction(format==='png'?'downloadPng':format==='webp'?'downloadWebp':'downloadJpg');
+  const old=$('imageFormat').value; $('imageFormat').value=format; updateExtensionHint();
+  try{
+    const src=state.sources.get(page.sourceId), mime=imageMime(), ext=imageExt(), quality=Math.max(.3,Math.min(1,+$('quality').value||.9));
+    const blob=await renderPageToImageBlob(page,mime,quality);
+    const stem=stripKnownExt(cleanName(page.kind==='pdf-page'?`${src.name}-p${page.pdfPageIndex+1}`:src.name));
+    downloadBlob(blob,stem+ext); log('Downloaded '+stem+ext);
+  }catch(err){console.error(err); alert('Page image download failed: '+err.message);}
+  finally{$('imageFormat').value=old; updateExtensionHint();}
+}
+function downloadBlob(blob,filename){const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbPut(key,value){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(value,key);tx.oncomplete=()=>{db.close();res()};tx.onerror=()=>{db.close();rej(tx.error)}})}
+async function idbGet(key){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly'), r=tx.objectStore(STORE).get(key);r.onsuccess=()=>{db.close();res(r.result)};r.onerror=()=>{db.close();rej(r.error)}})}
+async function idbDelete(key){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(key);tx.oncomplete=()=>{db.close();res()};tx.onerror=()=>{db.close();rej(tx.error)}})}
+async function saveSession(){
+  try{await idbPut(SESSION_KEY,{savedAt:new Date().toISOString(),sources:[...state.sources.values()],pages:state.pages,selectedPageId:state.selectedPageId,settings:settingsFromUi()});log('Session saved locally in IndexedDB.'); updateSessionStatus('Manual session saved.');}
+  catch(err){console.error(err);alert('Save failed: '+err.message);log('Save failed: '+err.message)}
+}
+async function loadSession(){
+  try{const data=await idbGet(SESSION_KEY); if(!data){log('No saved session found.');return}
+    applySettingsToUi(data.settings||DEFAULT_SETTINGS); state.sources=new Map(data.sources.map(s=>[s.id,s])); state.pages=data.pages||[]; state.selectedPageId=data.selectedPageId||state.pages[0]?.id||null; cache.pdfjs.clear(); cache.pdflib.clear(); invalidateOutput(); cache.recoveryDirty=false; render(); updateSessionStatus('Manual session loaded.'); log('Loaded saved session from '+(data.savedAt||'unknown time')+'.');}
+  catch(err){console.error(err);alert('Load failed: '+err.message);log('Load failed: '+err.message)}
+}
+async function clearSavedSession(){try{await idbDelete(SESSION_KEY);updateSessionStatus('Manual saved session cleared.');log('Saved session cleared.')}catch(err){console.error(err);log('Could not clear saved session: '+err.message)}}
+
+
+function buildEncryptArgs(options){
+  const user=options.userPassword||'', owner=options.ownerPassword||options.userPassword||'';
+  if(!user && !owner) throw new Error('Provide an output PDF password or owner password.');
+  const p=options.permissions||{};
+  return ['--encrypt',user,owner,'256',`--print=${p.printing===false?'none':'full'}`,`--modify=${p.modifying===false?'none':'all'}`,`--extract=${p.copying===false?'n':'y'}`,`--annotate=${p.annotating===false?'n':'y'}`,'--'];
+}
+function buildDecryptArgs(password){
+  const args=['--decrypt'];
+  if(password) args.unshift(`--password=${password}`);
+  return args;
+}
+async function loadQpdf(){
+  if(cache.qpdf) return cache.qpdf;
+  const moduleUrl=$('qpdfModuleUrl').value.trim(), wasmUrl=$('qpdfWasmUrl').value.trim();
+  if(!moduleUrl||!wasmUrl) throw new Error('qpdf module/wasm URL is missing.');
+  const mod=await import(/* @vite-ignore */ moduleUrl);
+  const createModule=mod.default||mod;
+  const stderr=[];
+  const instance=await createModule({locateFile:()=>wasmUrl,noInitialRun:true,print:()=>{},printErr:line=>stderr.push(String(line))});
+  cache.qpdf={instance,stderr};
+  return cache.qpdf;
+}
+function runQpdfMain(instance,args){
+  try{return instance.callMain(args)}catch(e){if(typeof e?.status==='number') return e.status; throw e}
+}
+async function qpdfTransform(bytes,args){
+  const {instance,stderr}=await loadQpdf();
+  stderr.length=0;
+  const input='/input_'+Date.now()+'.pdf', output='/output_'+Date.now()+'.pdf';
+  instance.FS.writeFile(input,bytes);
+  const code=runQpdfMain(instance,[...args,input,output]);
+  if(code!==0 && code!==3){
+    const msg=stderr.join(' ').trim();
+    throw new Error(msg || `qpdf failed with exit code ${code}`);
+  }
+  const out=instance.FS.readFile(output);
+  try{instance.FS.unlink(input); instance.FS.unlink(output);}catch(_e){}
+  return out;
+}
+async function qpdfMergePdfs(chunks){
+  const {instance,stderr}=await loadQpdf();
+  stderr.length=0;
+  const stamp=Date.now()+Math.random().toString(36).slice(2);
+  const inputs=chunks.map((chunk,i)=>{
+    const path=`/merge_${stamp}_${i}.pdf`;
+    instance.FS.writeFile(path,byteView(chunk.bytes));
+    return path;
+  });
+  const output=`/merge_${stamp}_out.pdf`;
+  const args=['--empty','--pages'];
+  for(const input of inputs) args.push(input,'1-z');
+  args.push('--',output);
+  log('Merging '+chunks.length+' PDF segment(s) through qpdf-wasm...');
+  const code=runQpdfMain(instance,args);
+  if(code!==0 && code!==3){
+    const msg=stderr.join(' ').trim();
+    throw new Error(msg || `qpdf merge failed with exit code ${code}`);
+  }
+  const out=instance.FS.readFile(output);
+  try{for(const input of inputs) instance.FS.unlink(input); instance.FS.unlink(output);}catch(_e){}
+  return out;
+}
+
+function settingsFromUi(){
+  return {
+    exportMode:$('exportMode').value, exportScope:$('exportScope').value, outputName:$('outputName').value,
+    fixExtension:$('fixExtension').checked, pageSizeMode:$('pageSizeMode').value, quality:$('quality').value,
+    imageFormat:$('imageFormat').value, imageBatchMode:$('imageBatchMode').value, imageGridCols:$('imageGridCols').value, rasterLongSide:$('rasterLongSide').value, imagesPerPdfPage:$('imagesPerPdfPage').value, pdfBackend:$('pdfBackend').value, imageEmbedMode:$('imageEmbedMode').value, insertMode:$('insertMode').value,
+    pdfRange:$('pdfRange').value, hotTargetCount:$('hotTargetCount').value, hotAutoPdf:$('hotAutoPdf').checked,
+    mailTo:$('mailTo').value, mailSubject:$('mailSubject').value, autosaveEnabled:$('autosaveEnabled').checked,
+    autoloadRecovery:$('autoloadRecovery').checked, clearRecoveryAfterExport:$('clearRecoveryAfterExport').checked,
+    autosaveMaxMb:$('autosaveMaxMb').value, qpdfModuleUrl:$('qpdfModuleUrl').value, qpdfWasmUrl:$('qpdfWasmUrl').value, quickActions:cache.quickActions
+  };
+}
+function applySettingsToUi(s={}){
+  const v={...DEFAULT_SETTINGS,...s};
+  $('exportMode').value=v.exportMode; $('exportScope').value=v.exportScope; $('outputName').value=v.outputName;
+  $('fixExtension').checked=!!v.fixExtension; $('pageSizeMode').value=v.pageSizeMode; $('quality').value=v.quality;
+  $('imageFormat').value=v.imageFormat; $('imageBatchMode').value=v.imageBatchMode||'combined'; $('imageGridCols').value=v.imageGridCols||'auto'; $('rasterLongSide').value=v.rasterLongSide; $('imagesPerPdfPage').value=v.imagesPerPdfPage||'1'; $('pdfBackend').value=v.pdfBackend||'auto'; $('imageEmbedMode').value=v.imageEmbedMode||'preserve'; $('insertMode').value=v.insertMode;
+  $('pdfRange').value=v.pdfRange; $('hotTargetCount').value=v.hotTargetCount; $('hotAutoPdf').checked=!!v.hotAutoPdf;
+  $('mailTo').value=v.mailTo||''; $('mailSubject').value=v.mailSubject||'Scanned PDF';
+  $('autosaveEnabled').checked=v.autosaveEnabled!==false; $('autoloadRecovery').checked=v.autoloadRecovery!==false;
+  $('clearRecoveryAfterExport').checked=v.clearRecoveryAfterExport!==false; $('autosaveMaxMb').value=v.autosaveMaxMb||'100'; $('qpdfModuleUrl').value=v.qpdfModuleUrl||DEFAULT_SETTINGS.qpdfModuleUrl; $('qpdfWasmUrl').value=v.qpdfWasmUrl||DEFAULT_SETTINGS.qpdfWasmUrl;
+  cache.quickActions=v.quickActions||cache.quickActions; updateExtensionHint(); updateSessionStatus();
+}
+async function saveSettings(){
+  try{await idbPut(SETTINGS_KEY,{savedAt:new Date().toISOString(),settings:settingsFromUi()});}
+  catch(err){console.error(err)}
+}
+async function loadSettings(){
+  try{const data=await idbGet(SETTINGS_KEY); applySettingsToUi(data?.settings||DEFAULT_SETTINGS);}
+  catch(err){console.error(err); applySettingsToUi(DEFAULT_SETTINGS)}
+}
+function approxSessionBytes(){
+  let total=0;
+  for(const s of state.sources.values()) total += s?.bytes?.byteLength||0;
+  total += JSON.stringify(state.pages||[]).length*2;
+  total += JSON.stringify(settingsFromUi()).length*2;
+  cache.lastRecoveryEstimate=total;
+  return total;
+}
+function updateSessionStatus(extra=''){
+  const bytes=approxSessionBytes(), mb=bytes/1048576, budget=Math.max(5, +$('autosaveMaxMb').value||100), pct=Math.min(100, mb/budget*100);
+  $('recoveryMeter').style.width=pct.toFixed(1)+'%';
+  $('recoveryMeter').style.background = pct<70 ? 'linear-gradient(90deg,#22c55e,#16a34a)' : pct<100 ? 'linear-gradient(90deg,#eab308,#f59e0b)' : 'linear-gradient(90deg,#ef4444,#b91c1c)';
+  const saved = cache.recoveryDirty ? 'pending unsaved changes' : 'stable';
+  $('sessionStatus').textContent = `Approx recovery payload: ${mb.toFixed(2)} MB / ${budget.toFixed(0)} MB budget. Recovery state: ${saved}. Autosave: ${$('autosaveEnabled').checked?'on':'off'}. Auto-restore: ${$('autoloadRecovery').checked?'on':'off'}.` + (extra?` ${extra}`:'');
+}
+function scheduleRecoverySave(){
+  cache.recoveryDirty=true; updateSessionStatus(); saveSettings();
+  clearTimeout(cache.recoveryTimer);
+  if(!$('autosaveEnabled').checked) return;
+  cache.recoveryTimer=setTimeout(()=>saveRecoverySnapshot(false),700);
+}
+async function saveRecoverySnapshot(force){
+  clearTimeout(cache.recoveryTimer);
+  cache.recoveryTimer=null;
+  const bytes=approxSessionBytes(), budget=Math.max(5,+$('autosaveMaxMb').value||100)*1048576;
+  if(!force && !$('autosaveEnabled').checked){ updateSessionStatus('Autosave disabled.'); return false; }
+  if(bytes>budget){ updateSessionStatus(`Recovery snapshot skipped because current session exceeds the ${(+$('autosaveMaxMb').value||100)} MB budget.`); log('Recovery snapshot skipped: over budget.'); return false; }
+  try{
+    await idbPut(RECOVERY_KEY,{savedAt:new Date().toISOString(),sources:[...state.sources.values()],pages:state.pages,selectedPageId:state.selectedPageId,settings:settingsFromUi(),approxBytes:bytes});
+    cache.recoveryDirty=false; updateSessionStatus(`Recovery snapshot saved ${new Date().toLocaleTimeString()}.`); log('Crash recovery snapshot saved.');
+    return true;
+  }catch(err){console.error(err); updateSessionStatus('Recovery save failed: '+err.message); log('Recovery save failed: '+err.message); return false;}
+}
+async function loadRecoverySnapshot(){
+  try{
+    const data=await idbGet(RECOVERY_KEY); if(!data){log('No recovery snapshot found.'); updateSessionStatus('No recovery snapshot found.'); return false}
+    applySettingsToUi(data.settings||DEFAULT_SETTINGS);
+    state.sources=new Map((data.sources||[]).map(s=>[s.id,s])); state.pages=data.pages||[]; state.selectedPageId=data.selectedPageId||state.pages[0]?.id||null;
+    cache.pdfjs.clear(); cache.pdflib.clear(); invalidateOutput(); cache.recoveryDirty=false; render(); updateHotStatus(); updateSessionStatus(`Recovery loaded from ${data.savedAt||'unknown time'}.`); log('Crash recovery snapshot loaded.');
+    return true;
+  }catch(err){console.error(err); updateSessionStatus('Recovery load failed: '+err.message); log('Recovery load failed: '+err.message); return false;}
+}
+async function clearRecoverySnapshot(){
+  try{await idbDelete(RECOVERY_KEY); cache.recoveryDirty=false; updateSessionStatus('Recovery snapshot cleared.'); log('Crash recovery snapshot cleared.');}
+  catch(err){console.error(err); updateSessionStatus('Could not clear recovery snapshot: '+err.message)}
+}
+async function maybeAutoLoadRecovery(){
+  if(!$('autoloadRecovery').checked) return;
+  const data=await idbGet(RECOVERY_KEY).catch(()=>null);
+  if(!data || !(data.pages||[]).length) { updateSessionStatus(); return; }
+  if(!state.pages.length){
+    applySettingsToUi(data.settings||DEFAULT_SETTINGS);
+    state.sources=new Map((data.sources||[]).map(s=>[s.id,s])); state.pages=data.pages||[]; state.selectedPageId=data.selectedPageId||state.pages[0]?.id||null;
+    cache.pdfjs.clear(); cache.pdflib.clear(); invalidateOutput(); cache.recoveryDirty=false; render(); updateHotStatus(); log('Auto-restored crash recovery snapshot.'); updateSessionStatus(`Auto-restored recovery from ${data.savedAt||'unknown time'}.`);
+  } else updateSessionStatus(`Recovery snapshot exists from ${data.savedAt||'unknown time'}.`);
+}
+async function maybeClearRecoveryAfterSuccessfulOutput(mode){
+  if(!$('clearRecoveryAfterExport').checked) return;
+  try{await idbDelete(RECOVERY_KEY); cache.recoveryDirty=false; updateSessionStatus(`Recovery snapshot cleared after successful ${mode}.`); log(`Recovery snapshot cleared after ${mode}.`);}catch(err){console.error(err)}
+}
+function installPersistenceWatchers(){
+  const ids=['exportMode','exportScope','outputName','fixExtension','pageSizeMode','quality','imageFormat','imageBatchMode','imageGridCols','rasterLongSide','imagesPerPdfPage','pdfBackend','imageEmbedMode','insertMode','pdfRange','hotTargetCount','hotAutoPdf','mailTo','mailSubject','autosaveEnabled','autoloadRecovery','clearRecoveryAfterExport','autosaveMaxMb','qpdfModuleUrl','qpdfWasmUrl'];
+  ids.forEach(id=>{const el=$(id); if(!el) return console.warn('Missing persistence control', id); el.addEventListener('change',()=>{updateExtensionHint(); updateSessionStatus(); saveSettings(); scheduleRecoverySave();});});
+  ['outputName','quality','rasterLongSide','pdfRange','mailTo','mailSubject','autosaveMaxMb','hotTargetCount','qpdfModuleUrl','qpdfWasmUrl'].forEach(id=>{const el=$(id); if(!el) return console.warn('Missing persistence input', id); el.addEventListener('input',()=>{updateExtensionHint(); updateSessionStatus(); saveSettings(); scheduleRecoverySave();});});
+  window.addEventListener('pagehide',()=>{saveSettings(); saveRecoverySnapshot(true)});
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ saveSettings(); saveRecoverySnapshot(true);} });
+}
+async function bootstrapPersistence(){
+  await loadSettings();
+  installPersistenceWatchers();
+  await maybeAutoLoadRecovery();
+  updateSessionStatus();
+}
+
+installExperimentTools();
+updateHotStatus();
+render();
+bootstrapPersistence();
+</script>
+</body>
+</html>
