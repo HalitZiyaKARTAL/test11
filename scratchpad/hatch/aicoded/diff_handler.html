@@ -15,6 +15,7 @@
         --font-mono: "Fira Code", "Consolas", monospace;
         --safe-bottom: env(safe-area-inset-bottom, 0em);
     }
+    header.fluid-bar{padding-top:calc(.6em + env(safe-area-inset-top,0em))}
     
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     
@@ -300,24 +301,15 @@ function showToast(msg, type='success') {
 }
 
 // --- TABS & NAVIGATION ---
-function switchToolTab(tabId) {
-    try {
-        document.querySelectorAll('#col-tools .nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('#col-tools .tab-content').forEach(c => c.classList.remove('active'));
-        event.target.classList.add('active');
-        document.getElementById('tool-' + tabId).classList.add('active');
-    } catch(e) {}
+function sw(scope,prefix,id){
+    try{
+        document.querySelectorAll(scope+' .nav-tab,'+scope+' .tab-content').forEach(x=>x.classList.remove('active'));
+        document.querySelector(`${scope} .nav-tab[onclick*="${id}"]`)?.classList.add('active');
+        document.getElementById(prefix+id)?.classList.add('active');
+    }catch(e){}
 }
-
-function switchTargetTab(tabId) {
-    try {
-        document.querySelectorAll('#col-target .nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('#col-target .tab-content').forEach(c => c.classList.remove('active'));
-        let btn = Array.from(document.querySelectorAll('#col-target .nav-tab')).find(b => b.getAttribute('onclick').includes(tabId));
-        if (btn) btn.classList.add('active');
-        document.getElementById('target-' + tabId).classList.add('active');
-    } catch(e) {}
-}
+function switchToolTab(id){sw('#col-tools','tool-',id)}
+function switchTargetTab(id){sw('#col-target','target-',id)}
 
 function switchMobileCol(colId, navIndex) {
     try {
@@ -459,11 +451,11 @@ function parsePatchSnippets() {
     } catch(e) {}
 }
 
-function copySnippet(index) {
-    if (currentParsedSnippets[index]) {
-        navigator.clipboard.writeText(currentParsedSnippets[index]);
-        showToast("Snippet Copied!");
-    }
+async function copySnippet(index){
+    try{
+        if(!currentParsedSnippets[index])return;
+        await navigator.clipboard.writeText(currentParsedSnippets[index]);showToast("Snippet Copied!");
+    }catch(e){showToast("Copy failed","error")}
 }
 
 els.patch.addEventListener('input', parsePatchSnippets);
