@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Diff Handler</title>
+<style>
+:root {
+--bg: #0d1117; --surface: #161b22; --surface-hover: #21262d; --surface-active: #30363d;
+--border: #30363d; --text: #c9d1d9; --text-muted: #8b949e;
+--accent: #58a6ff; --accent-hover: #79c0ff;
+--green: #2ea043; --green-bg: #04260f;
+--red: #f85149; --red-bg: #3a0606; --red-border: #8b1818;
+--yellow: #d29922; --orange: #e67e22; --font-ui: system-ui, -apple-system, sans-serif;
+--font-mono: "Fira Code", "Consolas", monospace;
+--safe-bottom: env(safe-area-inset-bottom, 0em);
+}
+header.fluid-bar { padding-top: calc(.6em + env(safe-area-inset-top, 0em)); }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+body {
+font-family: var(--font-ui); background: var(--bg); color: var(--text);
+height: var(--vh, 100dvh); display: flex; flex-direction: column; overflow: hidden; overscroll-behavior: none;
+}
+::-webkit-scrollbar { width: 0.5rem; height: 0.5rem; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-active); border-radius: 0.25rem; border: 0.1rem solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+.fluid-bar {
+display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between;
+gap: 0.5em; padding: 0.6em 0.8em; white-space: nowrap;
+font-size: min(14px, 2.2dvw);
+width: 100%; overflow: hidden; background: var(--surface); border-bottom: thin solid var(--border);
+flex-shrink: 0;
+}
+.brand { font-weight: 800; color: var(--text); font-size: 1.2em; letter-spacing: -0.05em; display: flex; align-items: center; gap: 0.5em; }
+.tool-group { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.5em; }
+.divider { width: thin; height: 1.5em; background: var(--border); margin: 0 0.25em; }
+button {
+font-family: var(--font-ui); background: var(--surface); color: var(--text); border: thin solid var(--border);
+border-radius: 0.375em; padding: 0.5em 0.8em; font-size: 1em; font-weight: 600; cursor: pointer; transition: 0.15s;
+display: inline-flex; align-items: center; justify-content: center; gap: 0.4em; white-space: nowrap;
+}
+button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--text-muted); }
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.primary { background: var(--accent); color: #0d1117; border-color: var(--accent); }
+button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+button.success { background: var(--green); color: #fff; border-color: var(--green); }
+button.danger { background: var(--red); color: #fff; border-color: var(--red); }
+input[type="text"], input[type="number"] {
+background: var(--bg); color: var(--text); border: thin solid var(--border);
+border-radius: 0.375em; padding: 0.4em 0.6em; font-size: 1em; outline: none; transition: 0.2s; font-family: var(--font-mono);
+field-sizing: content; max-width: 100%;
+}
+input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); background: var(--bg); }
+input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 1.2em; height: 1.2em; }
+.workspace { display: flex; flex: 1; min-height: 0; flex-direction: row; overflow: hidden; }
+.col { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; border-right: thin solid var(--border); background: var(--bg); }
+.col:last-child { border-right: none; }
+.nav-tabs { display: flex; background: var(--surface); border-bottom: thin solid var(--border); flex-shrink: 0; font-size: min(14px, 2.5dvw); }
+.nav-tab {
+flex: 1; background: transparent; color: var(--text-muted); border: none; border-bottom: 0.15em solid transparent;
+padding: 0.8em 1em; font-size: 0.85em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+cursor: pointer; border-radius: 0; white-space: nowrap; transition: 0.2s; text-align: center;
+}
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(88, 166, 255, 0.05); }
+.tab-content { display: none; flex: 1; flex-direction: column; min-height: 0; overflow-y: auto; }
+.tab-content.active { display: flex; }
+.tool-section { padding: 0.75rem; border-bottom: thin solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; }
+.tool-section:last-child { border-bottom: none; }
+.tool-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+textarea, .viewer {
+flex: 1; width: 100%; background: transparent; color: var(--text); font-family: var(--font-mono);
+font-size: min(14px, 3dvw); line-height: 1.5; padding: 0.75rem; border: none; resize: none; outline: none;
+}
+textarea.auto-h { flex: none; min-height: min(8rem, 26dvh); background: rgba(0,0,0,0.2); border: thin solid var(--border); border-radius: 0.375rem; }
+.viewer { white-space: pre-wrap; word-break: break-all; overflow-y: auto; }
+.format-hint { background: rgba(88, 166, 255, 0.08); border: thin dashed var(--accent); color: var(--accent); padding: 0.5rem 0.75rem; font-size: min(12px, 2.5dvw); font-family: var(--font-mono); border-radius: 0.375rem; white-space: pre-wrap; word-break: break-all; }
+.hl-new { background: var(--green-bg); color: #7ee787; text-decoration: underline; text-decoration-color: var(--green); border-radius: 0.15rem; }
+.hl-old { background: var(--red-bg); color: #ffa198; text-decoration: line-through; text-decoration-color: var(--red); opacity: 0.8; border-radius: 0.15rem; }
+.hl-marker { color: var(--accent); font-weight: bold; background: rgba(88, 166, 255, 0.1); border-radius: 0.25rem; padding: 0 0.25rem; font-size: 0.9em; }
+.float-actions { position: absolute; bottom: 1.5rem; right: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; background: rgba(22, 27, 34, 0.9); backdrop-filter: blur(8px); padding: 0.5rem; border-radius: 0.5rem; border: thin solid var(--border); box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: 0.3s; z-index: 10; max-width: 90dvw; justify-content: center; }
+.float-actions.show { opacity: 1; pointer-events: all; }
+.patch-card { flex: none; background: var(--surface); border: thin solid var(--border); border-radius: 0.375rem; overflow: hidden; margin-bottom: 0.5rem; }
+#parsedSnippets.tested .patch-card.ok { border-color: var(--green); }
+#parsedSnippets.tested .patch-card.skip { border-color: var(--yellow); }
+#parsedSnippets.tested .patch-card.fix { border-color: var(--orange); }
+#parsedSnippets.tested .patch-card.fail { border-color: var(--red); }
+#parsedSnippets:not(.tested) .diagnostic { display: none !important; }
+.patch-card-header { padding: 0.5rem 0.75rem; background: var(--surface-active); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 600; user-select: none; flex-wrap: wrap; gap: 0.5rem; }
+.patch-card-header:hover { background: #3c444d; }
+.patch-card-body { border-top: thin solid var(--border); background: var(--bg); }
+.patch-card-body.collapsed { display: none; }
+.copy-btn { padding: 0.25rem 0.5rem; font-size: 0.8em; background: var(--bg); border: thin solid var(--border); border-radius: 0.25rem; color: var(--text); cursor: pointer; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.card-actions { display: flex; gap: .5em; align-items: center; }
+.info-btn { padding: 0 .08em; min-width: 1.15em; background: transparent; border: 0; border-radius: 0; color: var(--text-muted); font-size: 1.25em; line-height: 1; }
+.info-btn:hover:not(:disabled) { background: transparent; border-color: transparent; color: var(--accent); }
+.patch-box { position: relative; flex: 0 0 min(8rem, 28dvh); display: flex; flex-direction: column; background: rgba(0,0,0,.2); border: thin solid var(--border); border-radius: .5rem; overflow: hidden; }
+.patch-box textarea { padding-right: 2.4rem; }
+.diff-load { position: absolute; top: .35rem; right: .45rem; z-index: 2; font-size: 1rem; }
+#parsedSnippets { flex-shrink: 0; min-height: 3rem; }
+#tool-surgical { container-type: inline-size; }
+#surgicalBar { font-size: clamp(8px, 2.8cqw, 14px) !important; }
+#surgicalBar.overflowing { overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
+#surgicalBar.overflowing::-webkit-scrollbar { display: none; }
+#infoPopup { inset: 0; margin: auto; width: min(48rem, calc(100dvw - 2rem)); max-height: calc(var(--vh,100dvh) - 2rem); padding: 0; overflow: hidden; border: thin solid var(--border); border-radius: .6rem; background: var(--surface); color: var(--text); box-shadow: 0 .75rem 2rem #000a; }
+#infoPopup::backdrop { background: #0009; }
+.info-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .7rem 1rem; border-bottom: thin solid var(--border); }
+.info-head button { padding: .2em .5em; }
+#infoBody { min-height: min(12rem, calc(var(--vh,100dvh) - 6rem)); max-height: calc(var(--vh,100dvh) - 6rem); padding: 1rem; overflow: auto; white-space: normal; }
+#infoBody.report { display: block !important; white-space: pre-wrap; font-family: var(--font-mono); word-break: break-word; }
+#infoBody pre { justify-self: start; width: fit-content; max-width: 100%; min-width: 0; overflow: auto; }
+#infoBody > div { display: block; min-width: 0; }
+#infoBody > div pre { display: inline-block; vertical-align: middle; margin: .25em .5em; }
+#toast { position: fixed; top: 4.5rem; left: 50%; transform: translateX(-50%) translateY(-1.25rem); background: var(--text); color: var(--bg); padding: 0.6rem 1.25rem; border-radius: 2rem; font-size: min(14px, 3dvw); font-weight: 600; box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100; max-width: 90dvw; text-align: center; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.error { background: var(--red); color: #fff; }
+#toast.success { background: var(--green); color: #fff; }
+#toast.warning { background: var(--yellow); color: #000; }
+#toast.orange { background: var(--orange); color: #111; }
+#toast.result { display: flex; align-items: center; gap: .55em; white-space: nowrap; pointer-events: auto; }
+#toast.result button { padding: 0 .08em; min-width: 1em; background: transparent; border: 0; border-radius: 0; color: inherit; font-size: 1.2em; line-height: 1; }
+#toast.result.compact .result-word { display: none; }
+.bottom-nav { display: none; background: var(--surface); border-top: thin solid var(--border); padding-bottom: var(--safe-bottom); flex-shrink: 0; }
+.bnav-btn { flex: 1; background: transparent; border: none; padding: 0.75rem; color: var(--text-muted); font-size: min(12px, 3dvw); font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; border-radius: 0; }
+.bnav-btn.active { color: var(--accent); }
+.bnav-btn svg { width: 1.25rem; height: 1.25rem; fill: currentColor; }
+.fluid-label { display: flex; align-items: center; gap: 0.25em; white-space: nowrap; }
+#targetNav, #mobileNav { position: relative; }
+#screenModeBtn { position: absolute; z-index: 4; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 1rem; height: 1rem; padding: 0; margin: 0; border: 0; background: transparent; color: var(--text-muted); box-shadow: none; line-height: 1; border-radius: 0; font-size: .8rem; overflow: visible; transition: none; }
+#mobileNav > #screenModeBtn { left: 66.6667%; }
+#screenModeBtn:hover:not(:disabled) { color: var(--accent); background: transparent; border-color: transparent; }
+body.small-screen .workspace { flex-direction: column; }
+body.small-screen .col { border-right: none; display: none; }
+body.small-screen .col.mobile-active { display: flex; }
+body.small-screen .bottom-nav { display: flex; }
+body.small-screen .float-actions { right: 50%; transform: translateX(50%); width: max-content; }
+</style>
+</head>
+<body>
+<header class="fluid-bar">
+<div class="brand">Diff Handler</div>
+<div class="tool-group">
+<button class="info-btn" onclick="openInfo()" title="Info" aria-label="Info">ⓘ</button>
+<button onclick="undo()" id="btnUndo" disabled title="Undo">↶</button>
+<button onclick="redo()" id="btnRedo" disabled title="Redo">↷</button>
+<div class="divider"></div>
+<button onclick="pickFile(0)">📂 Load Target</button>
+<input type="file" id="fileInput" hidden onchange="handleFileLoad(event)">
+<input type="text" id="filenameInput" placeholder="filename_edited.ext" style="width: 12em;">
+<button class="success" onclick="downloadTargetFile()">💾 Download</button>
+</div>
+</header>
+<div id="infoPopup" popover role="dialog" aria-labelledby="infoTitle">
+<div class="info-head">
+<strong id="infoTitle">Info</strong>
+<div class="tool-group">
+<button id="infoAction" hidden onclick="injectPatch(0,0,infoIndex)">Try Fixing</button>
+<button id="copyReport" hidden onclick="copyCurrentReport()">Copy Report</button>
+<button id="copyDebug" onclick="copyDebugLogs()">Copy Debug</button>
+<button onclick="closeInfo()" aria-label="Close">×</button>
+</div>
+</div>
+<div id="infoBody" style="display:grid;gap:.75rem">
+<p><strong>This is an automatic diff app.</strong></p>
+<p><strong>Format:</strong></p>
+<pre style="white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono);padding:.65rem;background:var(--bg);border:thin solid var(--border);border-radius:.35rem">&lt;coloured diff 7&gt;
+common anchor/*&#x1F7E2;*/new code/*&#x1F7E1;old code&#x1F534;*/common anchor
+&lt;/coloured diff 7&gt;</pre>
+<p>Use unchanged surrounding text as a unique anchor. Multiple distant edits can use separate tags; nearby related edits can share one tag when their middle unchanged anchor is sufficiently distinctive.</p>
+<div>Add-only: <pre style="white-space:nowrap;font-family:var(--font-mono);padding:0 .7ch;line-height:1.1;background:var(--bg);border:thin solid var(--border);border-radius:.35rem">anchor/*&#x1F7E2;*/new code/*&#x1F7E1;&#x1F534;*/anchor</pre></div>
+<div>Remove-only: <pre style="white-space:nowrap;font-family:var(--font-mono);padding:0 .7ch;line-height:1.1;background:var(--bg);border:thin solid var(--border);border-radius:.35rem">anchor/*&#x1F7E2;*//*&#x1F7E1;old code&#x1F534;*/anchor</pre></div>
+<p>Test is read-only. Surgically Inject performs the same exact test and commits its resulting target. Failed cards expose Try Fixing, which checks condensed-whitespace and then whitespace-removed anchors; Update Diff converts a unique suggestion back into an ordinary exact diff.</p>
+</div>
+</div>
+<div class="workspace">
+<div class="col mobile-active" id="col-tools">
+<div class="nav-tabs">
+<button class="nav-tab active" onclick="switchToolTab('surgical')">Surgical</button>
+<button class="nav-tab" onclick="switchToolTab('generator')">Generator</button>
+<button class="nav-tab" onclick="switchToolTab('scripts')">Scripts/Regex</button>
+</div>
+<div id="tool-surgical" class="tab-content active" style="padding: 0.75rem; gap: 0.75rem;">
+<div class="format-hint">diff format is:"common anchor here/*&#x1F7E2;*/new surgical code here/*&#x1F7E1;old removed surgical code here&#x1F534;*/common anchor here"</div>
+<div class="patch-box">
+<textarea id="patchInput" placeholder="Paste executable diff block here... (<tag 1> supported)"></textarea>
+<button class="diff-load info-btn" onclick="pickFile(1)" title="Load diff file" aria-label="Load diff file">📂</button>
+</div>
+<div id="parsedSnippets" style="display:flex; flex-direction:column; gap:0.25rem; max-height: 25dvh; overflow-y: auto;"></div>
+<div id="surgicalBar" class="fluid-bar" style="border: thin solid var(--border); border-radius: 0.5em; padding: 0.5em 0.8em;">
+<div class="tool-group">
+<label class="fluid-label">Tag <input type="text" id="injSeparator" value="coloured diff" style="width: 8em;"></label>
+<label class="fluid-label" style="cursor:pointer;" title="Require closing tag like </coloured diff> or </same>">
+<input type="checkbox" id="injStrict" checked> Strict
+</label>
+</div>
+<div class="tool-group">
+<button onclick="injectPatch(0)">Test</button>
+<label class="fluid-label" style="cursor:pointer"><input type="checkbox" id="autoTest" checked> Auto</label>
+<button id="resultInfo" class="info-btn" hidden onclick="openInfo(-1)" title="Current report" aria-label="Current report">ⓘ</button>
+<button id="injectBtn" class="primary" onclick="injectPatch()">⚡ Surgically Inject</button>
+</div>
+</div>
+</div>
+<div id="tool-generator" class="tab-content">
+<div class="tool-section" style="flex:1;">
+<span class="tool-title">Old Code Snippet</span>
+<textarea id="genOld" class="auto-h" style="flex:1;"></textarea>
+</div>
+<div class="tool-section" style="flex:1;">
+<span class="tool-title">New Code Snippet</span>
+<textarea id="genNew" class="auto-h" style="flex:1;"></textarea>
+</div>
+<div class="fluid-bar" style="font-size: min(14px, 2dvw); border-top: thin solid var(--border); border-bottom: none;">
+<div class="tool-group">
+<label class="fluid-label" title="Merge if anchor is under this size">Merge <input type="number" id="genThreshold" value="11" style="width: 3.5em;"></label>
+<label class="fluid-label" title="Chars before/after diff.">Context <input type="number" id="genContext" value="50" placeholder="Full" style="width: 4em;"></label>
+<label class="fluid-label">Tag <input type="text" id="genSeparator" value="coloured diff" style="width: 7em;" oninput="document.getElementById('injSeparator').value=this.value; parsePatchSnippets();"></label>
+</div>
+<button class="primary" onclick="generateDiff()">Generate Diffs</button>
+</div>
+</div>
+<div id="tool-scripts" class="tab-content">
+<div class="tool-section">
+<span class="tool-title">RegEx Replacer</span>
+<div style="display: flex; gap: 0.5rem;">
+<input type="text" id="regexFind" placeholder="Find (Regex or String)" style="flex:1;">
+<input type="text" id="regexFlags" placeholder="Flags (g,i)" style="width: 5em;">
+</div>
+<input type="text" id="regexReplace" placeholder="Replace with..." style="width: 100%;">
+<button class="primary" onclick="executeRegex()">Execute RegEx</button>
+</div>
+<div class="tool-section" style="flex:1;">
+<span class="tool-title">JavaScript Sandbox</span>
+<div style="font-size: clamp(0.5rem, 3dvw, 0.75rem); color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 0.25rem; word-wrap: break-word;">
+</div>
+<textarea id="jsInput" class="auto-h" style="flex:1;" placeholder="let modified = code.replace('a', 'b');&#10;return modified;"></textarea>
+<div style="display: flex; gap: 0.5rem;">
+<button class="primary" style="flex:1;" onclick="executeJS('macro')">Run Macro</button>
+<button class="danger" style="flex:1; background:var(--surface-hover); color:var(--red); border-color:var(--red-border);" onclick="executeJS('eval')">Pure Eval</button>
+</div>
+</div>
+</div>
+</div>
+<div class="col" id="col-target" style="position: relative;">
+<div class="nav-tabs" id="targetNav">
+<button class="nav-tab active" onclick="switchTargetTab('raw')">📝 Target Code</button>
+<button id="screenModeBtn" onclick="setScreenMode(!document.body.classList.contains('small-screen'))" title="Small screen mode" aria-label="Small screen mode">▾</button>
+<button class="nav-tab" onclick="switchTargetTab('vis')">👁️ Live Verification</button>
+</div>
+<div id="target-raw" class="tab-content active">
+<div class="tool-section" style="padding: 0.5rem 0.75rem; background: var(--surface);">
+<span class="tool-title">Raw Source Code <span id="targetSize" style="font-weight:normal; text-transform:none;">Empty</span></span>
+</div>
+<textarea id="targetCode" placeholder="Load a target file to begin editing..."></textarea>
+</div>
+<div id="target-vis" class="tab-content" style="position:relative;">
+<div class="float-actions" id="actionMenu">
+<button class="success" onclick="transformCode('commit')">✅ Commit (Keep New)</button>
+<button class="danger" onclick="transformCode('revert')">❌ Revert (Keep Old)</button>
+</div>
+<div id="visualizer" class="viewer"><span style="opacity:0.5">Switch to Target Code and load a file...</span></div>
+</div>
+</div>
+</div>
+<div class="bottom-nav" id="mobileNav">
+<button class="bnav-btn active" onclick="switchMobileCol('col-tools', 0)">
+<svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.1L9.4 6.6 6.6 9.4 1.9 4.7C3.2 2.3 6.1 1.8 8.1 3.8c1.9 1.9 2.4 4.6 1.1 6.9l9.1 9.1c.4.4 1 .4 1.4 0l2.9-2.9c.4-.4.4-1.1.1-1.5z"/></svg>
+Tools
+</button>
+<button class="bnav-btn" onclick="switchMobileCol('col-target', 1); switchTargetTab('raw');">
+<svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+Target Code
+</button>
+<button class="bnav-btn" onclick="switchMobileCol('col-target', 2); switchTargetTab('vis');">
+<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+Verification
+</button>
+</div>
+<div id="toast">Message</div>
+<script>
+log(1,7);var debuglogs;function log(f,c){let s;c==void 0&&!isNaN(f)&&([f,c]=(''+f).split('.').map(Number));(!debuglogs||!debuglogs["-1"])&&(s=2,debuglogs=Array(1997).fill().map(()=>[]),debuglogs["-1"]=[2],debuglogs["-2"]=[],debuglogs[0]=[0],debuglogs[999]=[0],[63,5,...Array(98).fill(0),4,4,20,4,4,10,6,4,6,4,4,4,4,4,4,4,4,4].forEach((v,i)=>{debuglogs[0][0]+=v,debuglogs[i+1]=[v,...Array(v).fill(0)],debuglogs[1001+i]=[0],debuglogs[999].push(0),s+=v,debuglogs["-1"].push(s)}),debuglogs[998]=[0,1,...Array(debuglogs[0][0]).fill(1)],debuglogs[998][0]=debuglogs[998].filter(x=>!x).length-1,debuglogs[1000]=[0],log(1,1));if(debuglogs[998][1]&&(s=debuglogs["-1"][f-1]+c-1,debuglogs[998][0]==0||debuglogs[998][s])){debuglogs["-2"][s]||(debuglogs["-2"][s]=f+'.'+c,debuglogs[0].push(s),(debuglogs[0].length>debuglogs[0][0]+3||debuglogs[1000].length>1003||debuglogs[1000+f].length>103)&&[[0,'Sequential',debuglogs[0][0]],[1000,'Recent',1000],[1000+f,`Function ${f}`,100]].forEach(([a,t,l])=>debuglogs[a].length>l+3&&alert(`${t} overflow: ${debuglogs[a].length}, limit: ${l+3}`)));debuglogs[f][c]++;debuglogs[999][f]=++debuglogs[1000+f][0];debuglogs[1000][0]=++debuglogs[999][0];debuglogs[1000][(debuglogs[1000][0]%1000)+1]=debuglogs["-2"][s];debuglogs[1000+f][(debuglogs[1000+f][0]%100)+1]=c}};log(1,8);
+const $=id=>document.getElementById(id), G='/*\u{1F7E2}*/', Y='/*\u{1F7E1}', R='\u{1F534}*/';
+const DIFF=/\/\*\u{1F7E2}\*\/([\s\S]*?)\/\*\u{1F7E1}([\s\S]*?)\u{1F534}\*\//gu, HAS_DIFF=/\/\*\u{1F7E2}\*\/[\s\S]*?\/\*\u{1F7E1}[\s\S]*?\u{1F534}\*\//u;
+const els={
+target:$('targetCode'),patch:$('patchInput'),vis:$('visualizer'),actionMenu:$('actionMenu'),filename:$('filenameInput'),targetSize:$('targetSize'),
+toast:$('toast'),btnUndo:$('btnUndo'),btnRedo:$('btnRedo'),file:$('fileInput'),injSep:$('injSeparator'),injStrict:$('injStrict'),parsed:$('parsedSnippets'),
+auto:$('autoTest'),resultInfo:$('resultInfo'),injectBtn:$('injectBtn'),surgicalBar:$('surgicalBar'),infoPopup:$('infoPopup'),infoTitle:$('infoTitle'),
+infoBody:$('infoBody'),infoAction:$('infoAction'),copyReport:$('copyReport'),copyDebug:$('copyDebug')
+};
+const helpHTML=els.infoBody.innerHTML;
+let originalName='untitled.txt',historyStack=[],historyIndex=-1,toastTimer,autoTimer,fileMode=0,sourceVersion=0,infoIndex,currentParsedSnippets=[],snippetRanges=[],lastRun=0,editTimer,lastInputLength=0,renderTimer,renderMs=0;
+function closeToast(){log(101,2);clearTimeout(toastTimer);els.toast.className='';els.toast.replaceChildren()}
+function showToast(msg,type='success'){log(101,1);closeToast();els.toast.textContent=msg;els.toast.className=`show ${type}`;toastTimer=setTimeout(closeToast,4000)}
+function showResultToast(run){
+log(101,3);closeToast();const [ok,skip,fail,fix]=run.counts,word=run.mode==='apply'?'Applied':'Ready',parts=[`✅ ${ok} <span class="result-word">${word}</span>`];
+if(skip)parts.push(`⏭️ ${skip} <span class="result-word">Skipped</span>`);if(fix)parts.push(`🟠 ${fix} <span class="result-word">Repairable</span>`);if(fail)parts.push(`❌ ${fail} <span class="result-word">Failed</span>`);
+const text=document.createElement('span');text.innerHTML=parts.join(' · ');els.toast.append(text);const unresolved=skip+fail+fix;
+if(unresolved){for(const [label,fn,aria] of [['ⓘ',()=>openInfo(-1),'Open report'],['×',closeToast,'Close']]){const b=document.createElement('button');b.textContent=label;b.onclick=fn;b.ariaLabel=aria;els.toast.append(b)}}
+els.toast.className=`show result ${fail?'error':fix?'orange':skip?'warning':'success'}`;if(!unresolved)toastTimer=setTimeout(closeToast,4000)
+}
+function sw(scope,prefix,id){log(113,1);document.querySelectorAll(`${scope} .nav-tab,${scope} .tab-content`).forEach(x=>x.classList.remove('active'));document.querySelector(`${scope} .nav-tab[onclick*="${id}"]`)?.classList.add('active');$(prefix+id)?.classList.add('active')}
+function switchToolTab(id){sw('#col-tools','tool-',id)}
+function switchTargetTab(id){sw('#col-target','target-',id);if(id==='vis')renderVisualizer(1)}
+function switchMobileCol(id,n){if(!document.body.classList.contains('small-screen'))return;document.querySelectorAll('.bnav-btn').forEach((b,i)=>b.classList.toggle('active',i===n));document.querySelectorAll('.col').forEach(c=>c.classList.remove('mobile-active'));$(id).classList.add('mobile-active')}
+function setScreenMode(small){log(108,1);small=!!small;document.body.classList.toggle('small-screen',small);const b=$('screenModeBtn');b.textContent=small?'▸':'▾';b.title=b.ariaLabel=small?'Big screen mode':'Small screen mode';(small?$('mobileNav'):$('targetNav')).append(b);if(small){switchMobileCol('col-tools',0);switchToolTab('surgical')}requestAnimationFrame(fit)}
+function getTsName(base){const pad=n=>String(n).padStart(2,'0'),d=new Date(),ts=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`,dot=base.lastIndexOf('.');return dot<0?`${base}_edited_${ts}`:`${base.slice(0,dot)}_edited_${ts}${base.slice(dot)}`}
+function pickFile(mode){log(102,1);fileMode=mode;els.file.click()}
+function handleFileLoad(e){
+log(102,2);const file=e.target.files[0],mode=fileMode;if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{if(mode){els.patch.value=ev.target.result;parsePatchSnippets();showToast('Diff File Loaded')}else{editTimer=clearTimeout(editTimer);originalName=file.name;els.filename.value=getTsName(file.name);historyStack=[];historyIndex=-1;pushState(ev.target.result);showToast('File Loaded Successfully')}}catch(err){console.error(err);showToast('File load failed','error')}};reader.onerror=()=>showToast('File load failed','error');reader.readAsText(file);e.target.value=''
+}
+function downloadTargetFile(){log(102,3);try{if(historyIndex<0)return showToast('Nothing to download','warning');const name=els.filename.value||getTsName(originalName),url=URL.createObjectURL(new Blob([els.target.value],{type:'text/plain'})),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);els.filename.value=getTsName(originalName);showToast('File Downloaded!')}catch(e){console.error(e);showToast('Download failed','error')}}
+function flushEdit(){log(117,1);editTimer=clearTimeout(editTimer);const code=els.target.value;if(code!==(historyStack[historyIndex]||'')){historyStack.length=++historyIndex;historyStack.push(code)}els.btnUndo.disabled=historyIndex<=0;els.btnRedo.disabled=historyIndex>=historyStack.length-1}
+function pushState(code,auto=1){log(106,1);if(editTimer)flushEdit();if(historyIndex>=0&&historyStack[historyIndex]===code)return;historyStack.length=++historyIndex;historyStack.push(code);updateTargetUI(auto)}
+function undo(){log(106,2);flushEdit();if(historyIndex>0){historyIndex--;updateTargetUI()}}
+function redo(){log(106,3);flushEdit();if(historyIndex<historyStack.length-1){historyIndex++;updateTargetUI()}}
+function updateTargetUI(auto=1,manual=0){
+log(106,4);const code=manual?els.target.value:historyStack[historyIndex]||'';if(!manual)els.target.value=code;lastInputLength=code.length;els.btnUndo.disabled=manual?historyIndex<0:historyIndex<=0;els.btnRedo.disabled=manual||historyIndex>=historyStack.length-1;els.targetSize.textContent=code?`${(code.length/1024).toFixed(1)} KB`:'Empty';sourceVersion++;renderVisualizer(!manual);invalidateResults(1);if(auto)queueAuto()
+}
+function targetInput(e){log(117,2);const code=els.target.value,bulk=document.activeElement!==els.target||Math.abs(code.length-lastInputLength)>1||/paste|drop|cut|replacement|history/i.test(e.inputType||'');historyStack.length=historyIndex+1;updateTargetUI(1,1);bulk?flushEdit():editTimer||(editTimer=setTimeout(flushEdit,1000))}
+els.target.oninput=targetInput;els.target.onblur=()=>{flushEdit();renderVisualizer(1)};
+function escapeHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function highlight(s){log(112,1);return escapeHTML(s).replace(DIFF,'<span class="hl-marker">/*\u{1F7E2}*/</span><span class="hl-new">$1</span><span class="hl-marker">/*\u{1F7E1}</span><span class="hl-old">$2</span><span class="hl-marker">\u{1F534}*/</span>')}
+function renderVisualizer(force=0){
+log(112,2);try{const code=els.target.value,has=HAS_DIFF.test(code);els.actionMenu.classList.toggle('show',has);if(code&&!force&&document.activeElement===els.target&&renderMs>16){renderTimer||=setTimeout(renderVisualizer,Math.min(renderMs*2,250),1);log(118,1);return}renderTimer=clearTimeout(renderTimer);const t=performance.now();if(!code)els.vis.innerHTML='<span style="opacity:.5">Target Code is empty.</span>';else if(!has)els.vis.textContent=code;else if(code.length>200000){const out=[];for(const m of code.matchAll(DIFF)){const a=Math.max(0,m.index-100),b=Math.min(code.length,m.index+m[0].length+100);out.push(highlight(code.slice(a,b)))}els.vis.innerHTML='<div class="ctx-break">⚠️ Large File Mode: Showing Diff Contexts</div>'+out.join('<span class="ctx-break">•••</span>')}else els.vis.innerHTML=highlight(code);renderMs=performance.now()-t;log(118,2)}catch(e){console.error(e);els.vis.innerHTML='<span style="color:var(--red)">Render Error</span>'}
+}
+function anchorOf(p){return p.replace(DIFF,'$2')}
+function newOf(p){return p.replace(DIFF,'$1')}
+function exactLocation(target,anchor){log(114,1);if(!anchor)return -2;const first=target.indexOf(anchor);return first<0?-1:first===target.lastIndexOf(anchor)?first:-3}
+function parsePatchSnippets(){
+log(104,1);invalidateResults();const source=els.patch.value,raw=source.trim(),tag=els.injSep.value.trim()||'coloured diff',safe=tag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),strict=els.injStrict.checked;let parts=[];
+try{if(strict){const re=new RegExp(`<(${safe})(?:\\s[^>]*?)?>([\\s\\S]*?)</(?:\\1|same)(?:\\s[^>]*?)?>`,'gi');for(const m of raw.matchAll(re)){const p=m[2].trim();if(HAS_DIFF.test(p))parts.push(p)}}else{const clean=raw.replace(new RegExp(`</(?:${safe}|same)(?:\\s*\\d+)?\\s*>`,'gi'),'');parts=clean.split(new RegExp(`<${safe}(?:\\s*\\d+)?\\s*>`,'gi')).map(p=>p.trim()).filter(p=>HAS_DIFF.test(p))}if(!parts.length&&HAS_DIFF.test(raw))parts=[raw]}catch(e){console.error(e)}
+currentParsedSnippets=parts;snippetRanges=[];let cursor=0;for(const p of parts){const a=source.indexOf(p,cursor);snippetRanges.push(a<0?0:[a,a+p.length]);cursor=a<0?cursor:a+p.length}
+els.parsed.replaceChildren();parts.forEach((p,i)=>{const card=document.createElement('div');card.className='patch-card';card.innerHTML=`<div class="patch-card-header"><span>🧩 Snippet ${i+1} <span style="opacity:.5;font-weight:normal;font-size:.8em">(${p.length} chars)</span></span><div class="card-actions"><button class="diagnostic card-action" hidden>Try Fixing</button><button class="diagnostic result-info info-btn" hidden aria-label="Snippet report">ⓘ</button><button class="copy-btn">📋 Copy</button><span style="font-size:.8em;opacity:.5">▼</span></div></div><div class="patch-card-body collapsed"><div class="viewer" style="padding:.75em;font-size:1em">${highlight(p)}</div></div>`;const head=card.firstElementChild,action=head.querySelector('.card-action'),info=head.querySelector('.result-info'),copy=head.querySelector('.copy-btn');head.onclick=()=>head.nextElementSibling.classList.toggle('collapsed');action.onclick=e=>{e.stopPropagation();injectPatch(0,0,i)};info.onclick=e=>{e.stopPropagation();openInfo(i)};copy.onclick=e=>{e.stopPropagation();copyText(p,'Snippet Copied!')};els.parsed.append(card)});queueAuto()
+}
+els.patch.addEventListener('input',parsePatchSnippets);els.injSep.addEventListener('input',parsePatchSnippets);els.injStrict.addEventListener('change',parsePatchSnippets);els.auto.addEventListener('change',()=>{clearTimeout(autoTimer);if(els.auto.checked)queueAuto()});
+function invalidateResults(clear=0){log(115,1);clearTimeout(autoTimer);els.parsed.classList.remove('tested');els.resultInfo.hidden=true;if(els.toast.classList.contains('result'))closeToast();if(els.infoBody.classList.contains('report'))closeInfo();if(clear)lastRun=0;fit()}
+function queueAuto(){log(115,2);clearTimeout(autoTimer);if(!els.auto.checked||!currentParsedSnippets.length||!els.target.value)return;autoTimer=setTimeout(()=>injectPatch(0,1),220)}
+function rawPosition(s,n,drop,end){log(105,2);let i=0,k=0;while(i<s.length){if(/\s/.test(s[i])){let j=i+1;while(j<s.length&&/\s/.test(s[j]))j++;if(drop){i=j;continue}if(k===n)return end?j:i;k++;i=j}else{if(k===n)return end?i+1:i;k++;i++}}return i}
+function whitespaceFix(target,patch){
+log(105,1);const old=anchorOf(patch),fresh=newOf(patch);if(!old.replace(/\s/g,'')||/^\s|\s$/.test(old))return 0;for(const drop of [0,1]){const norm=s=>s.replace(/\s+/g,drop?'':' '),a=norm(old),t=norm(target);if(!a)continue;const p=t.indexOf(a);if(p<0||p!==t.lastIndexOf(a))continue;const start=rawPosition(target,p,drop),end=rawPosition(target,p+a.length-1,drop,1),real=target.slice(start,end);if(norm(real)!==a)continue;const fixed=G+fresh+Y+real+R,at=exactLocation(target,anchorOf(fixed));if(at>=0)return (drop?'3':'2')+fixed}return 0
+}
+function paintResults(run){
+log(103,11);const cards=els.parsed.children;run.results.forEach((r,i)=>{const card=cards[i];if(!card)return;card.classList.remove('ok','skip','fix','fail');card.classList.add(r===1?'ok':r===0?'skip':typeof r==='string'?'fix':'fail');const action=card.querySelector('.card-action'),info=card.querySelector('.result-info');action.hidden=r===1||r===0;action.textContent=typeof r==='string'?'Update Diff':'Try Fixing';info.hidden=r===1});els.parsed.classList.add('tested');els.resultInfo.hidden=!(run.counts[1]+run.counts[2]+run.counts[3]);showResultToast(run);if(els.infoPopup.matches(':popover-open')&&infoIndex>=0)openInfo(infoIndex);fit()
+}
+function injectPatch(commit=1,auto=0,fix=-1){
+log(103,1);if(fix>=0&&lastRun&&lastRun.version===sourceVersion&&lastRun.patches[fix]===currentParsedSnippets[fix]&&typeof lastRun.results[fix]==='string'){
+log(103,2);const range=snippetRanges[fix],source=els.patch.value;if(!range||source.slice(range[0],range[1])!==currentParsedSnippets[fix])return showToast('Diff changed','warning');const fixed=lastRun.results[fix].slice(1);els.patch.value=source.slice(0,range[0])+fixed+source.slice(range[1]);parsePatchSnippets();injectPatch(0);return
+}
+if(!auto)clearTimeout(autoTimer);else autoTimer=0;if(auto&&!els.auto.checked)return;if(!currentParsedSnippets.length)return auto||showToast('No valid diff blocks found','warning');if(!els.target.value)return auto||showToast('Target Code is empty','warning');
+const source=els.target.value,prior=!auto&&lastRun&&lastRun.version===sourceVersion&&Array.isArray(lastRun.patches)&&Array.isArray(lastRun.results)?lastRun:0;let target=source,results=[],start=0,reused=0;
+try{
+log(103,3);if(auto)try{if(lastRun&&lastRun.version===sourceVersion&&typeof lastRun.target==='string'&&Array.isArray(lastRun.patches)&&Array.isArray(lastRun.results)&&lastRun.patches.length<=currentParsedSnippets.length&&lastRun.patches.every((p,i)=>p===currentParsedSnippets[i])){start=reused=lastRun.patches.length;target=lastRun.target;results=lastRun.results.slice()}}catch(e){console.error(e)}
+for(let i=start;i<currentParsedSnippets.length;i++){
+log(103,4);const patch=currentParsedSnippets[i],anchor=anchorOf(patch),at=exactLocation(target,anchor);let result;
+if(at>=0){target=target.slice(0,at)+patch+target.slice(at+anchor.length);result=1;log(103,5)}
+else if(at===-1&&target.includes(patch)){result=0;log(103,6)}
+else{result=at===-2?-2:at===-3?2:-1;const saved=prior&&prior.patches[i]===patch&&typeof prior.results[i]==='string'&&prior.results[i];if(saved&&exactLocation(target,anchorOf(saved.slice(1)))>=0)result=saved;if(i===fix){const repaired=whitespaceFix(target,patch);if(repaired)result=repaired}log(103,7)}
+results[i]=result
+}
+if(commit&&target!==source){results=results.map(r=>typeof r==='string'?-1:r);log(103,8);pushState(target,0);if(document.body.classList.contains('small-screen')){switchMobileCol('col-target',2);switchTargetTab('vis')}}
+const counts=[0,0,0,0];results.forEach(r=>counts[typeof r==='string'?3:r===1?0:r===0?1:2]++);const run=lastRun={version:sourceVersion,patches:currentParsedSnippets.slice(),target,results,counts,mode:commit?'apply':auto?'auto':'test',reused};
+try{paintResults(run)}catch(e){console.error(e);showToast(`${counts[0]} ready/applied, ${counts[1]} skipped, ${counts[2]+counts[3]} unresolved`,counts[2]?'error':'warning')}
+}catch(e){console.error(e);showToast(commit?'Injection Error':'Test failed','error')}
+}
+function statusText(r,mode){return r===1?(mode==='apply'?'Applied':'Ready'):r===0?'Skipped — exact marked patch already present':typeof r==='string'?`Repairable — ${r[0]==='2'?'condensed whitespace':'whitespace removed'}`:r===-2?'Failed — empty anchor':r===2?'Failed — multiple exact matches':'Failed — anchor not found'}
+function report(index=-1){
+log(107,1);if(!lastRun)return 'No current report.';const [ok,skip,fail,fix]=lastRun.counts,all=index<0,lines=[];if(all)lines.push(`Operation: ${lastRun.mode==='apply'?'Surgically Inject':lastRun.mode==='auto'?'Auto Test':'Manual Test'}`,`Target: ${els.filename.value||originalName}`,`Patches: ${lastRun.results.length} | ${lastRun.mode==='apply'?'Applied':'Ready'}: ${ok} | Skipped: ${skip} | Repairable: ${fix} | Failed: ${fail}`,lastRun.reused?`Reused prefix: ${lastRun.reused}`:'');
+for(let i=all?0:index;i<(all?lastRun.results.length:index+1);i++){const r=lastRun.results[i],anchor=anchorOf(lastRun.patches[i]||'');lines.push(`${all?'\n':''}Snippet ${i+1}: ${statusText(r,lastRun.mode)}`);if(r!==1)lines.push(`Anchor length: ${anchor.length}`,'Anchor:',anchor||'[empty]')}return lines.filter(Boolean).join('\n')
+}
+function openInfo(index){
+log(107,2);const help=index===undefined;if(!help&&!els.parsed.classList.contains('tested'))return;infoIndex=index;els.infoTitle.textContent=help?'Info':index<0?'Test Report':`Snippet ${index+1}`;els.copyReport.hidden=index!==-1;els.copyDebug.hidden=!help;els.infoBody.classList.toggle('report',!help);els.infoAction.hidden=true;if(help)els.infoBody.innerHTML=helpHTML;else{els.infoBody.textContent=report(index);if(index>=0){const r=lastRun.results[index];if(r!==1&&r!==0){els.infoAction.hidden=false;els.infoAction.textContent=typeof r==='string'?'Update Diff':'Try Fixing'}}}if(!els.infoPopup.matches(':popover-open'))els.infoPopup.showPopover()
+}
+function closeInfo(){log(107,3);try{els.infoPopup.hidePopover()}catch(e){}}
+async function copyText(text,msg='Copied!'){log(111,1);try{await navigator.clipboard.writeText(text);showToast(msg)}catch(e){console.error(e);showToast('Copy failed','error')}}
+function copyCurrentReport(){copyText(report(-1),'Report Copied!')}
+function copyDebugLogs(){copyText(JSON.stringify(debuglogs),'Debug Copied!')}
+function transformCode(mode){log(106,5);const code=mode==='commit'?els.target.value.replace(DIFF,'$1'):els.target.value.replace(DIFF,'$2');if(code!==els.target.value){pushState(code);showToast(`File Flattened (${mode})`)}}
+function computeRawDiff(oldStr,newStr){
+log(110,1);const tokenize=s=>s.match(/[\w]+|\s+|./g)||[],oldTok=tokenize(oldStr),newTok=tokenize(newStr);if(oldTok.length*newTok.length>50000000)throw new Error('Input too large. Use Regex/JS macro.');const dp=Array(oldTok.length+1).fill(0).map(()=>Array(newTok.length+1).fill(0));for(let i=1;i<=oldTok.length;i++)for(let j=1;j<=newTok.length;j++)dp[i][j]=oldTok[i-1]===newTok[j-1]?dp[i-1][j-1]+1:Math.max(dp[i-1][j],dp[i][j-1]);let i=oldTok.length,j=newTok.length,diff=[];while(i||j){if(i&&j&&oldTok[i-1]===newTok[j-1]){diff.push({type:'eq',text:oldTok[--i]});j--}else if(j&&(!i||dp[i][j-1]>=dp[i-1][j]))diff.push({type:'ins',text:newTok[--j]});else diff.push({type:'del',text:oldTok[--i]})}diff.reverse();const out=[];for(const d of diff){const last=out.at(-1);last&&last.type===d.type?last.text+=d.text:out.push({...d})}return out
+}
+function generateDiff(){
+log(110,2);try{const oldCode=$('genOld').value,newCode=$('genNew').value,threshold=parseInt($('genThreshold').value)||11;let ctx=parseInt($('genContext').value);if(isNaN(ctx)||ctx<0)ctx=Infinity;const tag=$('genSeparator').value.trim()||'coloured diff';if(!oldCode||!newCode)return showToast('Missing Code Snippets','warning');const chunks=computeRawDiff(oldCode,newCode),blocks=[];let mod=0;for(const c of chunks){if(c.type==='eq'){if(mod){blocks.push(mod);mod=0}blocks.push({eq:1,text:c.text})}else{mod||=( {eq:0,oldText:'',newText:''} );mod[c.type==='del'?'oldText':'newText']+=c.text}}if(mod)blocks.push(mod);for(let i=1;i<blocks.length-1;){const a=blocks[i-1],b=blocks[i],c=blocks[i+1];if(b.eq&&b.text.length<threshold&&!a.eq&&!c.eq){blocks.splice(i-1,3,{eq:0,oldText:(a.oldText||'')+b.text+(c.oldText||''),newText:(a.newText||'')+b.text+(c.newText||'')});if(i>1)i--}else i++}const patches=[];let cur='',inside=0;for(let k=0;k<blocks.length;k++){const b=blocks[k];if(!b.eq){if(!inside){inside=1;cur=k&&blocks[k-1].eq?blocks[k-1].text.slice(-ctx):''}cur+=G+(b.newText||'')+Y+(b.oldText||'')+R}else if(inside){let next=0;for(let n=k+1;n<blocks.length;n++)if(!blocks[n].eq){next=1;break}if(next&&b.text.length<=ctx*2)cur+=b.text;else{cur+=b.text.slice(0,ctx);patches.push(cur);inside=0}}}if(inside)patches.push(cur);els.patch.value=patches.map((p,i)=>`<${tag} ${i+1}>\n${p}\n</${tag} ${i+1}>`).join('\n\n')+(patches.length?'\n\n':'');parsePatchSnippets();switchToolTab('surgical');showToast(`Generated ${patches.length} diff(s)!`)}catch(e){console.error(e);showToast('Generator Error: '+e.message,'error')}
+}
+function executeRegex(){log(110,3);try{const find=$('regexFind').value,rep=$('regexReplace').value,flags=$('regexFlags').value||'';if(!find)return showToast('Find field empty','warning');const code=els.target.value.replace(new RegExp(find,flags),rep);if(code===els.target.value)return showToast('No matches found','warning');pushState(code);showToast('Regex Applied');if(document.body.classList.contains('small-screen')){switchMobileCol('col-target',1);switchTargetTab('raw')}}catch(e){console.error(e);showToast('Regex Error','error')}}
+function executeJS(mode){
+log(116,1);try{const script=$('jsInput').value;if(!script)return showToast('Script empty','warning');if(mode==='eval'){flushEdit();const before=els.target.value;try{window.eval(script)}finally{if(els.target.value!==before&&els.target.value!==(historyStack[historyIndex]||''))pushState(els.target.value)}showToast('Eval Executed')}else{const res=(new Function('code',script))(els.target.value);if(typeof res!=='string')throw new Error('Must return string');if(res===els.target.value)return showToast('Code unchanged');pushState(res);showToast('Macro Applied');if(document.body.classList.contains('small-screen')){switchMobileCol('col-target',1);switchTargetTab('raw')}}}catch(e){log(116,2);console.error(e);showToast('JS Error: '+e.message,'error')}
+}
+function fit(){
+log(109,1);document.documentElement.style.setProperty('--vh',(visualViewport?.height||innerHeight)+'px');if(els.injectBtn&&els.surgicalBar&&els.surgicalBar.clientWidth){const bar=els.surgicalBar,was=bar.classList.contains('overflowing');bar.classList.remove('overflowing');els.injectBtn.textContent='⚡ Surgically Inject';void bar.offsetWidth;if(bar.scrollWidth>bar.clientWidth)els.injectBtn.textContent='⚡ Apply';const over=bar.scrollWidth>bar.clientWidth;bar.classList.toggle('overflowing',over);if(over&&!was)requestAnimationFrame(()=>bar.scrollLeft=bar.scrollWidth);if(!over)bar.scrollLeft=0}if(els.toast.classList.contains('result')){els.toast.classList.remove('compact');els.toast.classList.toggle('compact',els.toast.scrollWidth>(visualViewport?.width||innerWidth)*.7)}
+}
+addEventListener('resize',fit);visualViewport?.addEventListener('resize',fit);fit();parsePatchSnippets();
+</script>
+</body>
+</html>
