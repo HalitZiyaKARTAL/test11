@@ -387,9 +387,9 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		TAB_PID = Date.now().toString(36)+'_'+(uuid ? uuid.replace(/-/g, '').slice(0, 5) : Math.random().toString(36).slice(2, 7));
 		sessionStorage.setItem('TAB_PID', TAB_PID);
 	}
-	const genKey=(id,i)=>id+'|'+i,gens={},tabBC=globalThis.BroadcastChannel&&new BroadcastChannel('dse_tab_beat'),tabSeen={},tabGen={},tabBorn=Date.now(),liveGen=(p,k)=>p===TAB_PID?!!gens[k]:Date.now()-(tabSeen[p]||0)<2500&&(tabGen[p]||[]).includes(k),tabBeat=q=>tabBC?.postMessage([CHAT_ID,TAB_PID,Date.now(),q,Object.keys(gens)]);
+	let genWatch=0,genWatchToken=0;const genKey=(id,i)=>id+'|'+i,gens={},tabBC=globalThis.BroadcastChannel&&new BroadcastChannel('dse_tab_beat'),tabSeen={},tabGen={},tabBorn=Date.now(),liveGen=(p,k)=>p===TAB_PID?!!gens[k]:Date.now()-(tabSeen[p]||0)<2500&&(tabGen[p]||[]).includes(k),tabBeat=q=>tabBC?.postMessage([CHAT_ID,TAB_PID,Date.now(),q,Object.keys(gens)]);
 	tabBC&&(tabBC.onmessage=e=>{const m=e.data||[],p=m[1],n=!tabSeen[p];if(m[0]===CHAT_ID&&p!==TAB_PID){tabSeen[p]=m[2];tabGen[p]=m[4]||[];if(n&&Date.now()-(tabSeen._||0)>20)tabSeen._=Date.now(),tabBeat(1)}},tabBeat(1),setInterval(tabBeat,1000));
-	let waitingToSave = {}; let isSaving = false; let isWaitScheduled = false; let isClashModalOpen = false;
+	let waitingToSave = {}; let isSaving = false; let isClashModalOpen = false, pendingTreeAction; const inputPlaceholder=els.messageInput.placeholder,bootStatus=(done,busy)=>els.messageInput.placeholder=busy?`${done} · ${busy}`:inputPlaceholder;
 	let pushHistoryNext = 0, histScrollTmr = 0;
 	const streamOps = {}; const streamOp = (k, fn) => { const p = (streamOps[k] || Promise.resolve()).then(fn, fn).finally(() => { if (streamOps[k] === p) delete streamOps[k]; }); return streamOps[k] = p; };
 	const ownStreamKey = (id,i) => `${CHAT_ID}|${TAB_PID}|${id}|${i}`;
@@ -428,43 +428,36 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 	});
 		localStorage.setItem('dse_metadata_migrated', 'true');
 	}
-	const DB_NAME = 'AIChatDB'; const STORE_NAME = 'chatTrees';
-	let dbPromise;
-	const initDB = () => dbPromise ||= new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, 1);
-		request.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME);
-		request.onsuccess = () => { const db = request.result; db.onversionchange = () => { db.close(); dbPromise = null; }; db.onclose = () => { dbPromise = null; }; resolve(db); };
-		request.onerror = () => { dbPromise = null; reject(request.error); };
-		request.onblocked = () => { dbPromise = null; reject(new Error('DB Blocked')); };
-});
+	const DB_NAME = 'AIChatDB'; const STORE_NAME = 'chatTrees', HOT_LIMIT = 2e6, hotKey = key => `dse_hot_${key}`, deferHot = fn => globalThis.requestIdleCallback ? globalThis.requestIdleCallback(fn,{timeout:2000}) : setTimeout(fn);
+	let dbPromise, storageRevisionCounter = 0;
+	const resetDB=()=>{const old=dbPromise;dbPromise=null;old?.then(db=>db.close()).catch(()=>{})},initDB=(status,attempt=0)=>dbPromise||=(()=>{const winner={},open=()=>new Promise((resolve,reject)=>{const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=e=>e.target.result.createObjectStore(STORE_NAME);request.onsuccess=()=>{const db=request.result;if(winner.db)db.close();else winner.db=db;resolve(winner.db)};request.onerror=()=>reject(request.error||new Error('DB open failed'));request.onblocked=()=>status?.('✓ Settings ready',`Storage blocked; waiting… A${attempt+1}`)}),promise=Promise.any([open(),new Promise(resolve=>setTimeout(resolve,1500*1.5**attempt)).then(()=>winner.db||(status?.('✓ Settings ready',`Storage still opening; trying another path… A${attempt+1}`),open()))]).then(db=>{const forget=()=>dbPromise===promise&&(dbPromise=null);db.onversionchange=()=>{db.close();forget()};db.onclose=forget;return db},error=>{if(dbPromise===promise)dbPromise=null;throw error});return promise})();
 
+	function saveHotMirror(key,serialized,revision){deferHot(()=>{if(getMetadata().chatStates?.[key]?.storage?.dbRevision!==revision)return;let saved=false;try{if(serialized.length>HOT_LIMIT)throw new Error('Hot mirror too large');localStorage.setItem(hotKey(key),serialized);saved=true}catch{}updateMetadata(m=>{const storage=(m.chatStates[key]??={}).storage??={};if(storage.dbRevision!==revision)return;if(saved){storage.localRevision=revision;storage.localSuccess=Date.now();storage.localFailure=0}else storage.localFailure=Date.now()})})}
 	async function saveToIndexedDB(key, data) {
-		const db = await initDB();
-		return new Promise((res, rej) => { 
-			const tx = db.transaction(STORE_NAME, 'readwrite'); 
-			tx.objectStore(STORE_NAME).put(data, key); 
-			tx.oncomplete = () => { 
-				if(data?.nodes) updateMetadata(m => {
-					m.chatStates[key] ??= {};
-					m.chatStates[key].chatTreeMetadata = chatTreeMetadata(data, m.chatStates[key].chatTreeMetadata);
-				}); 
-				res(); 
-			}; 
-			tx.onerror = () => rej(tx.error); 
-			tx.onabort = () => rej(new Error('Browser Aborted Transaction')); 
+		const dbReady=initDB(),isTree=!!data?.nodes,revision=isTree?`${Date.now().toString(36)}_${TAB_PID}_${++storageRevisionCounter}`:'',serialized=isTree?(data._storageRevision=revision,JSON.stringify(data)):'';
+		const db = await dbReady;
+		return new Promise((res, rej) => {
+			const tx=db.transaction(STORE_NAME,'readwrite');let settled=false;
+			const fail=error=>{if(settled)return;settled=true;if(isTree)updateMetadata(m=>{const storage=(m.chatStates[key]??={}).storage??={};storage.dbFailure=Date.now()});rej(error)};
+			tx.objectStore(STORE_NAME).put(data,key);
+			tx.oncomplete=()=>{if(settled)return;settled=true;if(isTree){updateMetadata(m=>{const state=m.chatStates[key]??={},storage=state.storage??={};state.chatTreeMetadata=chatTreeMetadata(data,state.chatTreeMetadata,serialized.length);storage.dbRevision=revision;storage.dbSuccess=Date.now();storage.dbFailure=0});key===CHAT_ID&&saveHotMirror(key,serialized,revision)}res()};
+			tx.onerror=()=>fail(tx.error);tx.onabort=()=>fail(new Error('Browser Aborted Transaction'));
 		});
 	}
 
-	async function loadFromIndexedDB(key) {
-		const db = await initDB();
-		return new Promise((res, rej) => { const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).get(key); req.onsuccess = () => res(req.result); req.onerror = rej; });
+	function readHotTree(key){try{const state=getMetadata().chatStates?.[key]?.storage,raw=localStorage.getItem(hotKey(key));if(!raw||!state?.dbRevision||state.localRevision!==state.dbRevision)return;const tree=JSON.parse(raw);if(tree._storageRevision!==state.localRevision||isTreeCorrupted(tree))throw new Error('Invalid hot mirror');return tree}catch(error){try{localStorage.removeItem(hotKey(key))}catch{}updateMetadata(m=>{const storage=(m.chatStates[key]??={}).storage??={};storage.localFailure=Date.now();delete storage.localRevision})}}
+
+	async function loadFromIndexedDB(key,status,attempt=0) {
+		const db=await initDB(status,attempt);status?.('✓ Storage opened',`Reading saved tree… A${attempt+1}`);
+		return new Promise((resolve,reject)=>{try{const tx=db.transaction(STORE_NAME,'readonly'),request=tx.objectStore(STORE_NAME).get(key);request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);tx.onerror=tx.onabort=()=>reject(tx.error||new Error('Database read aborted'))}catch(error){reject(error)}});
 	}
+	async function bootRead(){for(let attempt=0;;attempt++)try{bootStatus('✓ Settings ready',`Opening chat storage… A${attempt+1}`);return await loadFromIndexedDB(CHAT_ID,bootStatus,attempt)}catch(error){resetDB();bootStatus(`✕ Read A${attempt+1} failed`,`Retrying saved chat… A${attempt+2}`);await new Promise(resolve=>setTimeout(resolve,Math.min(5000,250*1.5**attempt)))}}
 
 	const SB='dse_sb',ST=864e5,sKey=(n,i)=>`${CHAT_ID}|${TAB_PID}|${n.id}|${i}`,foreignSB=new Set,recoveredSB=new Set;
 	const streamReg=fn=>initDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(STORE_NAME,'readwrite'),st=tx.objectStore(STORE_NAME),r=st.get(SB);let out;r.onsuccess=()=>{const b=r.result||{},now=Date.now();for(const k in b)if(now-b[k][0]>ST)delete b[k];out=fn(b);st.put(b,SB);};tx.oncomplete=()=>res(out);tx.onerror=()=>rej(tx.error);})).catch(()=>{});
 	function saveStreamBuffer(n,i){const v=n.versions[i];if(!v||v.endTime)return Promise.resolve();const k=sKey(n,i),nv=[Date.now(),n.lastUpdateTime,v.rawContent||'',v.thinking||''];return streamOp(k,()=>streamReg(b=>{const o=b[k]||[];if((nv[2]+nv[3]).length>=((o[2]||'')+(o[3]||'')).length)b[k]=nv;}))}
 	function clearStreamBuffer(id,i){const run=()=>streamReg(b=>{const now=Date.now();for(const k in b){const [c,p,n,v]=k.split('|'),own=p===TAB_PID,hit=c===CHAT_ID&&(!id?own:n===id&&(i==null||+v===i));if(hit&&(own||recoveredSB.has(k)&&now-b[k][0]>6e4&&now-(tabSeen[p]||tabBorn)>2000&&!liveGen(p,genKey(n,v))))delete b[k],recoveredSB.delete(k),foreignSB.delete(k);}}); if(id&&i!=null)return streamOp(ownStreamKey(id,i),run); return run();}
-	async function applyStreamBuffer(){let changed=false,wait=false;await streamReg(b=>{for(const k in b){const [c,p]=k.split('|');if(c===CHAT_ID&&p!==TAB_PID)wait=true,foreignSB.add(k);}});if(wait&&tabBC)await new Promise(r=>setTimeout(r,2000));await streamReg(b=>{for(const k in b){const [c,p,id,i]=k.split('|'),g=genKey(id,i);if(c!==CHAT_ID||p!==TAB_PID&&liveGen(p,g))continue;const [e,u,rc,th]=b[k],n=chatTree.nodes[id],v=n?.versions?.[+i],bl=(rc||'').length+(th||'').length,vl=(v?.rawContent||'').length+(v?.thinking||'').length;if(!n||!v)continue;if(bl>vl){Object.assign(v,{rawContent:rc||'',thinking:th||'',isDead:true,errorIcon:'☠️',errorText:'Stream interrupted',endTime:u||e});v.e??=u||e;if(p!==n.p)v.p??=p;n.lastUpdateTime=u||e;n.isGenerating=false;changed=true;if(p!==TAB_PID)recoveredSB.add(k);}}});return changed;}
+	async function applyStreamBuffer(t){let changed=[],wait=false;await streamReg(b=>{for(const k in b){const [c,p]=k.split('|');if(c===CHAT_ID&&p!==TAB_PID)wait=true,foreignSB.add(k);}});if(wait&&tabBC)await new Promise(r=>setTimeout(r,2000));await streamReg(b=>{for(const k in b){const [c,p,id,i]=k.split('|'),g=genKey(id,i);if(c!==CHAT_ID||p!==TAB_PID&&liveGen(p,g))continue;const [e,u,rc,th]=b[k],n=t.nodes[id],v=n?.versions?.[+i],bl=(rc||'').length+(th||'').length,vl=(v?.rawContent||'').length+(v?.thinking||'').length;if(!n||!v)continue;if(bl>vl){Object.assign(v,{rawContent:rc||'',thinking:th||'',isDead:true,errorIcon:'☠️',errorText:'Stream interrupted',endTime:u||e});v.e??=u||e;if(p!==n.p)v.p??=p;n.lastUpdateTime=u||e;n.isGenerating=false;changed.push(n);if(p!==TAB_PID)recoveredSB.add(k);}}});return changed;}
 
 
 	const ve=(n,v=n?.versions?.[n.activeVersion])=>v?.e??n?.e??v?.startTime??v?.endTime??n?.lastUpdateTime??getNodeEpochMs(n);
@@ -472,6 +465,15 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 	const ver=(n,v)=>(v.e??=Date.now(),n?.p&&n.p!==TAB_PID&&(v.p??=TAB_PID),v);
 	let chatTree = { rootId: 'root', nodes: { 'root': { id: 'root', role: 'system', depth: 0, parentId: null, children: [], activeChild: -1, versions: [{rawContent: '', thinking: '', isDead: false}], activeVersion: 0 } } };
 	let activeViewList = [CHAT_ID, { id: 'root', v: 0 }];
+
+	const queueSave=(...groups)=>{for(const g of groups)if(Array.isArray(g)){for(const n of g)if(n)waitingToSave[n.id]=n}else if(g){waitingToSave[g.id]=g;const p=g.parentId&&chatTree.nodes[g.parentId];if(p){p.children.includes(g.id)||p.children.push(g.id);waitingToSave[p.id]=p}}saveHistory()},requeue=q=>{for(const id in q)waitingToSave[id]??=q[id]},work=()=>Object.keys(gens).length||Object.keys(waitingToSave).length,adoptTree=t=>!pendingTreeAction&&!work()&&(chatTree=t,1),treeBusy=()=>isSaving||isClashModalOpen||work();
+	async function treeAction(action,label){if(treeBusy()||pendingTreeAction)return pendingTreeAction=[action,label],showToast(`${label} queued until active work is saved`);isSaving=true;let retry=false;try{retry=await action()===false}catch(e){console.error(`${label} failed`,e);showToast(`⚠️ ${label} failed`)}finally{isSaving=false;retry&&!pendingTreeAction&&work()&&(pendingTreeAction=[action,label]);Object.keys(waitingToSave).length&&saveHistory();runTreeAction()}}
+	function runTreeAction(){if(pendingTreeAction&&!treeBusy()){const action=pendingTreeAction;pendingTreeAction=0;treeAction(...action)}}
+	function linkChild(p,id,source=p){const selected=p.children?.[p.activeChild]??source.children?.[source.activeChild];p.children??=[];let i=p.children.indexOf(id);if(i<0){i=source.children?.indexOf(id);p.children.splice(i<0?p.children.length:Math.min(i,p.children.length),0,id)}else if(p.children.indexOf(id,i+1)>=0)p.children=p.children.filter((x,j)=>x!==id||j===i);i=p.children.indexOf(selected);if(i>=0)p.activeChild=i;else if(p.children.length===1)p.activeChild=0}
+	function checkGen(g,done,fast=1){if(!g)return 1;done&&(g.done=1);const n=g.node;let p=chatTree.nodes[n.parentId],i=p?.children?.indexOf(n.id),ok=chatTree.nodes[n.id]===n&&i>=0&&p.children.indexOf(n.id,i+1)<0&&n.versions[g.v];if(!ok){const made=[];if(!p){const path=[];let id=n.parentId;while(id&&!chatTree.nodes[id]){const source=g.tree?.nodes[id];if(!source)break;path.push(source);id=source.parentId}p=chatTree.nodes[id];while(p&&path.length){const source=path.pop(),copy={...source,children:[]};chatTree.nodes[copy.id]=copy;linkChild(p,copy.id,g.tree.nodes[p.id]||p);made.push(copy);p=copy}}if(p){chatTree.nodes[n.id]=n;linkChild(p,n.id,g.parent);queueSave(n,...made);i=p.children.indexOf(n.id);ok=chatTree.nodes[n.id]===n&&i>=0&&p.children.indexOf(n.id,i+1)<0&&n.versions[g.v]}}if(ok&&g.done){queueSave(n);delete gens[g.key];tabBeat(1);runTreeAction()}else if(!ok&&fast)watchGens(1);return ok}
+	function checkGens(){let ok=1;for(const g of Object.values(gens))if(!checkGen(g,0,0))ok=0;return ok}
+	function watchGens(restart){if(genWatch&&!restart)return;const start=performance.now(),token=++genWatchToken,tick=()=>{if(token!==genWatchToken)return;genWatch=0;if(checkGens())return;const t=performance.now()-start;genWatch=!document.hidden&&t<200?requestAnimationFrame(tick):setTimeout(tick,t<200?16:t<2000?100:1000)};genWatch=document.hidden?setTimeout(tick,16):requestAnimationFrame(tick)}
+	document.addEventListener('visibilitychange',()=>{if(genWatch)watchGens(1)})
 
 	function getViewNodes() { return activeViewList.slice(1).map(step => chatTree.nodes[step.id]).filter(n => n && n.id !== 'root'); }
 
@@ -680,7 +682,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 	const meta0=()=>({cost:{calculated:{out:'$0',hit:'$0',miss:'$0',unk:'$0',total:'$0'}},usage:{output:0,cacheHit:0,cacheMiss:0,total:0},unknown:0,chars:0,msgs:0,nodes:0,versions:0,objectChars:0});
 	function addMeta(s,v,role='assistant'){s.versions++;const ch=(v?.rawContent||'').length+(v?.thinking||'').length;s.chars+=ch;const u=v?.metadata?.usage,c=typeof v?.metadata?.cost?.calculated==='number'?{total:`$${v.metadata.cost.calculated}`}:v?.metadata?.cost?.calculated,ex=v?.metadata?.cost?.exact?.total;if(u){['output','cacheHit','cacheMiss','total'].forEach(k=>s.usage[k]+=u[k]||0)}if(c){['out','hit','miss','unk'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],c[k]||'$0'));const known=qv(c.out)+qv(c.hit)+qv(c.miss)+qv(c.unk),T=ex||c.total||`$${known}`;if(ex&&qv(T)>known)s.cost.calculated.unk=qadd(s.cost.calculated.unk,`$${qv(T)-known}+`);s.cost.calculated.total=qadd(s.cost.calculated.total,T)}else if(role==='assistant'&&ch)s.unknown=1;return s}
 	const metaVs=a=>a.reduce((s,v)=>addMeta(s,v),meta0());
-	function chatTreeMetadata(tree,old={}){const s=meta0();s.created=old.created||Date.now();s.epoch=Date.now();Object.values(tree.nodes||{}).forEach(n=>{s.nodes++;if(n.id!=='root')s.msgs++;vs(n).forEach(v=>addMeta(s,v,n.role))});try{s.objectChars=JSON.stringify(tree).length}catch{}return s}
+	function chatTreeMetadata(tree,old={},objectChars){const s=meta0();s.created=old.created||Date.now();s.epoch=Date.now();Object.values(tree.nodes||{}).forEach(n=>{s.nodes++;if(n.id!=='root')s.msgs++;vs(n).forEach(v=>addMeta(s,v,n.role))});try{s.objectChars=objectChars??JSON.stringify(tree).length}catch{}return s}
 	function sumChatTreeMetadata(a){const s=meta0();a.forEach(t=>{if(!t){s.unknown=1;return}['unknown','chars','msgs','nodes','versions','objectChars'].forEach(k=>s[k]+=t[k]||0);['output','cacheHit','cacheMiss','total'].forEach(k=>s.usage[k]+=t.usage?.[k]||0);['out','hit','miss','unk','total'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],t.cost?.calculated?.[k]||'$0'))});return s}
 	const rowT=(m,k)=>k==='out'?m.usage.output:k==='hit'?m.usage.cacheHit:k==='miss'?m.usage.cacheMiss:k==='unk'?0:m.usage.total,cr=[['output','out'],['input hit','hit'],['input miss','miss'],['unknown','unk']];
 	function costTable(cols){return `<table class="costtbl"><tr><th>category</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr><tr><td>description</td>${cols.map(c=>`<td>${c.desc}</td>`).join('')}</tr>${cr.map(([r,k])=>`<tr><td>${r}</td>${cols.map(c=>`<td>+${money(c.meta.cost.calculated[k])}(${rowT(c.meta,k).toLocaleString()}t${c.meta.unknown?'+':''})</td>`).join('')}</tr>`).join('')}<tr><td>────</td>${cols.map(()=>'<td>────</td>').join('')}</tr><tr><td>total</td>${cols.map(c=>`<td>${money(c.meta.cost.calculated.total)}(${rowT(c.meta,'total').toLocaleString()}t${c.meta.unknown?'+':''})</td>`).join('')}</tr></table>`}
@@ -708,7 +710,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 	});
 		function importStamp(){const d=new Date().toISOString().replace(/\D/g,'').slice(0,14);return d.slice(0,8)+'_'+d.slice(8);}
 		async function uniqueImportChatId(base){const s=importStamp();let id=`${base}_imported_${s}`,v=2;while(await loadFromIndexedDB(id))id=`${base}_imported_${s}_v${v++}`;return id;}
-		function mergeTreeAsRootBranches(t){const r=t.nodes?.[t.rootId||'root']||t.nodes?.root,mp={},used=new Set(Object.keys(chatTree.nodes)),stamp=Date.now();let c=0;if(!r)throw new Error('No root');Object.keys(t.nodes).forEach(id=>{if(id!=='root'){let n=id.replace(/_\d+$/,'')+'_'+(stamp+c++);while(used.has(n))n+='x';mp[id]=n;used.add(n);}});Object.keys(mp).forEach(id=>{const o=t.nodes[id],n=JSON.parse(JSON.stringify(o));n.id=mp[id];n.parentId=o.parentId==='root'?'root':mp[o.parentId]||o.parentId;n.children=(o.children||[]).map(x=>mp[x]).filter(Boolean);n.msgNum=++globalMsgCounter;n.e??=Date.now();n.p??=TAB_PID;chatTree.nodes[n.id]=n;});(r.children||[]).forEach(id=>{if(mp[id])chatTree.nodes.root.children.push(mp[id]);});chatTree.nodes.root.activeChild=chatTree.nodes.root.children.length-1;localStorage.setItem('dse_globalMsgCounter',globalMsgCounter);waitingToSave={};}
+		function mergeTreeAsRootBranches(t){const r=t.nodes?.[t.rootId||'root']||t.nodes?.root,mp={},add=[],used=new Set(Object.keys(chatTree.nodes)),stamp=Date.now();let c=0;if(!r)throw new Error('No root');Object.keys(t.nodes).forEach(id=>{if(id!=='root'){let n=id.replace(/_\d+$/,'')+'_'+(stamp+c++);while(used.has(n))n+='x';mp[id]=n;used.add(n);}});Object.keys(mp).forEach(id=>{const o=t.nodes[id],n=JSON.parse(JSON.stringify(o));n.id=mp[id];n.parentId=o.parentId==='root'?'root':mp[o.parentId]||o.parentId;n.children=(o.children||[]).map(x=>mp[x]).filter(Boolean);n.msgNum=++globalMsgCounter;n.e??=Date.now();n.p??=TAB_PID;chatTree.nodes[n.id]=n;add.push(n)});(r.children||[]).forEach(id=>{if(mp[id])chatTree.nodes.root.children.push(mp[id]);});chatTree.nodes.root.activeChild=chatTree.nodes.root.children.length-1;localStorage.setItem('dse_globalMsgCounter',globalMsgCounter);add.push(chatTree.nodes.root);queueSave(add);}
 		els.importChatBtn.addEventListener('click', () => els.importChatInput.click());
 		els.importChatInput.addEventListener('change', (e) => {
 			const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
@@ -729,15 +731,10 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 						if (els.renameImportToggle.checked && mode !== 'replace') importedId = await uniqueImportChatId(importedId);
 						if (mode === 'replace') {
 							if (!confirm('Replace current data with imported backup? Export a backup first if unsure.')) return;
-							chatTree = healed.tree; clearStreamBuffer();
-							let maxNum = 0; Object.values(chatTree.nodes).forEach(n => { if (n.msgNum > maxNum) maxNum = n.msgNum; });
-							if (maxNum > globalMsgCounter) { globalMsgCounter = maxNum; localStorage.setItem('dse_globalMsgCounter', globalMsgCounter); }
-							waitingToSave = {}; activeViewList = [CHAT_ID, { id: 'root', v: chatTree.nodes['root'].activeVersion }]; rebuildViewArrayFrom(2);
-							await saveToIndexedDB(CHAT_ID, chatTree); updateMetadata(m => { m.chatStates[CHAT_ID] ??= {}; m.chatStates[CHAT_ID].lastWriter = TAB_PID; });
-							saveActiveView(); renderFullChat(); invalidateTokenCounterFit();
+							treeAction(async()=>{const old=chatTree;if(!adoptTree(healed.tree))return false;saveEmergencyBackup(old);clearStreamBuffer();let maxNum=0;Object.values(chatTree.nodes).forEach(n=>{if(n.msgNum>maxNum)maxNum=n.msgNum});if(maxNum>globalMsgCounter){globalMsgCounter=maxNum;localStorage.setItem('dse_globalMsgCounter',globalMsgCounter)}waitingToSave={};activeViewList=[CHAT_ID,{id:'root',v:chatTree.nodes.root.activeVersion}];rebuildViewArrayFrom(2);await saveToIndexedDB(CHAT_ID,chatTree);updateMetadata(m=>{m.chatStates[CHAT_ID]??={};m.chatStates[CHAT_ID].lastWriter=TAB_PID});saveActiveView();renderFullChat();invalidateTokenCounterFit();showToast("Import successful!");els.settingsPanel.classList.remove('open')},'Import');return;
 						} else if (importedId !== CHAT_ID) { await saveToIndexedDB(importedId, healed.tree); updateMetadata(m => { m.chatStates[importedId] ??= {}; m.chatStates[importedId].importedAt = Date.now(); }); }
 						else if (mode === 'diff') showToast('Import skipped: same chat ID.');
-						else { mergeTreeAsRootBranches(healed.tree); await saveToIndexedDB(CHAT_ID, chatTree); saveActiveView(); renderFullChat(); invalidateTokenCounterFit(); }
+						else { mergeTreeAsRootBranches(healed.tree); saveActiveView(); renderFullChat(); invalidateTokenCounterFit(); }
 					}
 					showToast("Import successful!"); els.settingsPanel.classList.remove('open');
 				} catch (err) { showToast("⚠️ Invalid Chat/Backup file"); } finally { els.importChatInput.value = ''; }
@@ -783,15 +780,10 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 				};
 		});
 		}
-		els.restoreBackupBtn.addEventListener('click', async () => {
+		els.restoreBackupBtn.addEventListener('click', () => {
 			const backup = localStorage.getItem(`dse_emergency_backup_${CHAT_ID}`);
-			if (backup && confirm("Overwrite current chat with the emergency backup?")) {
-				const parsed = JSON.parse(backup); if (isTreeCorrupted(parsed)) await promptRepairBackup(parsed);
-				const healed = healTree(parsed); chatTree = healed.tree; waitingToSave = {};
-				activeViewList = [CHAT_ID, { id: 'root', v: chatTree.nodes['root'].activeVersion }]; rebuildViewArrayFrom(2);
-				await saveToIndexedDB(CHAT_ID, chatTree); updateMetadata(m => { m.chatStates[CHAT_ID] ??= {}; m.chatStates[CHAT_ID].lastWriter = TAB_PID; });
-				saveActiveView(); renderFullChat(); showToast("Emergency backup restored!");
-			} else if (!backup) showToast("No backup available.");
+			if (backup && confirm("Overwrite current chat with the emergency backup?")){let healed;treeAction(async()=>{if(!healed){const parsed=JSON.parse(backup);if(isTreeCorrupted(parsed))await promptRepairBackup(parsed);healed=healTree(parsed)}const old=chatTree;if(!adoptTree(healed.tree))return false;saveEmergencyBackup(old);waitingToSave={};activeViewList=[CHAT_ID,{id:'root',v:chatTree.nodes.root.activeVersion}];rebuildViewArrayFrom(2);await saveToIndexedDB(CHAT_ID,chatTree);updateMetadata(m=>{m.chatStates[CHAT_ID]??={};m.chatStates[CHAT_ID].lastWriter=TAB_PID});saveActiveView();renderFullChat();showToast("Emergency backup restored!")},'Restore')}
+			else if (!backup) showToast("No backup available.");
 	});
 		document.querySelector('[data-tab="io"]').addEventListener('click', () => { const backupTime = localStorage.getItem(`dse_backup_time_${CHAT_ID}`); els.backupTimeDisplay.textContent = backupTime ? `Last auto-backup: ${new Date(parseInt(backupTime)).toLocaleString()}` : "No auto-backup found."; });
 		function saveEmergencyBackup(treeData) { try { localStorage.setItem(`dse_emergency_backup_${CHAT_ID}`, JSON.stringify(treeData)); localStorage.setItem(`dse_backup_time_${CHAT_ID}`, Date.now()); } catch (e) { if (e.name === 'QuotaExceededError' || e.code === 22) try { localStorage.removeItem(`dse_emergency_backup_${CHAT_ID}`); } catch(err){} } }
@@ -911,12 +903,12 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			const parentNode = parentId ? chatTree.nodes[parentId] : null; const depth = parentNode ? parentNode.depth + 1 : 1; const id = generateTopologicalId(parentNode);
 			const msgNum = ++globalMsgCounter; localStorage.setItem('dse_globalMsgCounter', globalMsgCounter);
 			const node = { id, role, parentId, depth, msgNum, children: [], activeChild: -1, versions: [], activeVersion: 0, isGenerating, e: Date.now(), p: TAB_PID }; node.versions=[ver(node,{rawContent, thinking, isDead: false})];
-			chatTree.nodes[id] = node; waitingToSave[id] = node;
+			chatTree.nodes[id] = node;
 			if (parentNode) {
-				parentNode.children.push(id); parentNode.activeChild = parentNode.children.length - 1; waitingToSave[parentNode.id] = parentNode;
+				parentNode.children.push(id); parentNode.activeChild = parentNode.children.length - 1;
 				const pIdx = activeViewList.findIndex(s => s.id === parentId); if (pIdx > -1) rebuildViewArrayFrom(pIdx + 1); else { activeViewList.push({ id: node.id, v: 0 }); saveActiveView(); }
 			} else { activeViewList.push({ id: node.id, v: 0 }); saveActiveView(); }
-			saveHistory(); return node;
+			queueSave(node); return node;
 		}
 		function getUnreadDotsHTML(node) { return { dL: node.versions.slice(0, node.activeVersion).some(v => v.unread) ? `<span data-action="v-unread-left" class="v-unread-left" title="Jump to unread">•</span>` : '', dR: node.versions.slice(node.activeVersion + 1).some(v => v.unread) ? `<span data-action="v-unread-right" class="v-unread-right" title="Jump to unread">•</span>` : '' }; }
 		function updateVersionDots(n,i){let a=n.activeVersion,v=n.versions,b=v[a].swarm&&!v[a].endTime&&getMessageEl(n.id)?.querySelector('.bubble');if(b){b.innerText=v.slice(a+1).map((x,i)=>{let e=x.endTime,q=e?'':'+';return`V${a+i+2}:${getMessageStatString(n,x)}${q} ${((e||Date.now())-x.startTime)/1e3|0}s${q}`}).join('\n');return}if(i!=null){if(v[i].unread)return;v[i].unread=1}let c=getMessageEl(n.id)?.querySelector('.version-ctrl');if(!c)return;let{dL,dR}=getUnreadDotsHTML(n);c.innerHTML=`${dL}<button data-action="v-prev" class="v-prev">◀</button> v${a+1}/${v.length} <button data-action="v-next" class="v-next">▶</button>${dR}`}
@@ -995,7 +987,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		}
 		function finalizeGeneration(node, vIndex, controller) {
 			if (!node.versions.some(v => v.startTime && !v.endTime && !v.isDead)) node.isGenerating = false;
-			delete gens[genKey(node.id,vIndex)];tabBeat(1);delete lastBufferWrite[node.id+'|'+vIndex]; waitingToSave[node.id] = node; saveHistory();
+			const g=gens[genKey(node.id,vIndex)];delete lastBufferWrite[node.id+'|'+vIndex];g?checkGen(g,1):queueSave(node);
 			if (node.activeVersion === vIndex) { if (!softFinalizeNodeDOM(node, vIndex)) updateNodeDOM(node); autoCollapseThinkingBlocks(); } else updateVersionDots(node);
 			if (controller) activeControllers.delete(controller); resetStopBtn(); updateSendBtn(); updateTokenDisplay();
 		}
@@ -1046,7 +1038,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			if(!messages){messages=[{role:r.systemRole||'system',content:'You are a helpful assistant.'}];targetPath.forEach(n=>{if(n.id!=='root'&&n.role!=='system'&&n.role!=='system-msg'&&n.versions[n.activeVersion||0].rawContent)messages.push({role:n.role,content:n.versions[n.activeVersion].rawContent})})}return r.prompt?messages.concat({role:r.systemRole||'system',content:r.prompt}):messages;
 		}
 		function triggerAI(messages,node,v,r) {
-			els.sendBtn.style.display='none';els.stopBtn.style.display='flex';const controller=new AbortController();activeControllers.add(controller);gens[genKey(node.id,v)]=Date.now();tabBeat(1);updateSendBtn();
+			els.sendBtn.style.display='none';els.stopBtn.style.display='flex';const controller=new AbortController(),key=genKey(node.id,v),g=gens[key]={key,node,parent:chatTree.nodes[node.parentId],tree:chatTree,v,done:0};activeControllers.add(controller);checkGen(g);queueSave(node);tabBeat(1);updateSendBtn();
 			return executeAPI(messages,node,v,controller,r).then(()=>1).catch(err=>{const ver=node.versions[v];ver.isDead=true;ver.endTime=Date.now();if(err.name==='AbortError'){ver.errorIcon='☠️';ver.errorText='Stopped by user'}else{ver.errorIcon='⚠️';ver.errorText=`Error: ${err.message}`;showToast(`⚠️ Error: ${err.message}`)}finalizeGeneration(node,v,controller);return 0});
 		}
 		async function generateAIResponse(leaf=null,node,agent='',x={},messages,v,skip) {
@@ -1079,24 +1071,22 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 				try {
 					$('clashModal').close();
 					clashQueue.forEach(c => { c.diskNode.versions.push(ver(c.diskNode,c.ramNode.versions[c.vIdx])); c.diskNode.activeVersion = c.diskNode.versions.length - 1; delete waitingToSave[c.topologicalId]; });
-					if (targetChatId === CHAT_ID) chatTree = diskTree;
-					await saveToIndexedDB(targetChatId, diskTree); updateMetadata(m => { m.chatStates[CHAT_ID] ??= {}; m.chatStates[CHAT_ID].lastWriter = TAB_PID; });
-					if (targetChatId === CHAT_ID) renderFullChat();
-				} finally { isClashModalOpen = false; if (Object.keys(waitingToSave).length > 0) saveHistory(); }
+					await saveToIndexedDB(targetChatId,diskTree);const adopted=targetChatId!==CHAT_ID||adoptTree(diskTree);if(adopted)updateMetadata(m=>{m.chatStates[CHAT_ID]??={};m.chatStates[CHAT_ID].lastWriter=TAB_PID});if(targetChatId===CHAT_ID&&adopted)renderFullChat();
+				} finally { isClashModalOpen = false; if (Object.keys(waitingToSave).length > 0) saveHistory(); runTreeAction(); }
 			};
-			$('clashBtnNo').onclick = async () => { try { $('clashModal').close(); clashQueue.forEach(c => { delete waitingToSave[c.topologicalId]; }); if (targetChatId === CHAT_ID) await loadHistory(); } finally { isClashModalOpen = false; if (Object.keys(waitingToSave).length > 0) saveHistory(); } };
+			$('clashBtnNo').onclick = () => { try { $('clashModal').close(); clashQueue.forEach(c => { delete waitingToSave[c.topologicalId]; }); if (targetChatId === CHAT_ID) treeAction(()=>loadHistory(),'Reload'); } finally { isClashModalOpen = false; if (Object.keys(waitingToSave).length > 0) saveHistory(); runTreeAction(); } };
 		}
 		$('clashModal').addEventListener('cancel', e => { e.preventDefault(); showToast('Choose yes or no to resolve the synchronization clash.'); });
 		function getTargetChatIdFromNodeId(nodeId) { const match = nodeId.match(/\((.*?)\)/); if (!match) return CHAT_ID; const endIdx = match[1].indexOf(',,'); return endIdx >= 0 ? match[1].slice(0, endIdx) : CHAT_ID; }
 		async function saveHistory() {
-			if (isClashModalOpen || isSaving) { if (!isWaitScheduled) { isWaitScheduled = true; setTimeout(() => { isWaitScheduled = false; saveHistory(); }, isClashModalOpen ? 500 : 50); } return; }
+			if (isClashModalOpen || isSaving) return;
 			if (Object.keys(waitingToSave).length === 0) return;
-			isSaving = true; const currentQueue = { ...waitingToSave }; waitingToSave = {};
+			isSaving=true;const currentQueue=Object.fromEntries(Object.entries(waitingToSave).map(([id,n])=>[id,{...n,children:[...(n.children||[])],versions:[...(n.versions||[])]}]));waitingToSave={};
 			try {
 				const state = getMetadata().chatStates?.[CHAT_ID] || {}; const lock = state.writeLock;
-				if (lock && lock.pid !== TAB_PID && Date.now() - lock.epoch < 1000) { Object.assign(waitingToSave, currentQueue); return; }
+				if (lock && lock.pid !== TAB_PID && Date.now() - lock.epoch < 1000) { requeue(currentQueue); return; }
 				updateMetadata(m => { m.chatStates[CHAT_ID] ??= {}; m.chatStates[CHAT_ID].writeLock = { pid: TAB_PID, epoch: Date.now() }; });
-				if (getMetadata().chatStates?.[CHAT_ID]?.writeLock?.pid !== TAB_PID) { Object.assign(waitingToSave, currentQueue); return; }
+				if (getMetadata().chatStates?.[CHAT_ID]?.writeLock?.pid !== TAB_PID) { requeue(currentQueue); return; }
 				if (state.lastWriter === TAB_PID || !state.lastWriter) { await saveToIndexedDB(CHAT_ID, chatTree); updateMetadata(m => { m.chatStates[CHAT_ID].lastWriter = TAB_PID; }); for(let k in currentQueue){const n=currentQueue[k];if(n.role==='assistant')n.versions.forEach((v,i)=>{if(v.endTime||v.isDead)clearStreamBuffer(k,i);});} }
 				else {
 					saveEmergencyBackup(chatTree);
@@ -1125,13 +1115,13 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 									if (ramNode.parentId && diskTree.nodes[ramNode.parentId] && !diskTree.nodes[ramNode.parentId].children.includes(incomingId)) { diskTree.nodes[ramNode.parentId].children.push(incomingId); diskTree.nodes[ramNode.parentId].activeChild = diskTree.nodes[ramNode.parentId].children.length - 1; }
 								}
 							}
-							if (hasClash) { showClashPopup(clashQueue, diskTree, targetChatId); Object.assign(waitingToSave, chatQueue); continue; }
-							await saveToIndexedDB(targetChatId, diskTree); for(let k in chatQueue){const n=chatQueue[k];if(n.role==='assistant')n.versions.forEach((v,i)=>{if(v.endTime||v.isDead)clearStreamBuffer(k,i);});} if (targetChatId === CHAT_ID) { chatTree = diskTree; renderFullChat(); updateMetadata(m => { m.chatStates[CHAT_ID].lastWriter = TAB_PID; }); }
-						} catch (e) { console.error(`🚨 ERROR IN CHAT [${targetChatId}]`, e); }
+							if (hasClash) { showClashPopup(clashQueue, diskTree, targetChatId); requeue(chatQueue); continue; }
+							await saveToIndexedDB(targetChatId, diskTree); for(let k in chatQueue){const n=chatQueue[k];if(n.role==='assistant')n.versions.forEach((v,i)=>{if(v.endTime||v.isDead)clearStreamBuffer(k,i);});} if(targetChatId===CHAT_ID&&adoptTree(diskTree)){renderFullChat();updateMetadata(m=>{m.chatStates[CHAT_ID].lastWriter=TAB_PID})}
+						} catch (e) { requeue(groupedByChat[targetChatId]);console.error(`🚨 ERROR IN CHAT [${targetChatId}]`, e); }
 					}
 				}
-			} catch (e) { Object.assign(waitingToSave, currentQueue); }
-			finally { isSaving = false; if (Object.keys(waitingToSave).length > 0 && !isWaitScheduled) { isWaitScheduled = true; setTimeout(() => { isWaitScheduled = false; saveHistory(); }, 50); } }
+			} catch (e) { requeue(currentQueue); }
+			finally { isSaving = false; if (Object.keys(waitingToSave).length > 0) setTimeout(saveHistory,50); runTreeAction(); }
 		}
 		function makeFreshTree() { return { rootId: 'root', nodes: { 'root': { id: 'root', role: 'system', depth: 0, parentId: null, children: [], activeChild: -1, versions: [{rawContent: '', thinking: '', isDead: false}], activeVersion: 0 } } }; }
 
@@ -1242,30 +1232,26 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		if (typeof globalMsgCounter !== 'undefined' && globalMsgCounter < safeNum - 1) globalMsgCounter = safeNum - 1;
 		return { tree: t, modified: mod };
 	}
-		async function loadHistory() {
+		function spawnHistory(tree,boot,verifying){if(!adoptTree(tree))return;let maxNum=0;Object.values(tree.nodes).forEach(n=>{if(n.msgNum>maxNum)maxNum=n.msgNum});if(maxNum>globalMsgCounter){globalMsgCounter=maxNum;localStorage.setItem('dse_globalMsgCounter',globalMsgCounter)}restoreActiveView();boot&&bootStatus('✓ Path restored',verifying||'Rendering chat and cost…');renderFullChat();const path=getViewNodes();autoCollapseThinkingBlocks(path[path.length-1]?.id);updateTokenDisplay();updateSendBtn();if(boot)verifying?bootStatus('✓ Local mirror shown',verifying):bootStatus();return tree}
+		async function loadHistory(boot=false,verify=0) {
 			try {
-				let saved = await loadFromIndexedDB(CHAT_ID);
-				if (!saved) { const oldLocal = localStorage.getItem('dse_chatTree'); if (oldLocal) { saved = JSON.parse(oldLocal); await saveToIndexedDB(CHAT_ID, saved); } else { renderFullChat(); updateTokenDisplay(); updateSendBtn(); return; } }
-				if (isTreeCorrupted(saved)) await promptRepairBackup(saved);
-				const healed = healTree(saved); chatTree = healed.tree; let treeModified = healed.modified;
-				let maxNum = 0; Object.values(chatTree.nodes).forEach(n => { if (n.msgNum > maxNum) maxNum = n.msgNum; });
-				if (maxNum > globalMsgCounter) { globalMsgCounter = maxNum; localStorage.setItem('dse_globalMsgCounter', globalMsgCounter); }
-				restoreActiveView();
-				renderFullChat(); const path = getViewNodes(); autoCollapseThinkingBlocks(path[path.length-1]?.id); updateTokenDisplay(); updateSendBtn();
-				(async () => { try { treeModified = await applyStreamBuffer() || treeModified;
+				const dbRead=boot?bootRead():loadFromIndexedDB(CHAT_ID);let hot=boot&&readHotTree(CHAT_ID),hotHealed=hot&&healTree(hot),hotTree=hot&&(chatTree._storageRevision===hot._storageRevision?chatTree:spawnHistory(hotHealed.tree,boot,'Verifying database…')),saved=await dbRead,migrated=false,loadedTree,treeModified=false,latest=getMetadata().chatStates?.[CHAT_ID]?.storage?.dbRevision;if(boot&&saved?._storageRevision&&latest&&saved._storageRevision!==latest){if(chatTree._storageRevision===latest)saved=hot=hotTree=chatTree;else if(!verify)return loadHistory(boot,1)}
+				if(!saved){if(hotTree){saved=hotTree;migrated=true}else{const oldLocal=localStorage.getItem('dse_chatTree');if(oldLocal){boot&&bootStatus('✓ Storage checked','Migrating legacy chat…');saved=JSON.parse(oldLocal);migrated=true}else{renderFullChat();updateTokenDisplay();updateSendBtn();boot&&bootStatus();return}}}
+				if(hotTree&&saved._storageRevision===hot._storageRevision){loadedTree=hotTree;treeModified=migrated||hotHealed.modified;boot&&bootStatus()}else{boot&&bootStatus(migrated?'✓ Legacy chat found':'✓ Saved tree received','Checking chat…');if(isTreeCorrupted(saved))await promptRepairBackup(saved);const healed=healTree(saved);boot&&bootStatus('✓ Chat checked','Restoring active path…');loadedTree=spawnHistory(healed.tree,boot);if(!loadedTree){boot&&bootStatus('✓ Saved tree ready','Waiting for active work…');treeAction(()=>loadHistory(boot),'Reload');return}treeModified=healed.modified||migrated}
+				try { const recovered=await applyStreamBuffer(loadedTree);
 				const lock = getMetadata().chatStates?.[CHAT_ID]?.writeLock, isAnotherTabActive = lock && lock.pid !== TAB_PID && (Date.now() - lock.epoch < 1500);
-				for (const k in chatTree.nodes) {
-					const n = chatTree.nodes[k], vi = n.activeVersion || 0, ver = n.versions[vi];
+				for (const k in loadedTree.nodes) {
+					const n = loadedTree.nodes[k], vi = n.activeVersion || 0, ver = n.versions[vi];
 					if (n.isGenerating && !liveGen(vp(n, ver), genKey(n.id, vi)) && (!isAnotherTabActive && Date.now() - (n.lastUpdateTime || 0) > 10000)) {
 						n.isGenerating = false; if (ver) { ver.isDead = true; ver.errorIcon = '☠️'; ver.errorText = 'Stream interrupted'; ver.endTime = Date.now(); }
-						treeModified = true; waitingToSave[n.id] = n;
+						recovered.push(n);
 					}
 				}
-				if (treeModified) { await saveToIndexedDB(CHAT_ID, chatTree); saveHistory(); preserveScrollDuring(()=>renderPathTopoAware()); updateTokenDisplay(); } } catch(e){ console.error('Background recovery failed:', e); } })();
-			} catch(e) { console.error('🚨 Critical database load error:', e); showToast('⚠️ Could not load history from database.'); renderFullChat(); updateSendBtn(); }
+				if(chatTree!==loadedTree)return;if(treeModified||recovered.length){queueSave(treeModified?Object.values(loadedTree.nodes):recovered);preserveScrollDuring(()=>renderPathTopoAware());updateTokenDisplay()} } catch(e){ console.error('Background recovery failed:', e); }
+			} catch(e) { console.error('🚨 Critical chat spawn error:', e); showToast('⚠️ Could not display saved chat.'); boot&&bootStatus('✕ Saved tree received','Chat spawn failed'); renderFullChat(); updateSendBtn(); }
 		}
-		function commitNode(node) { saveActiveView(); waitingToSave[node.id] = node; saveHistory(); updateNodeDOM(node); updateTokenDisplay(); }
-		function commitBranch(parent, renderId) { saveActiveView(); waitingToSave[parent.id] = parent; saveHistory(); renderPathFrom(renderId); updateTokenDisplay(); }
+		function commitNode(node) { saveActiveView(); queueSave(node); updateNodeDOM(node); updateTokenDisplay(); }
+		function commitBranch(parent, renderId) { saveActiveView(); queueSave(parent); renderPathFrom(renderId); updateTokenDisplay(); }
 		let lastThinkPointer=0,lastThinkNode='';
 		function handleThinkingToggle(t,pd=false){
 			const g=t.closest?.('.thinking-header, .thinking-footer, .thinking-bottom-toggle'); if(!g)return false;
@@ -1325,7 +1311,6 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 						activeViewList[targetListIdx].v = targetNode.activeVersion;
 						pushHistoryNext=1;saveActiveView();
 					}
-					waitingToSave[targetNode.id] = targetNode;
 					updateNodeDOM(targetNode);
 					generateAIResponse(null,targetNode,settings.swarm?(prior.swarm||prior.agent||''):'',settings.swarm&&prior.agent&&!prior.swarm?{...prior,...prior.x}:{},buildAPIMessages(path.slice(0,sliceIdx+1)),targetNode.activeVersion,!settings.swarm|!prior.swarm);
 					break;
@@ -1368,7 +1353,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			renderFullChat(); if(s.scroll!=null) els.chatContainer.scrollTop=s.scroll; requestAnimationFrame(saveActiveView);
 		});
 		window.addEventListener('beforeunload',e=>{if(isSaving||Object.keys(waitingToSave).length)e.preventDefault(),e.returnValue='';});
-		loadSettings(); await loadHistory(); loadModels();
+		loadSettings(); await loadHistory(true); loadModels();
 })();
 const todo = JSON.parse(`{
 "tags":"tags for each individual messages nodes branches chats etc",
