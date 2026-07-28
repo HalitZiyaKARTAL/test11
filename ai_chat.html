@@ -9,7 +9,7 @@
 	--bg: #0f0f1a; --surface: #1a1a2e; --text: #e0e0e8; --text-secondary: #9090a8;
 	--accent: #5b8def; --border: #2a2a40; --user-bubble: #1e3a6e; --ai-bubble: #1e3a3a;
 	--thinking-bg: #1a2030; --danger: #e0556a; --success: #4caf84; --code-bg: #0a0a14;
-	--warning: #d4a050; --safe-bottom: env(safe-area-inset-bottom, 0px);
+	--warning: #d4a050; --safe-top: env(safe-area-inset-top, 0px); --safe-right: env(safe-area-inset-right, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px);
 	--block-font-scale: 0.5;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,7 +30,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 
 .error-avatar { background: transparent; font-size: 1.1rem; box-shadow: none; }
 
-.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; z-index: 10; gap: 10px; }
+.header { position: relative; background: var(--surface); border-bottom: 1px solid var(--border); padding: calc(8px + var(--safe-top)) max(14px,var(--safe-right)) 8px max(14px,var(--safe-left)); display: flex; align-items: center; justify-content: space-between; z-index: 10; gap: 10px; }
 
 .header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 
@@ -49,9 +49,11 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 
 .settings-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: grid; place-content: center; }
 
-.settings-panel { position: absolute; top: 46px; right: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; width: fit-content; min-width: min(360px,calc(100vw - 28px)); max-width: min(720px,calc(100vw - 28px)); box-sizing: border-box; max-height: 75vh; overflow-y: auto; overflow-x: hidden; z-index: 100; display: none; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.settings-panel { position: absolute; top: 100%; right: max(14px,var(--safe-right)); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; width: fit-content; min-width: min(360px,calc(100dvw - 28px - var(--safe-left) - var(--safe-right))); max-width: min(720px,calc(100dvw - 28px - var(--safe-left) - var(--safe-right))); box-sizing: border-box; max-height: min(75dvh,calc(100dvh - var(--safe-top) - var(--safe-bottom) - 56px)); overflow-y: auto; overflow-x: hidden; z-index: 100; display: none; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
 
 .settings-panel.open { display: flex; }
+
+@media (max-width: 560px) { .welcome-hint { display: none !important; } .token-counter { white-space: nowrap; word-break: normal; -webkit-line-clamp: 1; } .header-left { gap: min(2dvw,10px); } }
 
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; overflow-x: hidden; scrollbar-width: none; }
 
@@ -377,7 +379,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 ],N=r=>{(r[0]<1||r[0]?.startsWith?.('tab-'))||(r=[0,...r]);let d=D[r[1]]||[],I=typeof r[4]=='string'&&!(r[3]=='s'&&Array.isArray(r[5]));return[r[0],r[1],r[2]??d[0]??r[1],r[3]??d[1]??'b',I?r[4]:d[2]??r[1],(I?r[5]:r[4])??d[3]??0,(I?r[6]:r[5])??d[4],(I?r[7]:r[6])??d[5]]},W=(r,f)=>(r=N(r),f?.(r),(r[7]||[]).map(x=>W(x[1],f)),r),defaultSettings={displayTokens:0};SG.splice(0,SG.length,...SG.map(N));SG.map(r=>W(r,r=>!/[axr]/.test(r[3])&&(defaultSettings[r[1]]=r[5])));
 	let settings = { ...defaultSettings };
 
-	const SGT=t=>t.split('/').reduce((p,x,i)=>i?(p['$'+x]||(a=p._,p._=1,a||p.insertAdjacentHTML('afterbegin','<div class=tabs></div>'),p.children[0].insertAdjacentHTML('beforeend',`<button class="tab-btn${a?'':' active'}">${x}</button>`),p.insertAdjacentHTML('beforeend',`<div class="tab-content${a?'':' active'}"></div>`),p.children[0].lastChild._=p['$'+x]=p.lastChild)):$(x),0),J=t=>'ax'.includes(t),TG=(x,c)=>`<label class=toggle><input type=checkbox ${x} ${c?'checked':''}><span class=slider></span></label>`,F=(t,a,v,o,l,w=(String(v??'').length*1.2+5))=>t=='b'?TG(a,v):t=='s'?`<select ${a}>${o.map(x=>`<option value="${x}">${x}</option>`).join('')}</select>`:t=='a'?`<span ${a} class=eval-open>${l}</span>`:t=='x'?`<button ${a}>${l}</button>`:t=='e'?`<button ${a}>✏️</button>`:t=='t'?`<textarea class=xt rows=1 placeholder=empty style="width:${w}ch" ${a}>${escapeHtml(v??'')}</textarea>`:`<input type=number ${a} value="${escapeHtml(v??'')}">`,SC=([k,l,t,id,d,o])=>t=='r'?(o?`<div id=${id}></div>`:`<select id=${id} data-registry=${k} style=flex:1></select><button class=btn-outline data-add=${k}>➕</button><button class=btn-outline data-edit=${k}>✏️</button>`):F(t,'id='+id,d,o,l),ROW=r=>{let[tab,k,l,t,id,d,o,x]=N(r);return`<div class=setting-row>${l?`<span>${l}</span>`:''}${SC([k,l,t,id,d,o])}${(x||[]).map(y=>{let e=N(y[1]);return`<div id=${e[4]}X style=display:none>${J(e[3])?SC(e.slice(1)):ROW(e)}</div>`}).join('')}</div>`};SG.map(r=>SGT(r[0]).insertAdjacentHTML('beforeend',ROW(r)));
+	const SGT=t=>t.split('/').reduce((p,x,i)=>i?(p['$'+x]||(a=p._,p._=1,a||p.insertAdjacentHTML('afterbegin','<div class=tabs></div>'),p.children[0].insertAdjacentHTML('beforeend',`<button class="tab-btn${a?'':' active'}">${x}</button>`),p.insertAdjacentHTML('beforeend',`<div class="tab-content${a?'':' active'}"></div>`),p.children[0].lastChild._=p['$'+x]=p.lastChild)):$(x),0),J=t=>'ax'.includes(t),TG=(x,c)=>`<label class=toggle><input type=checkbox ${x} ${c?'checked':''}><span class=slider></span></label>`,F=(t,a,v,o,l,w=(String(v??'').length*1.2+5))=>t=='b'?TG(a,v):t=='s'?`<select ${a}>${o.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('')}</select>`:t=='a'?`<span ${a} class=eval-open>${l}</span>`:t=='x'?`<button ${a}>${l}</button>`:t=='e'?`<button ${a}>✏️</button>`:t=='t'?`<textarea class=xt rows=1 placeholder=empty style="width:${w}ch" ${a}>${escapeHtml(v??'')}</textarea>`:`<input type=number ${a} value="${escapeHtml(v??'')}">`,SC=([k,l,t,id,d,o])=>t=='r'?(o?`<div id=${id}></div>`:`<select id=${id} data-registry=${k} style=flex:1></select><button class=btn-outline data-add=${k}>➕</button><button class=btn-outline data-edit=${k}>✏️</button>`):F(t,'id='+id,d,o,l),ROW=r=>{let[tab,k,l,t,id,d,o,x]=N(r);return`<div class=setting-row>${l?`<span>${l}</span>`:''}${SC([k,l,t,id,d,o])}${(x||[]).map(y=>{let e=N(y[1]);return`<div id=${e[4]}X style=display:none>${J(e[3])?SC(e.slice(1)):ROW(e)}</div>`}).join('')}</div>`};SG.map(r=>SGT(r[0]).insertAdjacentHTML('beforeend',ROW(r)));
 $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b._=$('tab-'+b.dataset.tab));
 	els.tokenCounter.dataset.cost='global';
 	const CHAT_ID = 'default';
@@ -493,14 +495,15 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 
 	const default_providers = {
 		custom_template: { id: '', name: '', baseURL: '', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: [], defaultModel: '', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: false },
-		deepseek: { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: { 'deepseek-v4-pro': { maxTokens: 384000, temperature: 1, contextTokens: 1000000, outputTokens: 384000, pricing: { inputCacheHit: 3.625e-9, inputCacheMiss: 4.35e-7, output: 8.7e-7 }, request: { thinking: { type: 'enabled' }, reasoning_effort: 'max' } }, 'deepseek-v4-flash': { maxTokens: 384000, temperature: 1, contextTokens: 1000000, outputTokens: 384000, pricing: { inputCacheHit: 2.8e-9, inputCacheMiss: 1.4e-7, output: 2.8e-7 }, request: { thinking: { type: 'enabled' }, reasoning_effort: 'max' } } }, defaultModel: 'deepseek-v4-pro', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true },
-		openai: { id: 'openai', name: 'OpenAI', baseURL: 'https://api.openai.com/v1', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini'], defaultModel: 'gpt-5.5', maxTokensParam: 'max_completion_tokens', systemRole: 'developer', supportsStreamUsage: true },
-		gemini: { id: 'gemini', name: 'Gemini', baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-flash-latest'], defaultModel: 'gemini-pro-latest', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true },
-		zai: { id: 'zai', name: 'Z.ai', baseURL: 'https://api.z.ai/api/paas/v4', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: { 'glm-5.2': { maxTokens: 131072, temperature: 1, contextTokens: 1000000, outputTokens: 131072, pricing: { inputCacheHit: 0.26e-6, inputCacheMiss: 1.4e-6, output: 4.4e-6 }, request: { do_sample: true, top_p: 0.95, thinking: { type: 'enabled', clear_thinking: true }, reasoning_effort: 'max' } } }, defaultModel: 'glm-5.2', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: false }
+		deepseek: { id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: { 'deepseek-v4-pro': { maxTokens: 384000, temperature: 1, contextTokens: 1000000, outputTokens: 384000, pricing: { inputCacheHit: 3.625e-9, inputCacheMiss: 4.35e-7, output: 8.7e-7 }, request: { thinking: { type: 'enabled' }, reasoning_effort: 'max' } }, 'deepseek-v4-flash': { maxTokens: 384000, temperature: 1, contextTokens: 1000000, outputTokens: 384000, pricing: { inputCacheHit: 2.8e-9, inputCacheMiss: 1.4e-7, output: 2.8e-7 }, request: { thinking: { type: 'enabled' }, reasoning_effort: 'max' } } }, defaultModel: 'deepseek-v4-pro', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true, usageFamily: 'chat' },
+		openai: { id: 'openai', name: 'OpenAI', baseURL: 'https://api.openai.com/v1', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini'], defaultModel: 'gpt-5.5', maxTokensParam: 'max_completion_tokens', systemRole: 'developer', supportsStreamUsage: true, usageFamily: 'chat' },
+		gemini: { id: 'gemini', name: 'Gemini', baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: ['gemini-pro-latest', 'gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-flash-latest'], defaultModel: 'gemini-pro-latest', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: true, usageFamily: 'chat' },
+		zai: { id: 'zai', name: 'Z.ai', baseURL: 'https://api.z.ai/api/paas/v4', apiPath: '/chat/completions', authHeader: 'Bearer', fallbackModels: { 'glm-5.2': { maxTokens: 131072, temperature: 1, contextTokens: 1000000, outputTokens: 131072, pricing: { inputCacheHit: 0.26e-6, inputCacheMiss: 1.4e-6, output: 4.4e-6 }, request: { do_sample: true, top_p: 0.95, thinking: { type: 'enabled', clear_thinking: true }, reasoning_effort: 'max' } } }, defaultModel: 'glm-5.2', maxTokensParam: 'max_tokens', systemRole: 'system', supportsStreamUsage: false, usageFamily: 'chat' }
 	};
 	const JL=k=>{try{return JSON.parse(localStorage[k]||0)||{}}catch(e){return {}}};
 	let providers=JL('dse_providers');
 	for(const k in default_providers)providers[k]??=default_providers[k];
+	if(providers.openai?.baseURL==='https://api.openai.com/v1'&&providers.openai.usageMap?.cacheWrite===0)delete providers.openai.usageMap.cacheWrite;
 	let activeProviderId=localStorage.dse_active_provider||'deepseek';
 	providers[activeProviderId]||(activeProviderId='deepseek');
 
@@ -520,7 +523,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		provider:{items:providers,label:'Provider',prefix:'custom_',omit:'custom_template',template:()=>providers.custom_template,active:()=>activeProviderId,use:id=>{activeProviderId=id;els.apiKeyInput.value=getApiKey();loadModels()}},
 		agent:{items:agents,label:'Agent',list:'aL',omit:'_',template:()=>agents._,use:()=>0}
 	};
-	const agent=a=>a&&typeof a=='object'?a:agents[a]||{},run=(a,x={})=>{a=agent(a);let p=providers[x.provider||a.provider||activeProviderId]||providers[activeProviderId],m=x.model||a.model||(p.id==activeProviderId?getCurrentModel():p.defaultModel),d=modelDef(p,m);return{...settings,...p,...d,...a,...x,p,m,request:{...p.request,...d.request,...a.request,...x.request}}};
+	const agent=a=>a&&typeof a=='object'?a:agents[a]||{},run=(a,x={})=>{a=agent(a);let p=providers[x.provider||a.provider||activeProviderId]||providers[activeProviderId],m=x.model||a.model||(p.id==activeProviderId?getCurrentModel():p.defaultModel),d=modelDef(p,m),base=default_providers[p.id]||{},profileId=x.usageProfile??a.usageProfile??d.usageProfile??p.usageProfile??base.usageProfile,profile=usageProfiles[profileId??p.id]||{},family=usageFamilies[x.usageFamily??a.usageFamily??d.usageFamily??(profileId&&profile.usageFamily)??p.usageFamily??base.usageFamily??profile.usageFamily??settings.usageFamily??'chat']||usageFamilies.chat,requested=x.maxTokens??a.maxTokens??settings.maxTokens??p.maxTokens??d.maxTokens,maxTokens=Math.min(requested??384000,d.outputTokens??d.maxTokens??Infinity);return{...settings,...family,...profile,...base,...p,...d,...a,...x,maxTokens,p,m,request:{...p.request,...d.request,...a.request,...x.request},usageMap:{...family.usageMap,...profile.usageMap,...base.usageMap,...p.usageMap,...d.usageMap,...a.usageMap,...x.usageMap},pricing:{...modelPricing(p,m),...p.pricing,...d.pricing,...a.pricing,...x.pricing}}};
 
 	function getApiKey(id=activeProviderId) { return getMetadata().apiKeys?.[id] || ''; }
 
@@ -545,7 +548,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		}
 	}
 
-	const RO=r=>Object.entries(r.items).filter(x=>x[0]!=r.omit),Y=s=>(s||'').split(/[\/,]/).filter(x=>x),XP=s=>Y(s).filter(x=>x[0]!='@').map(x=>x.split(':')),XR=(k,i,a,p,g=p[0],t=p[1]||'t',d=`data-o="${k}|${i}|${g}"`,e=els[registries[k].list]?.dataset.e,b=t=='e'||g=='e',v=F(b?'e':t,b?`data-edit="${k}|${i}"`:d,a[g],p.slice(2)))=>e?`<label class=af>${F('t',`data-k="${k}|${i}|${g}"`,g)}${v}</label>`:b?v:t=='b'?v:`<label class=af>${g}${v}</label>`,RL=k=>{let r=registries[k],h=els[r.list],A=RO(r);if(!h)return;let T=r.template(),X=a=>XP(a.$||T.$),C=a=>Y(a.$||T.$).map(x=>x[0]=='@'?' l'+x[1]:'').join(''),B=a=>X(a).find(p=>p[1]=='b')?.[0],Z=(i,a,b)=>X(a).filter(p=>(p[1]=='b')==b).map(p=>XR(k,i,a,p)).join(''),BT=B(T);h.innerHTML=A.concat(r.omit&&[[r.omit,T]]||[]).map(([i,a])=>{let f=B(a);return`<div class="setting-row ar${C(a)} ${!f||a[f]?'':'o'}"><b ${i==r.omit?`data-add=${k}`:''}>${i==r.omit?'＋':a.name||i}</b><span class=ag>${Z(i,a,0)}</span><span class=ao>${Z(i,a,1)}</span></div>`}).join('')+`<div class="setting-row ar"><b>Edit keys</b><span class=ag></span><span class=ao>${TG(`data-e="${k}"`,h.dataset.e)}</span></div><div class="setting-row ar"><b>Set all</b><span class=ag></span><span class=ao>${BT?TG(`data-a="${k}|${BT}"`,h.dataset.all?+h.dataset.all:A.every(x=>x[1][BT])):''}</span></div>`};
+	const RO=r=>Object.entries(r.items).filter(x=>x[0]!=r.omit),Y=s=>(s||'').split(/[\/,]/).filter(x=>x),XP=s=>Y(s).filter(x=>x[0]!='@').map(x=>x.split(':')),XR=(k,i,a,p,g=p[0],t=p[1]||'t',d=`data-o="${escapeHtml([k,i,g].join('|'))}"`,e=els[registries[k].list]?.dataset.e,b=t=='e'||g=='e',v=F(b?'e':t,b?`data-edit="${escapeHtml(k+'|'+i)}"`:d,a[g],p.slice(2)))=>e?`<label class=af>${F('t',`data-k="${escapeHtml([k,i,g].join('|'))}"`,g)}${v}</label>`:b?v:t=='b'?v:`<label class=af>${escapeHtml(g)}${v}</label>`,RL=k=>{let r=registries[k],h=els[r.list],A=RO(r);if(!h)return;let T=r.template(),X=a=>XP(a.$||T.$),C=a=>Y(a.$||T.$).map(x=>x[0]=='@'?' l'+String(x[1]||'').replace(/[^\w-]/g,''):'').join(''),B=a=>X(a).find(p=>p[1]=='b')?.[0],Z=(i,a,b)=>X(a).filter(p=>(p[1]=='b')==b).map(p=>XR(k,i,a,p)).join(''),BT=B(T);h.innerHTML=A.concat(r.omit&&[[r.omit,T]]||[]).map(([i,a])=>{let f=B(a);return`<div class="setting-row ar${C(a)} ${!f||a[f]?'':'o'}"><b ${i==r.omit?`data-add=${k}`:''}>${i==r.omit?'＋':escapeHtml(a.name||i)}</b><span class=ag>${Z(i,a,0)}</span><span class=ao>${Z(i,a,1)}</span></div>`}).join('')+`<div class="setting-row ar"><b>Edit keys</b><span class=ag></span><span class=ao>${TG(`data-e="${k}"`,h.dataset.e)}</span></div><div class="setting-row ar"><b>Set all</b><span class=ag></span><span class=ao>${BT?TG(`data-a="${escapeHtml(k+'|'+BT)}"`,h.dataset.all?+h.dataset.all:A.every(x=>x[1][BT])):''}</span></div>`};
 	const renderRegistry=k=>{const r=registries[k],s=els[k+'Select'];if(s){s.replaceChildren(...RO(r).map(([,x])=>new Option(x.name||x.id,x.id)));s.value=r.active()}RL(k)};
 	const saveRegistry=k=>localStorage['dse_'+k+'s']=JSON.stringify(registries[k].items);
 	let editingKind='provider',editingId='';
@@ -601,7 +604,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 
 	function charStat(cLen, tLen = 0) { return tLen > 0 ? `${cLen}(+${tLen})c` : `${cLen}c`; }
 
-	function hasKnownCompletionTokens(node, ver) { return node.role === 'assistant' && Number.isFinite(ver.tokens) && ver.tokens > 0; }
+	function hasKnownCompletionTokens(node, ver) { return node.role === 'assistant' && Number.isFinite(ver.tokens) && ver.tokens >= 0; }
 
 	function buildCounterBase(){
 		const b=[0,0,0,0,0,0,0,0];
@@ -610,7 +613,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			if(n.role==='assistant'&&n.isGenerating&&!v.endTime)return;
 			if(n.role==='assistant'){
 				b[0]+=c;b[1]+=h;
-				if(v.tokens>0){b[6]=1;const r=Number.isFinite(v.reasoningTokens)?v.reasoningTokens:(c+h?Math.round(v.tokens*h/(c+h)):0);b[3]+=Math.max(0,v.tokens-r);b[4]+=Math.max(0,r);}
+				if(Number.isFinite(v.tokens)&&v.tokens>=0){b[6]=1;const r=Number.isFinite(v.reasoningTokens)?v.reasoningTokens:(c+h?Math.round(v.tokens*h/(c+h)):0);b[3]+=Math.max(0,v.tokens-r);b[4]+=Math.max(0,r);}
 				else{b[3]+=Math.ceil(c/4);b[4]+=Math.ceil(h/4);if(c+h)b[7]=1;}
 			}else{b[2]+=c;b[5]+=Math.ceil(c/4);if(c)b[7]=1;}
 		});
@@ -645,8 +648,9 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 	function getMessageStatString(node, ver) { return statsUseTokens() && hasKnownCompletionTokens(node, ver) ? `${ver.tokens}t` : charStat((ver.rawContent || '').length, (ver.thinking || '').length); }
 	const statsMode=()=>settings.statsDisplay||defaultSettings.statsDisplay, statsUseTokens=()=>statsMode().includes('tokens'), statsShowRate=()=>statsMode()[0]==='+';
 	const showPricing=()=>settings.pricingDisplay&&settings.pricingDisplay!=='off';
-	const cn=(n,d=6)=>Number.isFinite(n)?Number((Math.round(n*10**d)/10**d).toFixed(d)).toString():'0',cs=n=>Math.abs(n)<1?cn(n*100,4)+'¢':'$'+cn(n);
-	const qv=s=>{const m=String(s??'').match(/^(~?)([^0-9+\-.]*)(-?)([0-9]*\.?[0-9]+(?:e[+-]?\d+)?)([^+\-]*)([+-]?)$/i);return m?(m[3]?-1:1)*+m[4]/(m[5]==='¢'?100:1):0},versionCost=v=>typeof v?.metadata?.cost?.calculated==='number'?v.metadata.cost.calculated:qv(v?.metadata?.cost?.exact?.total||v?.metadata?.cost?.calculated?.total);
+	const cn=(n,d=12)=>Number.isFinite(n)?Number((Math.round(n*10**d)/10**d).toFixed(d)).toString():'0',cs=n=>Math.abs(n)<1?cn(n*100,10)+'¢':'$'+cn(n);
+	const qv=s=>{const m=String(s??'').match(/^(~?)([^0-9+\-.]*)(-?)([0-9]*\.?[0-9]+(?:e[+-]?\d+)?)([^+\-]*)([+-]?)$/i);return m?(m[3]?-1:1)*+m[4]/(m[5]==='¢'?100:1):NaN};
+	const versionCost=v=>{const c=v?.metadata?.cost;if(typeof c?.calculated==='number')return c.calculated;const total=c?.exact?.total??c?.calculated?.total;return total==null?NaN:qv(total)},costUnknown=v=>/\+$/.test(String(v?.metadata?.cost?.calculated?.total??''));
 
 	function formatCost(x,unknown=false){
 		if(!showPricing())return '';
@@ -659,32 +663,37 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 	function getVisibleCost(){
 		let total=0,unknown=false;
 		if(!showPricing())return {total,unknown};
-		getViewNodes().forEach(n=>{const v=n.versions[n.activeVersion]||{},c=versionCost(v);if(n.role==='assistant'){if(Number.isFinite(c))total+=c;else if((v.rawContent||v.thinking||'').length)unknown=true;}});
+		getViewNodes().forEach(n=>{const v=n.versions[n.activeVersion]||{},c=versionCost(v);if(n.role==='assistant'){if(Number.isFinite(c))total+=c;if(costUnknown(v)||!Number.isFinite(c)&&(v.rawContent||v.thinking||'').length)unknown=true;}});
 		return {total,unknown};
 	}
 
-	function applyResponseMetadata(v,u,p,model,provider){
-		if(!u)return;
-		const input=u.prompt_tokens||0,hit=u.prompt_cache_hit_tokens??u.prompt_tokens_details?.cached_tokens??0,miss=u.prompt_cache_miss_tokens??Math.max(0,input-hit),output=u.completion_tokens||0,reasoning=u.completion_tokens_details?.reasoning_tokens||0,r=modelPricing(p,model);
-		if(input)v.promptTokens=input;if(output)v.tokens=output;if(reasoning)v.reasoningTokens=reasoning;
-		const usage={input,cacheHit:hit,cacheMiss:miss,output,total:u.total_tokens||(input+output),reasoning};
-		v.metadata={...(v.metadata||{}),provider,model,usage};
-		const out=output*(r?.output||0),hi=hit*(r?.inputCacheHit||0),mi=miss*(r?.inputCacheMiss??r?.input??0),tot=out+hi+mi;
-		v.metadata.cost={...(v.metadata.cost||{}),calculated:{out:cs(out),hit:cs(hi),miss:cs(mi),unk:'$0',total:cs(tot)}};
-		const ex=u.cost??u.cost_usd??u.billing?.cost??u.billing?.cost_usd;if(Number.isFinite(ex))v.metadata.cost.exact={total:cs(ex)};
+	const usageFields={input:"prompt_tokens,input_tokens",output:"completion_tokens,output_tokens",total:"total_tokens",reasoning:"completion_tokens_details.reasoning_tokens,output_tokens_details.reasoning_tokens,output_tokens_details.thinking_tokens,reasoning_tokens",cacheHit:"prompt_cache_hit_tokens,prompt_tokens_details.cached_tokens,prompt_token_details.cached_tokens,input_tokens_details.cached_tokens,num_cached_tokens,cached_tokens",cacheMiss:"prompt_cache_miss_tokens",cacheWrite:"prompt_cache_write_tokens,prompt_tokens_details.cache_write_tokens,prompt_tokens_details.cache_creation_input_tokens,input_tokens_details.cache_write_tokens,cache_write_tokens",fee:"web_search_usage.tool_usage,num_server_side_tools_used,server_tool_use.web_search_requests"},usageFamilies={chat:{usageMap:usageFields},anthropic:{usageMap:{input:["input_tokens","?cache_read_input_tokens","?cache_creation_input_tokens"],output:"output_tokens",total:false,reasoning:"output_tokens_details.thinking_tokens",cacheHit:["?cache_read_input_tokens"],cacheMiss:"input_tokens",cacheWrite:["?cache_creation_input_tokens"]},reasoningInOutput:true},gemini:{usageMap:{input:"promptTokenCount",output:["candidatesTokenCount,responseTokenCount","?thoughtsTokenCount"],total:"totalTokenCount",reasoning:"thoughtsTokenCount",cacheHit:["?cachedContentTokenCount"],cacheMiss:false,cacheWrite:0},cacheRemainder:"cacheMiss",reasoningInOutput:true}},noWrite={usageMap:{cacheWrite:0},cacheRemainder:"cacheMiss"},reasonedWrite0={...noWrite,reasoningInOutput:true},anthropicUsage={usageFamily:"anthropic"},nativeGemini={...noWrite,usageFamily:"gemini"},xaiUsage={...noWrite,reasoningInOutput:false,usageCost:"usage.cost_in_usd_ticks",usageCostScale:1e-10},qwenUsage={cacheRemainder:"cacheMiss",reasoningInOutput:true},genericUsage={},usageProfiles={openai:{cacheRemainder:"cacheMiss",reasoningInOutput:true},anthropic:anthropicUsage,claude:anthropicUsage,gemini:nativeGemini,google:nativeGemini,xai:xaiUsage,grok:xaiUsage,deepseek:reasonedWrite0,zai:{...noWrite,usageMap:{cacheWrite:0,reasoning:false}},moonshot:noWrite,kimi:noWrite,qwen:qwenUsage,alibaba:qwenUsage,minimax:noWrite,mimo:reasonedWrite0,xiaomi:reasonedWrite0,mistral:noWrite,bytedance:genericUsage,seed:genericUsage,doubao:genericUsage,tencent:genericUsage,hunyuan:genericUsage},costFields="cost_usd,total_cost_usd,billing.cost_usd",nn=t=>("number"==typeof t||"string"==typeof t&&t.trim())&&Number.isFinite(t=+t)&&t>=0?t:void 0,at=(t,e)=>String(e).split(".").reduce((t,e)=>t?.[e],t);
+	function usageValue(t,e,n={}){if(!1!==e&&null!=e&&""!==e&&(!Array.isArray(e)||e.length)){if("number"==typeof e){const t=nn(e);return void 0===t&&(n.value=1),t}if(Array.isArray(e)){let u=0,i=0;for(let o of e){const e="string"==typeof o&&"?"===o[0],l=n.value,s=usageValue(t,e?o.slice(1):o,n);if(n.value&&!l)return;if(void 0===s){if(!e)return void(n.value=1)}else{if(!Number.isSafeInteger(u+=s))return void(n.value=1);i=1}}return i?u:0}for(let u of String(e).split(",")){if(u=u.trim(),!u)continue;const e=at(t,u);if(null==e)continue;const i=nn(e);if(void 0!==i)return i;n.value=1}}}
+	function mapUsage(t,e={}){const n={},u={};for(const i in usageFields){const o={},l=usageValue(t,Object.hasOwn(e,i)?e[i]:usageFields[i],o);n[i]=o.value?void 0:l,o.value&&(u[i]=1)}return n._=u,n}
+	function mergeUsage(t,e){const n={...t||{}};for(const[t,u]of Object.entries(e||{}))null==u||["__proto__","prototype","constructor"].includes(t)||(n[t]=isObj(u)?mergeUsage(n[t],u):u);return n}
+	const tokenKeys=["input","output","total","reasoning","cacheHit","cacheMiss","cacheWrite"],cacheKeys=tokenKeys.slice(4),safeSum=(...t)=>{let e=0;for(let n of t)if(n??=0,!Number.isSafeInteger(n)||n<0||!Number.isSafeInteger(e+=n))return;return e},cacheSum=t=>safeSum(...cacheKeys.map(e=>t[e])),moneyEpsilon=(t,e)=>8*Number.EPSILON*Math.max(1,Math.abs(t),Math.abs(e));
+	function normalizeUsage(t,e={}){const n={...t},u=n._||{};delete n._;let i=!!Object.keys(u).length,o=i,l=0,s=e.reasoningInOutput,d=e.cacheRemainder;void 0!==s&&!0!==s&&!1!==s&&(s=void 0,i=o=l=1);for(const t of tokenKeys)null!=n[t]&&(!Number.isSafeInteger(n[t])||n[t]<0)&&(n[t]=void 0,u[t]=1,i=o=1);null!=n.fee&&null==nn(n.fee)&&(n.fee=void 0,i=o=1);const a=null!=n.output,c=n.reasoning??0;if(!a&&!u.output&&null!=n.input&&null!=n.total&&n.total>=n.input&&(n.output=n.total-n.input),a&&c){const t=safeSum(n.input,n.output),e=safeSum(n.input,n.output,c);if(!1===s||null==s&&null!=n.input&&n.total===e){const t=safeSum(n.output,c);null==t?(n.output=void 0,i=o=l=1):n.output=t}else!0===s&&c>n.output?i=o=l=1:null!=s||null!=n.input&&n.total===t||(i=l=1)}if(c&&null!=n.output&&c>n.output&&(i=o=l=1),null!=n.input||u.input||null==n.output||null==n.total||!(n.total>=n.output)||c&&null==s&&a||(n.input=n.total-n.output),null!=n.input){const t=cacheKeys.filter(t=>null==n[t]),e=cacheSum(n);null==e?i=o=1:1!==t.length||u[t[0]]||d!==t[0]||(e<=n.input?n[t[0]]=n.input-e:i=o=1);const l=cacheSum(n);(null==l||l>n.input)&&(cacheKeys.forEach(t=>n[t]=void 0),i=o=1)}const r=cacheSum(n),p=null==r?void 0:Math.max(n.input??0,r),f=null==p?void 0:safeSum(n.output,p);null==f?(n.total=void 0,i=o=1):(null!=n.total&&n.total<f&&(i=o=1),n.total=Math.max(n.total??0,f));const h=null!=n.input&&null!=r?Math.max(0,n.input-r):0,m=null!=n.total&&null!=p?Math.max(0,n.total-(n.output??0)-p):0,_=safeSum(n.cacheWrite,h,m);return n.unknown=_??0,null==_&&(i=o=1),(null==n.input||null==n.output||h||m)&&(i=1),i&&(n.partial=!0),o&&(n.conflict=!0),l&&(n.unpriced=!0),n}
+	function priceUsage(t,e={},n){const u={},i={out:e.output,hit:e.inputCacheHit??e.input,miss:e.inputCacheMiss??e.input,write:e.inputCacheWrite},o=(t,e,n)=>{if(!t)return 0;const i=nn(e),o=t*(i??0);return null!=i&&Number.isFinite(o)||(u[n]=1),null!=i&&Number.isFinite(o)?o:0};let l={out:o(t.output,i.out,"out"),hit:o(t.cacheHit,i.hit,"hit"),miss:o(t.cacheMiss,i.miss,"miss"),unk:o(t.cacheWrite,i.write,"unk")};const s=cacheSum(t),a=null!=t.input&&null!=s?Math.max(0,t.input-s):0,c=Math.max(0,(t.unknown??0)-(t.cacheWrite??0)-a);if(a){let n=nn(e.inputUnknown);if(null==n){const e=[["cacheHit",i.hit],["cacheMiss",i.miss],["cacheWrite",i.write]].filter(([e])=>0!==t[e]).map(([,t])=>nn(t));e.length&&e.every(t=>null!=t&&t===e[0])&&(n=e[0])}l.unk+=o(a,n,"unk")}(c||t.fee||null==t.input||null==t.output||t.unpriced||t.conflict)&&(u.unk=1);let r=Object.values(l).reduce((t,e)=>t+e,0);Number.isFinite(r)||(l={out:0,hit:0,miss:0,unk:0},r=0,u.unk=1);const p=nn(n);if(null!=p){let e=p+moneyEpsilon(p,r)<r;if(e)l={out:0,hit:0,miss:0,unk:p};else{const t=p-r;if(t>=0)l.unk+=t;else{let n=0;for(const e in l)if(l[e]>=-t){l[e]+=t,n=1;break}n||(l={out:0,hit:0,miss:0,unk:p},e=1)}}return{usage:t,cost:l,total:p,unresolved:!1,split:e||!!Object.keys(u).length||!!t.partial||!!t.conflict,missing:u}}return{usage:t,cost:l,total:r,unresolved:!!Object.keys(u).length,missing:u}}
+	const bill=(t,e,n,u)=>priceUsage(normalizeUsage(t,u),e,n);
+	function applyResponseMetadata(version,raw,config,reportedExact){
+		const exactBad={},localExact=usageValue(raw,costFields,exactBad),scale=config.usageCostScale==null?1:nn(config.usageCostScale)||undefined,scaled=reportedExact!=null?scale!=null&&Number.isFinite(reportedExact*scale)?reportedExact*scale:undefined:exactBad.value?undefined:localExact,result=bill(mapUsage(raw,config.usageMap),config.pricing||{},scaled,config),usage=result.usage,cost=result.cost,mark=(value,unknown)=>cs(value)+(unknown?'+':'');
+		if(Number.isFinite(usage.input))version.promptTokens=usage.input;if(Number.isFinite(usage.output))version.tokens=usage.output;if(Number.isFinite(usage.reasoning)&&usage.reasoning<=usage.output)version.reasoningTokens=usage.reasoning;else delete version.reasoningTokens;
+		version.metadata={...(version.metadata||{}),provider:config.p.id,model:config.m,usage};
+		version.metadata.cost={...(version.metadata.cost||{}),calculated:{out:mark(cost.out,result.unresolved&&result.missing.out),hit:mark(cost.hit,result.unresolved&&result.missing.hit),miss:mark(cost.miss,result.unresolved&&result.missing.miss),unk:mark(cost.unk,result.unresolved&&result.missing.unk),total:mark(result.total,result.unresolved)},split:!!result.split};
+		scaled!=null?version.metadata.cost.exact={total:cs(scaled)}:delete version.metadata.cost.exact;
 	}
 	const top=e=>(document.querySelector('.top-active')?.classList.remove('top-active'),e?.classList.add('top-active')),untop=()=>document.querySelector('.top-active')?.classList.remove('top-active');
-	let ib={m:0,t:null,n:null}; // 1 hover, 2 pinned, 3 locked
+	let ib={m:0,t:null,n:null}; /* 1 hover, 2 pinned, 3 locked */
 	const vs=n=>n?.versions||[],av=n=>vs(n)[n?.activeVersion||0]||{},asn=n=>n?.role==='assistant',nodes=()=>Object.values(chatTree.nodes||{});
 	const msgVs=n=>[av(n)],nodeVs=n=>(chatTree.nodes[n?.parentId]?.children||[n?.id]).map(id=>chatTree.nodes[id]).filter(asn).flatMap(vs),visVs=()=>getViewNodes().filter(asn).map(av);
 	const pq=s=>{s=String(s||'').trim().replace(/,/g,'');const m=s.match(/^(~?)([^0-9+\-.]*)(-?)([0-9]*\.?[0-9]+(?:e[+-]?\d+)?)([^+\-]*)([+-]?)$/i);return m?{a:!!m[1],pre:m[2],v:(m[3]?-1:1)*+m[4],post:m[5],b:m[6],u:m[2]||m[5]}:{a:0,pre:'',v:0,post:'',b:'',u:''}};
 	const money=s=>{const q=pq(s),x=q.post==='¢'?q.v/100:q.v;return(q.a?'~':'')+formatCost(x)+(q.b||'')},qadd=(a,b)=>{let x=pq(a),y=pq(b),z=(x.post==='¢'?x.v/100:x.v)+(y.post==='¢'?y.v/100:y.v);return`${x.a||y.a?'~':''}${cs(z)}${x.b||y.b||''}`};
-	const meta0=()=>({cost:{calculated:{out:'$0',hit:'$0',miss:'$0',unk:'$0',total:'$0'}},usage:{output:0,cacheHit:0,cacheMiss:0,total:0},unknown:0,chars:0,msgs:0,nodes:0,versions:0,objectChars:0});
-	function addMeta(s,v,role='assistant'){s.versions++;const ch=(v?.rawContent||'').length+(v?.thinking||'').length;s.chars+=ch;const u=v?.metadata?.usage,c=typeof v?.metadata?.cost?.calculated==='number'?{total:`$${v.metadata.cost.calculated}`}:v?.metadata?.cost?.calculated,ex=v?.metadata?.cost?.exact?.total;if(u){['output','cacheHit','cacheMiss','total'].forEach(k=>s.usage[k]+=u[k]||0)}if(c){['out','hit','miss','unk'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],c[k]||'$0'));const known=qv(c.out)+qv(c.hit)+qv(c.miss)+qv(c.unk),T=ex||c.total||`$${known}`;if(ex&&qv(T)>known)s.cost.calculated.unk=qadd(s.cost.calculated.unk,`$${qv(T)-known}+`);s.cost.calculated.total=qadd(s.cost.calculated.total,T)}else if(role==='assistant'&&ch)s.unknown=1;return s}
+	const meta0=()=>({cost:{calculated:{out:'$0',hit:'$0',miss:'$0',unk:'$0',total:'$0'}},usage:{output:0,cacheHit:0,cacheMiss:0,unknown:0,total:0},unknown:0,chars:0,msgs:0,nodes:0,versions:0,objectChars:0});
+	function addMeta(s,v,role='assistant'){s.versions++;const ch=(v?.rawContent||'').length+(v?.thinking||'').length;s.chars+=ch;const u=v?.metadata?.usage,c=typeof v?.metadata?.cost?.calculated==='number'?{total:`$${v.metadata.cost.calculated}`}:v?.metadata?.cost?.calculated,ex=v?.metadata?.cost?.exact?.total;if(u){['output','cacheHit','cacheMiss','unknown','total'].forEach(k=>s.usage[k]+=u[k]||0);if(u.partial||u.conflict)s.unknown=1}if(c){['out','hit','miss','unk'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],c[k]||'$0'));const known=qv(c.out||'$0')+qv(c.hit||'$0')+qv(c.miss||'$0')+qv(c.unk||'$0'),T=ex??c.total??`$${known}`,total=qv(T),epsilon=moneyEpsilon(total,known);if(ex!=null&&total>known+epsilon)s.cost.calculated.unk=qadd(s.cost.calculated.unk,`$${total-known}+`);if(ex!=null&&total+epsilon<known)s.unknown=1;s.cost.calculated.total=qadd(s.cost.calculated.total,T)}else if(role==='assistant'&&ch){s.unknown=1;s.cost.calculated.total=qadd(s.cost.calculated.total,'$0+')}return s}
 	const metaVs=a=>a.reduce((s,v)=>addMeta(s,v),meta0());
 	function chatTreeMetadata(tree,old={},objectChars){const s=meta0();s.created=old.created||Date.now();s.epoch=Date.now();Object.values(tree.nodes||{}).forEach(n=>{s.nodes++;if(n.id!=='root')s.msgs++;vs(n).forEach(v=>addMeta(s,v,n.role))});try{s.objectChars=objectChars??JSON.stringify(tree).length}catch{}return s}
-	function sumChatTreeMetadata(a){const s=meta0();a.forEach(t=>{if(!t){s.unknown=1;return}['unknown','chars','msgs','nodes','versions','objectChars'].forEach(k=>s[k]+=t[k]||0);['output','cacheHit','cacheMiss','total'].forEach(k=>s.usage[k]+=t.usage?.[k]||0);['out','hit','miss','unk','total'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],t.cost?.calculated?.[k]||'$0'))});return s}
-	const rowT=(m,k)=>k==='out'?m.usage.output:k==='hit'?m.usage.cacheHit:k==='miss'?m.usage.cacheMiss:k==='unk'?0:m.usage.total,cr=[['output','out'],['input hit','hit'],['input miss','miss'],['unknown','unk']];
+	function sumChatTreeMetadata(a){const s=meta0();a.forEach(t=>{if(!t){s.unknown=1;return}['unknown','chars','msgs','nodes','versions','objectChars'].forEach(k=>s[k]+=t[k]||0);['output','cacheHit','cacheMiss','unknown','total'].forEach(k=>s.usage[k]+=t.usage?.[k]||0);['out','hit','miss','unk','total'].forEach(k=>s.cost.calculated[k]=qadd(s.cost.calculated[k],t.cost?.calculated?.[k]||'$0'))});return s}
+	const rowT=(m,k)=>k==='out'?m.usage.output:k==='hit'?m.usage.cacheHit:k==='miss'?m.usage.cacheMiss:k==='unk'?m.usage.unknown:m.usage.total,cr=[['output','out'],['input hit','hit'],['input miss','miss'],['unknown','unk']];
 	function costTable(cols){return `<table class="costtbl"><tr><th>category</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr><tr><td>description</td>${cols.map(c=>`<td>${c.desc}</td>`).join('')}</tr>${cr.map(([r,k])=>`<tr><td>${r}</td>${cols.map(c=>`<td>+${money(c.meta.cost.calculated[k])}(${rowT(c.meta,k).toLocaleString()}t${c.meta.unknown?'+':''})</td>`).join('')}</tr>`).join('')}<tr><td>────</td>${cols.map(()=>'<td>────</td>').join('')}</tr><tr><td>total</td>${cols.map(c=>`<td>${money(c.meta.cost.calculated.total)}(${rowT(c.meta,'total').toLocaleString()}t${c.meta.unknown?'+':''})</td>`).join('')}</tr></table>`}
 	const chatMeta=()=>getMetadata().chatStates?.[CHAT_ID]?.chatTreeMetadata||chatTreeMetadata(chatTree),uniMeta=()=>sumChatTreeMetadata(Object.values(getMetadata().chatStates||{}).map(x=>x.chatTreeMetadata));
 	const msgCols=n=>[{label:'message',desc:'this message',meta:metaVs(msgVs(n))},{label:'node',desc:'all messages<wbr> in this bubble',meta:metaVs(nodeVs(n))}],globalCols=()=>[{label:'visible messages',desc:'self explanatory',meta:metaVs(visVs())},{label:'whole chat ID',desc:'everything made under<wbr> current chat id',meta:chatMeta()},{label:'universal',desc:'everything this<wbr> app sees',meta:uniMeta()}];
@@ -718,8 +727,9 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 				try {
 					let parsed = JSON.parse(event.target.result); if (parsed.rootId && parsed.nodes && !parsed._dse_export) parsed = { _dse_export: true, chatTree: parsed };
 					if (!parsed._dse_export) throw new Error("Invalid format");
-					const wantH = els.ioHistoryToggle.checked, wantM = els.ioMetaToggle.checked, wantK = els.ioKeysToggle.checked;
+					const wantH = els.ioHistoryToggle.checked, wantM = els.ioMetaToggle.checked, wantK = els.ioKeysToggle.checked, mode = els.importModeSelect.value;
 					if (wantH && !parsed.chatTree) if (!confirm("No Chat History found. Continue?")) return; if (wantM && !parsed.metadata?.settings) if (!confirm("No Settings found. Continue?")) return; if (wantK && !parsed.metadata?.apiKeys) if (!confirm("No API Keys found. Continue?")) return;
+					if (wantH && parsed.chatTree && mode === 'replace' && !confirm('Replace current data with imported backup? Export a backup first if unsure.')) return;
 					if (wantM || wantK) {
 						let cMeta = getMetadata(); let iMeta = parsed.metadata || {};
 						if (wantM && iMeta.settings) { cMeta.settings = { ...defaultSettings, ...(cMeta.settings || {}), ...iMeta.settings }; if (iMeta.models) cMeta.models = { ...(cMeta.models || {}), ...iMeta.models }; }
@@ -727,14 +737,13 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 					}
 					if (wantH && parsed.chatTree) {
 						if (isTreeCorrupted(parsed.chatTree)) await promptRepairBackup(parsed.chatTree);
-						let importedId = parsed.chatId || parsed.chatTree.chatId || CHAT_ID, healed = healTree(parsed.chatTree), mode = els.importModeSelect.value;
+						let importedId = parsed.chatId || parsed.chatTree.chatId || CHAT_ID, healed = healTree(parsed.chatTree);
 						if (els.renameImportToggle.checked && mode !== 'replace') importedId = await uniqueImportChatId(importedId);
 						if (mode === 'replace') {
-							if (!confirm('Replace current data with imported backup? Export a backup first if unsure.')) return;
 							treeAction(async()=>{const old=chatTree;if(!adoptTree(healed.tree))return false;saveEmergencyBackup(old);clearStreamBuffer();let maxNum=0;Object.values(chatTree.nodes).forEach(n=>{if(n.msgNum>maxNum)maxNum=n.msgNum});if(maxNum>globalMsgCounter){globalMsgCounter=maxNum;localStorage.setItem('dse_globalMsgCounter',globalMsgCounter)}waitingToSave={};activeViewList=[CHAT_ID,{id:'root',v:chatTree.nodes.root.activeVersion}];rebuildViewArrayFrom(2);await saveToIndexedDB(CHAT_ID,chatTree);updateMetadata(m=>{m.chatStates[CHAT_ID]??={};m.chatStates[CHAT_ID].lastWriter=TAB_PID});saveActiveView();renderFullChat();invalidateTokenCounterFit();showToast("Import successful!");els.settingsPanel.classList.remove('open')},'Import');return;
 						} else if (importedId !== CHAT_ID) { await saveToIndexedDB(importedId, healed.tree); updateMetadata(m => { m.chatStates[importedId] ??= {}; m.chatStates[importedId].importedAt = Date.now(); }); }
 						else if (mode === 'diff') showToast('Import skipped: same chat ID.');
-						else { mergeTreeAsRootBranches(healed.tree); saveActiveView(); renderFullChat(); invalidateTokenCounterFit(); }
+						else { mergeTreeAsRootBranches(healed.tree); rebuildViewArrayFrom(2); renderFullChat(); invalidateTokenCounterFit(); }
 					}
 					showToast("Import successful!"); els.settingsPanel.classList.remove('open');
 				} catch (err) { showToast("⚠️ Invalid Chat/Backup file"); } finally { els.importChatInput.value = ''; }
@@ -820,14 +829,15 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			if (!stopConfirmReady) { stopConfirmReady = true; els.stopBtn.classList.add('confirm'); els.stopBtn.textContent = activeControllers.size>1?'STOP '+activeControllers.size:'STOP'; clearTimeout(stopTimeout); stopTimeout = setTimeout(() => { stopConfirmReady = false; els.stopBtn.classList.remove('confirm'); els.stopBtn.textContent = '⏹'; }, 3000); }
 			else { activeControllers.forEach(c => c.abort()); activeControllers.clear(); }
 	});
-		async function fetchModels() { const p = providers[activeProviderId]; const key = getApiKey(); if (!key || !p.baseURL) return null; try { const res = await fetch(p.baseURL + '/models', { headers: { 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key } }); return res.ok ? (await res.json()).data?.map(m => m.id).filter(Boolean) || [] : null; } catch { return null; } }
+		let modelLoadToken = 0;
+		async function fetchModels(id = activeProviderId) { const p = providers[id]; const key = getApiKey(id); if (!key || !p?.baseURL) return null; try { const res = await fetch(p.baseURL + '/models', { headers: { 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key } }); return res.ok ? (await res.json()).data?.map(m => m.id).filter(Boolean) || [] : null; } catch { return null; } }
 		async function loadModels() {
-			els.statusDot.className = 'status-dot off'; const p = providers[activeProviderId]; els.modelSelect.disabled = true; els.modelSelect.innerHTML = '<option value="">Loading...</option>';
-			let models = await fetchModels(); const list = (models && models.length) ? models : modelIds(p); els.modelSelect.innerHTML = '';
+			const id = activeProviderId, p = providers[id], token = ++modelLoadToken; els.statusDot.className = 'status-dot off'; els.modelSelect.disabled = true; els.modelSelect.innerHTML = '<option value="">Loading...</option>';
+			let models = await fetchModels(id); if (token !== modelLoadToken || id !== activeProviderId) return; const list = (models && models.length) ? models : modelIds(p); els.modelSelect.innerHTML = '';
 			if (list.length === 0) { const opt = document.createElement('option'); opt.value = p.defaultModel; opt.textContent = p.defaultModel; els.modelSelect.appendChild(opt); }
 			else { list.forEach(id => { const opt = document.createElement('option'); opt.value = id; opt.textContent = id; els.modelSelect.appendChild(opt); }); }
-			const saved = getMetadata().models?.[activeProviderId]; els.modelSelect.value = (saved && list.includes(saved)) ? saved : (list.includes(p.defaultModel) ? p.defaultModel : list[0] || p.defaultModel);
-			els.modelSelect.disabled = false; els.statusDot.className = getApiKey() ? 'status-dot' : 'status-dot off'; updateSendBtn();
+			const saved = getMetadata().models?.[id]; els.modelSelect.value = (saved && list.includes(saved)) ? saved : (list.includes(p.defaultModel) ? p.defaultModel : list[0] || p.defaultModel);
+			els.modelSelect.disabled = false; els.statusDot.className = getApiKey(id) ? 'status-dot' : 'status-dot off'; updateSendBtn();
 		}
 		els.modelSelect.addEventListener('change', updateSendBtn);
 		function processInline(text) {
@@ -856,7 +866,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			if (!thinkingText) return '';
 			let isCollapsed; if (userToggledThinkings.has(nodeId)) isCollapsed = !userToggledThinkings.get(nodeId); else isCollapsed = !isStreamForcedOpen && settings.autoCollapseThinking;
 			const bodyClass = isCollapsed ? 'thinking-body collapsed' : 'thinking-body'; const headArrowClass = isCollapsed ? 'arrow collapsed' : 'arrow'; const footBtnClass = isCollapsed ? 'thinking-bottom-toggle collapsed' : 'thinking-bottom-toggle';
-			return `<div class="thinking-block" data-node-id="${nodeId}"><div class="thinking-header"><span>🧠 Thinking · ${thinkingText.length} chars</span><span class="${headArrowClass}"></span></div><div class="${bodyClass}">${escapeHtml(thinkingText)}</div><div class="thinking-footer"><span>${thinkingText.length} chars</span><button data-action="collapse-think" class="${footBtnClass}" title="Collapse / expand thinking"></button></div></div>`;
+			return `<div class="thinking-block" data-node-id="${escapeHtml(nodeId)}"><div class="thinking-header"><span>🧠 Thinking · ${thinkingText.length} chars</span><span class="${headArrowClass}"></span></div><div class="${bodyClass}">${escapeHtml(thinkingText)}</div><div class="thinking-footer"><span>${thinkingText.length} chars</span><button data-action="collapse-think" class="${footBtnClass}" title="Collapse / expand thinking"></button></div></div>`;
 		}
 		function setThinkingCollapsed(tBlock, isCollapsed) {
 			const tBody = tBlock?.querySelector('.thinking-body'); if (!tBody) return; tBody.classList.toggle('collapsed', isCollapsed);
@@ -953,14 +963,15 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 				const useTokenStats = statsUseTokens() && hasKnownCompletionTokens(node, ver);
 				let statsHtml = `<span class="msg-stats"><span>${useTokenStats ? `${ver.tokens}t` : `${totalChars}c`}</span>`;
 				if (ver.startTime && ver.endTime && ver.endTime > ver.startTime) { const secs = (ver.endTime - ver.startTime) / 1000; statsHtml += `<span>${secs.toFixed(3)}s</span>`; if (statsShowRate()) statsHtml += `<span>${useTokenStats ? (ver.tokens / secs).toFixed(1) + 't/s' : (totalChars / secs).toFixed(1) + 'c/s'}</span>`; }
-				if (showPricing()&&Number.isFinite(versionCost(ver))) statsHtml += `<span class="cost-pill" data-cost="msg" data-node-id="${node.id}">${formatCost(versionCost(ver))}</span>`;
+				const messageCost=versionCost(ver),messageCostUnknown=costUnknown(ver)||node.role==='assistant'&&!Number.isFinite(messageCost)&&totalChars>0;
+				if (showPricing()&&node.role==='assistant'&&(Number.isFinite(messageCost)||messageCostUnknown)) statsHtml += `<span class="cost-pill" data-cost="msg" data-node-id="${escapeHtml(node.id)}">${formatCost(Number.isFinite(messageCost)?messageCost:0,messageCostUnknown)}</span>`;
 				actionBtns = `${statsHtml}</span> <button data-action="edit" class="edit-btn">✏️ Edit</button> <button data-action="copy">📋 Copy</button>`;
 				if (node.role === 'assistant' || node.role === 'user') actionBtns += `<button data-action="refresh" class="refresh-btn" title="Regenerate">🔄</button>`;
 				actionBtns += `<button data-action="toggle-msg" class="footer-toggle-btn"></button>`;
 			}
 			msgDiv.innerHTML = `
 			<div class="msg-header">
-			<span class="msg-meta"><span>${getMessageIdentifiers(node)} · ${node.role === 'user' ? 'You' : isSystem ? 'System' : 'Assistant'}</span><span class="msg-time">${getMessageTimeLabel(node)}</span><span class="char-count">${totalChars > 0 ? getMessageStatString(node, ver) : ''}</span></span>
+			<span class="msg-meta"><span>${escapeHtml(getMessageIdentifiers(node))} · ${node.role === 'user' ? 'You' : isSystem ? 'System' : 'Assistant'}</span><span class="msg-time">${getMessageTimeLabel(node)}</span><span class="char-count">${totalChars > 0 ? getMessageStatString(node, ver) : ''}</span></span>
 			<button data-action="toggle-msg" class="toggle-btn"></button>
 			</div>
 			<div class="msg-body">
@@ -971,7 +982,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			<div class="edit-ui"><textarea></textarea><div class="edit-actions"><button data-action="update" class="btn btn-update">Update text only</button><button data-action="branch" class="btn btn-branch">Spawn inline branch</button><button class="btn btn-newchat" disabled style="opacity:0.5" title="Coming soon">Spawn different chat</button><button data-action="cancel-edit" class="btn-outline btn-cancel">Cancel</button></div></div>
 			</div>
 			</div>
-			${ver.isDead ? `<div class="msg-row" style="margin-top: -4px;"><div class="avatar error-avatar">${ver.errorIcon || '☠️'}</div><div class="bubble-wrapper"><div class="bubble error-bubble-box">${escapeHtml(ver.errorText || 'Stream interrupted')}</div></div></div>` : ''}
+			${ver.isDead ? `<div class="msg-row" style="margin-top: -4px;"><div class="avatar error-avatar">${escapeHtml(ver.errorIcon || '☠️')}</div><div class="bubble-wrapper"><div class="bubble error-bubble-box">${escapeHtml(ver.errorText || 'Stream interrupted')}</div></div></div>` : ''}
 			${(!isSystem && !node.isGenerating) ? `<div class="msg-footer">${ctrls}${actionBtns}</div>` : ''}
 			</div>`;
 			if (settings.msgAutoCollapse && totalChars > settings.msgCollapseSize && !node.isGenerating) { msgDiv.querySelector('.msg-body').classList.add('collapsed'); msgDiv.querySelectorAll('[data-action="toggle-msg"]').forEach(b=>b.classList.add('collapsed')); }
@@ -981,6 +992,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			const oldEl = getMessageEl(node.id); if (!oldEl || node.activeVersion !== vIndex) return false;
 			const ver = node.versions[vIndex]; if (!ver || ver.isDead) return false;
 			const path = getViewNodes(); const newEl = createMessageDOM(node, path.length > 0 && path[path.length - 1].id === node.id); const wasCollapsed = oldEl.querySelector('.msg-body')?.classList.contains('collapsed') || false;
+			const oldBubble = oldEl.querySelector('.bubble'), newBubble = newEl.querySelector('.bubble'); if (oldBubble?.querySelector('.typing-indicator') && newBubble) oldBubble.replaceWith(newBubble);
 			const oldHeader = oldEl.querySelector('.msg-header'); const newHeader = newEl.querySelector('.msg-header'); if (oldHeader && newHeader) oldHeader.replaceWith(newHeader);
 			oldEl.querySelector('.msg-footer')?.remove(); const newFooter = newEl.querySelector('.msg-footer'); const oldBody = oldEl.querySelector('.msg-body'); if (newFooter && oldBody) oldBody.appendChild(newFooter);
 			oldEl.querySelectorAll('[data-action="toggle-msg"]').forEach(b=>b.classList.toggle('collapsed', wasCollapsed)); return true;
@@ -996,10 +1008,14 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		const payload = { ...r.request,model:modelId,messages,temperature:r.temperature??.7,stream:isStream }; payload[p.maxTokensParam || 'max_tokens'] = r.maxTokens; if (isStream && p.supportsStreamUsage) payload.stream_options = { include_usage: true };
 		node.versions[vIndex].startTime = Date.now();
 		const res = await fetch(p.baseURL + p.apiPath, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': (p.authHeader ? p.authHeader + ' ' : '') + key }, body: JSON.stringify(payload), signal: controller.signal });
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		const applyUsage = u => applyResponseMetadata(node.versions[vIndex],u,p,modelId,p.id);
+		if (!res.ok) { const body = (await res.text()).trim(); throw new Error(`HTTP ${res.status}${res.statusText ? ' ' + res.statusText : ''}${body ? '\n' + body : ''}`); }
+		let usageState,exactCost;
+		const applyUsage = envelope => {
+			const costBad={},next=r.usagePath===false?envelope:r.usagePath?at(envelope,r.usagePath):envelope?.usage??envelope?.usageMetadata??envelope?.message?.usage,reportedCost=usageValue(envelope,r.usageCost,costBad);if(!costBad.value&&reportedCost!==undefined)exactCost=reportedCost;
+			if(isObj(next))usageState=mergeUsage(usageState,next);if(usageState||exactCost!==undefined)applyResponseMetadata(node.versions[vIndex],usageState||{},r,exactCost);
+		};
 		if (!isStream) {
-			const data = await res.json(); applyUsage(data.usage); node.versions[vIndex].rawContent = data.choices[0].message.content || ''; node.versions[vIndex].thinking = data.choices[0].message.reasoning_content || '';
+			const data = await res.json(); applyUsage(data); node.versions[vIndex].rawContent = data.choices[0].message.content || ''; node.versions[vIndex].thinking = data.choices[0].message.reasoning_content || '';
 			handleNewContent(node.versions[vIndex].rawContent.length + node.versions[vIndex].thinking.length, true);
 		} else {
 			const reader = res.body.getReader(); const decoder = new TextDecoder(); let fullC = '', fullT = '', buffer = '', isFirstChunk = true, lastRenderedLen = 0;
@@ -1025,7 +1041,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 						if (node.activeVersion === vIndex) scheduleTokenDisplayUpdate(fullC.length, fullT.length);
 						const swKey=node.id+'|'+vIndex,now=Date.now();if(now-(lastBufferWrite[swKey]||0)>500){saveStreamBuffer(node,vIndex);lastBufferWrite[swKey]=now;}
 					}
-					applyUsage(parsed.usage);
+					applyUsage(parsed);
 				} catch (e) {}
 			};
 			while (true) { const { done, value } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); const lines = buffer.split('\n'); buffer = lines.pop(); for (let line of lines) processLine(line); }
@@ -1078,6 +1094,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		}
 		$('clashModal').addEventListener('cancel', e => { e.preventDefault(); showToast('Choose yes or no to resolve the synchronization clash.'); });
 		function getTargetChatIdFromNodeId(nodeId) { const match = nodeId.match(/\((.*?)\)/); if (!match) return CHAT_ID; const endIdx = match[1].indexOf(',,'); return endIdx >= 0 ? match[1].slice(0, endIdx) : CHAT_ID; }
+		const versionState = v => JSON.stringify(Object.fromEntries(Object.keys(v || {}).filter(k => !['e','p','unread'].includes(k)).sort().map(k => [k,v[k]])), (k,x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(q => [q,x[q]])) : x);
 		async function saveHistory() {
 			if (isClashModalOpen || isSaving) return;
 			if (Object.keys(waitingToSave).length === 0) return;
@@ -1106,7 +1123,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 									const diskNode = diskTree.nodes[incomingId];
 									ramNode.versions.forEach((rVer, vIdx) => {
 										const dVer = diskNode.versions[vIdx];
-										if (dVer && rVer.rawContent !== dVer.rawContent && !ramNode.isGenerating && !rVer.isDead) { clashQueue.push({ topologicalId: incomingId, ramText: rVer.rawContent, diskNode: diskNode, ramNode: ramNode, vIdx: vIdx }); hasClash = true; }
+										if (dVer && versionState(rVer) !== versionState(dVer) && !ramNode.isGenerating && !rVer.isDead) { clashQueue.push({ topologicalId: incomingId, ramText: rVer.rawContent !== dVer.rawContent ? rVer.rawContent : JSON.stringify(rVer,null,2), diskNode: diskNode, ramNode: ramNode, vIdx: vIdx }); hasClash = true; }
 										else if (dVer) diskNode.versions[vIdx] = ver(diskNode,rVer); else diskNode.versions.push(ver(diskNode,rVer));
 								});
 									diskNode.isGenerating = ramNode.isGenerating;
@@ -1153,7 +1170,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			let m = String(id).match(/^(\d+)(?:\.(\d+))?(?:v\d+)?\((.*?)\)_(\d{10,})/);
 			let origE = T(n.e) || T(n.timestamp);
 
-			// THE FIX: Corrected indexes. m[3] is History, m[4] is Epoch
+			/* THE FIX: Corrected indexes. m[3] is History, m[4] is Epoch */
 			truth[id] = m ? { L: 0, d: N(m[1]), b: N(m[2], 1) || 1, h: m[3], e: N(m[4]) } 
 						  : { L: N(n.msgNum || n.num), d: N(n.depth, N(n.msgNum || n.num)), b: N(n.branch, 1) || 1, e: origE };
 
@@ -1353,7 +1370,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			renderFullChat(); if(s.scroll!=null) els.chatContainer.scrollTop=s.scroll; requestAnimationFrame(saveActiveView);
 		});
 		window.addEventListener('beforeunload',e=>{if(isSaving||Object.keys(waitingToSave).length)e.preventDefault(),e.returnValue='';});
-		loadSettings(); await loadHistory(true); loadModels();
+		loadSettings(); await loadHistory(true);
 })();
 const todo = JSON.parse(`{
 "tags":"tags for each individual messages nodes branches chats etc",
