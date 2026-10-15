@@ -382,7 +382,7 @@ dialog::backdrop { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
 	var SGT=t=>t.split('/').reduce((p,x,i)=>i?(p['$'+x]||(a=p._,p._=1,a||p.insertAdjacentHTML('afterbegin','<div class=tabs></div>'),p.children[0].insertAdjacentHTML('beforeend',`<button class="tab-btn${a?'':' active'}">${x}</button>`),p.insertAdjacentHTML('beforeend',`<div class="tab-content${a?'':' active'}"></div>`),p.children[0].lastChild._=p['$'+x]=p.lastChild)):$(x),0),J=t=>'ax'.includes(t),TG=(x,c)=>`<label class=toggle><input type=checkbox ${x} ${c?'checked':''}><span class=slider></span></label>`,F=(t,a,v,o,l,w=(String(v??'').length*1.2+5))=>t=='b'?TG(a,v):t=='s'?`<select ${a}>${o.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('')}</select>`:t=='a'?`<span ${a} class=eval-open>${l}</span>`:t=='x'?`<button ${a}>${l}</button>`:t=='e'?`<button ${a}>✏️</button>`:t=='t'?`<textarea class=xt rows=1 placeholder=empty style="width:${w}ch" ${a}>${escapeHtml(v??'')}</textarea>`:`<input type=number ${a} value="${escapeHtml(v??'')}">`,SC=([k,l,t,id,d,o])=>t=='r'?(o?`<div id=${id}></div>`:`<select id=${id} data-registry=${k} style=flex:1></select><button class=btn-outline data-add=${k}>➕</button><button class=btn-outline data-edit=${k}>✏️</button>`):F(t,'id='+id,d,o,l),ROW=r=>{var[tab,k,l,t,id,d,o,x]=N(r);return`<div class=setting-row>${l?`<span>${l}</span>`:''}${SC([k,l,t,id,d,o])}${(x||[]).map(y=>{var e=N(y[1]);return`<div id=${e[4]}X style=display:none>${J(e[3])?SC(e.slice(1)):ROW(e)}</div>`}).join('')}</div>`};SG.map(r=>SGT(r[0]).insertAdjacentHTML('beforeend',ROW(r)));
 $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b._=$('tab-'+b.dataset.tab));
 	els.tokenCounter.dataset.cost='global';
-	var CHAT_ID = 'default';
+	var CHAT_ID = localStorage.dse_active_chat || 'default'; if (CHAT_ID === 'dse_sb') CHAT_ID = 'default';
 	var TAB_PID = sessionStorage.getItem('TAB_PID');
 	if (!TAB_PID) {
 		var uuid = globalThis.crypto?.randomUUID?.();
@@ -455,11 +455,11 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 	}
 	async function bootRead(){for(var attempt=0;;attempt++)try{bootStatus('✓ Settings ready',`Opening chat storage… A${attempt+1}`);return await loadFromIndexedDB(CHAT_ID,bootStatus,attempt)}catch(error){resetDB();bootStatus(`✕ Read A${attempt+1} failed`,`Retrying saved chat… A${attempt+2}`);await new Promise(resolve=>setTimeout(resolve,Math.min(5000,250*1.5**attempt)))}}
 
-	var SB='dse_sb',ST=864e5,sKey=(n,i)=>`${CHAT_ID}|${TAB_PID}|${n.id}|${i}`,foreignSB=new Set,recoveredSB=new Set;
+	var SB='dse_sb',ST=864e5,sKey=(n,i)=>`${CHAT_ID}|${TAB_PID}|${n.id}|${i}`,sParse=k=>{var j=k.indexOf('|'),c=k.startsWith(CHAT_ID+'|')?CHAT_ID:j<0?k:k.slice(0,j),r=k.slice(c.length+1),a=r.indexOf('|'),z=r.lastIndexOf('|');return[c,r.slice(0,a),r.slice(a+1,z),r.slice(z+1)]},foreignSB=new Set,recoveredSB=new Set;
 	var streamReg=fn=>initDB().then(db=>new Promise((res,rej)=>{var tx=db.transaction(STORE_NAME,'readwrite'),st=tx.objectStore(STORE_NAME),r=st.get(SB);var out;r.onsuccess=()=>{var b=r.result||{},now=Date.now();for(var k in b)if(now-b[k][0]>ST)delete b[k];out=fn(b);st.put(b,SB);};tx.oncomplete=()=>res(out);tx.onerror=()=>rej(tx.error);})).catch(()=>{});
 	function saveStreamBuffer(n,i){var v=n.versions[i];if(!v||v.endTime)return Promise.resolve();var k=sKey(n,i),nv=[Date.now(),n.lastUpdateTime,v.rawContent||'',v.thinking||''];return streamOp(k,()=>streamReg(b=>{var o=b[k]||[];if((nv[2]+nv[3]).length>=((o[2]||'')+(o[3]||'')).length)b[k]=nv;}))}
-	function clearStreamBuffer(id,i){var run=()=>streamReg(b=>{var now=Date.now();for(var k in b){var [c,p,n,v]=k.split('|'),own=p===TAB_PID,hit=c===CHAT_ID&&(!id?own:n===id&&(i==null||+v===i));if(hit&&(own||recoveredSB.has(k)&&now-b[k][0]>6e4&&now-(tabSeen[p]||tabBorn)>2000&&!liveGen(p,genKey(n,v))))delete b[k],recoveredSB.delete(k),foreignSB.delete(k);}}); if(id&&i!=null)return streamOp(ownStreamKey(id,i),run); return run();}
-	async function applyStreamBuffer(t){var changed=[],wait=false;await streamReg(b=>{for(var k in b){var [c,p]=k.split('|');if(c===CHAT_ID&&p!==TAB_PID)wait=true,foreignSB.add(k);}});if(wait&&tabBC)await new Promise(r=>setTimeout(r,2000));await streamReg(b=>{for(var k in b){var [c,p,id,i]=k.split('|'),g=genKey(id,i);if(c!==CHAT_ID||p!==TAB_PID&&liveGen(p,g))continue;var [e,u,rc,th]=b[k],n=t.nodes[id],v=n?.versions?.[+i],bl=(rc||'').length+(th||'').length,vl=(v?.rawContent||'').length+(v?.thinking||'').length;if(!n||!v)continue;if(bl>vl){Object.assign(v,{rawContent:rc||'',thinking:th||'',isDead:true,errorIcon:'☠️',errorText:'Stream interrupted',endTime:u||e});v.e??=u||e;if(p!==n.p)v.p??=p;n.lastUpdateTime=u||e;n.isGenerating=false;changed.push(n);if(p!==TAB_PID)recoveredSB.add(k);}}});return changed;}
+	function clearStreamBuffer(id,i){var run=()=>streamReg(b=>{var now=Date.now();for(var k in b){var [c,p,n,v]=sParse(k),own=p===TAB_PID,hit=c===CHAT_ID&&(!id?own:n===id&&(i==null||+v===i));if(hit&&(own||recoveredSB.has(k)&&now-b[k][0]>6e4&&now-(tabSeen[p]||tabBorn)>2000&&!liveGen(p,genKey(n,v))))delete b[k],recoveredSB.delete(k),foreignSB.delete(k);}}); if(id&&i!=null)return streamOp(ownStreamKey(id,i),run); return run();}
+	async function applyStreamBuffer(t){var changed=[],wait=false;await streamReg(b=>{for(var k in b){var [c,p]=sParse(k);if(c===CHAT_ID&&p!==TAB_PID)wait=true,foreignSB.add(k);}});if(wait&&tabBC)await new Promise(r=>setTimeout(r,2000));await streamReg(b=>{for(var k in b){var [c,p,id,i]=sParse(k),g=genKey(id,i);if(c!==CHAT_ID||p!==TAB_PID&&liveGen(p,g))continue;var [e,u,rc,th]=b[k],n=t.nodes[id],v=n?.versions?.[+i],bl=(rc||'').length+(th||'').length,vl=(v?.rawContent||'').length+(v?.thinking||'').length;if(!n||!v)continue;if(bl>vl){Object.assign(v,{rawContent:rc||'',thinking:th||'',isDead:true,errorIcon:'☠️',errorText:'Stream interrupted',endTime:u||e});v.e??=u||e;if(p!==n.p)v.p??=p;n.lastUpdateTime=u||e;n.isGenerating=false;changed.push(n);if(p!==TAB_PID)recoveredSB.add(k);}}});return changed;}
 
 
 	var ve=(n,v=n?.versions?.[n.activeVersion])=>v?.e??n?.e??v?.startTime??v?.endTime??n?.lastUpdateTime??getNodeEpochMs(n);
@@ -720,6 +720,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		function importStamp(){var d=new Date().toISOString().replace(/\D/g,'').slice(0,14);return d.slice(0,8)+'_'+d.slice(8);}
 		async function uniqueImportChatId(base){var s=importStamp();var id=`${base}_imported_${s}`,v=2;while(await loadFromIndexedDB(id))id=`${base}_imported_${s}_v${v++}`;return id;}
 		function mergeTreeAsRootBranches(t){var r=t.nodes?.[t.rootId||'root']||t.nodes?.root,mp={},add=[],used=new Set(Object.keys(chatTree.nodes)),stamp=Date.now();var c=0;if(!r)throw new Error('No root');Object.keys(t.nodes).forEach(id=>{if(id!=='root'){var n=id.replace(/_\d+$/,'')+'_'+(stamp+c++);while(used.has(n))n+='x';mp[id]=n;used.add(n);}});Object.keys(mp).forEach(id=>{var o=t.nodes[id],n=JSON.parse(JSON.stringify(o));n.id=mp[id];n.parentId=o.parentId==='root'?'root':mp[o.parentId]||o.parentId;n.children=(o.children||[]).map(x=>mp[x]).filter(Boolean);n.msgNum=++globalMsgCounter;n.e??=Date.now();n.p??=TAB_PID;chatTree.nodes[n.id]=n;add.push(n)});(r.children||[]).forEach(id=>{if(mp[id])chatTree.nodes.root.children.push(mp[id]);});chatTree.nodes.root.activeChild=chatTree.nodes.root.children.length-1;localStorage.setItem('dse_globalMsgCounter',globalMsgCounter);add.push(chatTree.nodes.root);queueSave(add);}
+		function retagIds(t,id){var o=t.nodes,m={},u={},P=k=>{var a=k.indexOf('('),b=k.lastIndexOf(')');if(a<0||b<=a)return k;var h=k.slice(a+1,b),e=h.lastIndexOf(',,');return k.slice(0,a+1)+id+(e<0?',,':h.slice(e))+k.slice(b)};for(var k in o)if(k!=='root'){var q=P(k);while(q!==k&&(o[q]||u[q]))q+='x';m[k]=q;u[q]=1}t.nodes={};for(var k in o){var n=o[k],q=m[k]||k;n.id=q;n.parentId=m[n.parentId]||n.parentId;n.children=(n.children||[]).map(c=>m[c]||c);t.nodes[q]=n}return t}
 		els.importChatBtn.addEventListener('click', () => els.importChatInput.click());
 		els.importChatInput.addEventListener('change', (e) => {
 			var file = e.target.files[0]; if (!file) return; var reader = new FileReader();
@@ -737,8 +738,9 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 					}
 					if (wantH && parsed.chatTree) {
 						if (isTreeCorrupted(parsed.chatTree)) await promptRepairBackup(parsed.chatTree);
-						var importedId = parsed.chatId || parsed.chatTree.chatId || CHAT_ID, healed = healTree(parsed.chatTree);
+						var importedId = parsed.chatId || parsed.chatTree.chatId || CHAT_ID, healed = healTree(parsed.chatTree); if (importedId === 'dse_sb') importedId = 'default';
 						if (els.renameImportToggle.checked && mode !== 'replace') importedId = await uniqueImportChatId(importedId);
+						retagIds(healed.tree, mode === 'replace' ? CHAT_ID : importedId);
 						if (mode === 'replace') {
 							treeAction(async()=>{var old=chatTree;if(!adoptTree(healed.tree))return false;saveEmergencyBackup(old);clearStreamBuffer();var maxNum=0;Object.values(chatTree.nodes).forEach(n=>{if(n.msgNum>maxNum)maxNum=n.msgNum});if(maxNum>globalMsgCounter){globalMsgCounter=maxNum;localStorage.setItem('dse_globalMsgCounter',globalMsgCounter)}waitingToSave={};activeViewList=[CHAT_ID,{id:'root',v:chatTree.nodes.root.activeVersion}];rebuildViewArrayFrom(2);await saveToIndexedDB(CHAT_ID,chatTree);updateMetadata(m=>{m.chatStates[CHAT_ID]??={};m.chatStates[CHAT_ID].lastWriter=TAB_PID});saveActiveView();renderFullChat();invalidateTokenCounterFit();showToast("Import successful!");els.settingsPanel.classList.remove('open')},'Import');return;
 						} else if (importedId !== CHAT_ID) { await saveToIndexedDB(importedId, healed.tree); updateMetadata(m => { m.chatStates[importedId] ??= {}; m.chatStates[importedId].importedAt = Date.now(); }); }
@@ -887,7 +889,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			return { depth, branch, version, label, history, core: `${label}(${history})` };
 		}
 		function getNextTopologicalCoreForCurrentView() { var path = getViewNodes(); return getChildTopologicalCore(path[path.length - 1] || chatTree.nodes[chatTree.rootId] || chatTree.nodes.root || null, 1); }
-		function splitHistoryPayload(history) { var s = String(history || `${CHAT_ID},,`); var sep = s.indexOf(',,'); return sep < 0 ? { chatId: s || CHAT_ID, branches: [] } : { chatId: s.slice(0, sep) || CHAT_ID, branches: s.slice(sep + 2).split(',').map(x => x.trim()).filter(Boolean) }; }
+		function splitHistoryPayload(history) { var s = String(history || `${CHAT_ID},,`); var sep = s.lastIndexOf(',,'); return sep < 0 ? { chatId: s || CHAT_ID, branches: [] } : { chatId: s.slice(0, sep) || CHAT_ID, branches: s.slice(sep + 2).split(',').map(x => x.trim()).filter(Boolean) }; }
 		function scrollToChatTop() { els.chatContainer.scrollTop = 0; }
 		function scrollToBranchLabel(label) {
 			var wanted = String(label || ''); var wantedMain = wanted.split('.')[0].replace(/v\d+$/, ''); var nodes = getViewNodes();
@@ -1093,7 +1095,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			$('clashBtnNo').onclick = () => { try { $('clashModal').close(); clashQueue.forEach(c => { delete waitingToSave[c.topologicalId]; }); if (targetChatId === CHAT_ID) treeAction(()=>loadHistory(),'Reload'); } finally { isClashModalOpen = false; if (Object.keys(waitingToSave).length > 0) saveHistory(); runTreeAction(); } };
 		}
 		$('clashModal').addEventListener('cancel', e => { e.preventDefault(); showToast('Choose yes or no to resolve the synchronization clash.'); });
-		function getTargetChatIdFromNodeId(nodeId) { var match = nodeId.match(/\((.*?)\)/); if (!match) return CHAT_ID; var endIdx = match[1].indexOf(',,'); return endIdx >= 0 ? match[1].slice(0, endIdx) : CHAT_ID; }
+		function getTargetChatIdFromNodeId(nodeId) { var h = getIdHistoryPayload(nodeId), e = h.lastIndexOf(',,'); return e >= 0 ? h.slice(0, e) : CHAT_ID; }
 		var versionState = v => JSON.stringify(Object.fromEntries(Object.keys(v || {}).filter(k => !['e','p','unread'].includes(k)).sort().map(k => [k,v[k]])), (k,x) => x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(q => [q,x[q]])) : x);
 		async function saveHistory() {
 			if (isClashModalOpen || isSaving) return;
@@ -1109,7 +1111,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 					saveEmergencyBackup(chatTree);
 					var groupedByChat = {};
 					for (var incomingId in currentQueue) {
-						var targetChatId = getTargetChatIdFromNodeId(incomingId);
+						var targetChatId = chatTree.nodes[incomingId] ? CHAT_ID : getTargetChatIdFromNodeId(incomingId);
 						if (!groupedByChat[targetChatId]) groupedByChat[targetChatId] = {};
 						groupedByChat[targetChatId][incomingId] = currentQueue[incomingId];
 					}
@@ -1167,7 +1169,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			var n = nodes[id];
 			if (!n || typeof n !== 'object' || Array.isArray(n)) { n = nodes[id] = {}; mod = true; }
 
-			var m = String(id).match(/^(\d+)(?:\.(\d+))?(?:v\d+)?\((.*?)\)_(\d{10,})/);
+			var m = String(id).match(/^(\d+)(?:\.(\d+))?(?:v\d+)?\(([\s\S]*)\)_(\d{10,})/);
 			var origE = T(n.e) || T(n.timestamp);
 
 			/* THE FIX: Corrected indexes. m[3] is History, m[4] is Epoch */
@@ -1210,7 +1212,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 			var n = nodes[id], tr = truth[id], p = n.parentId;
 			if (!p || !nodes[p]) {
 				if (tr.L > 1) { var arr = byL[tr.L - 1]; p = arr?.[arr.length - 1]; }
-				else if (!tr.L && tr.h) p = byH[tr.h.split(',,')[1]?.split(',').pop()]; 
+				else if (!tr.L && tr.h) { var cut = tr.h.lastIndexOf(',,'); p = cut < 0 ? undefined : byH[tr.h.slice(cut + 2).split(',').pop()]; } 
 				if (!p && tr.d > 1) {
 					var dMap = byD[tr.d - 1];
 					if (dMap) { var arr = dMap[n.p], fall = Object.values(dMap)[0]; p = arr ? arr[arr.length - 1] : (fall ? fall[fall.length - 1] : null); }
@@ -1253,7 +1255,7 @@ $q('[id]').forEach(el => els[el.id] = el);$q('.tab-btn[data-tab]').forEach(b=>b.
 		async function loadHistory(boot=false,verify=0) {
 			try {
 				var dbRead=boot?bootRead():loadFromIndexedDB(CHAT_ID);var hot=boot&&readHotTree(CHAT_ID),hotHealed=hot&&healTree(hot),hotTree=hot&&(chatTree._storageRevision===hot._storageRevision?chatTree:spawnHistory(hotHealed.tree,boot,'Verifying database…')),saved=await dbRead,migrated=false,loadedTree,treeModified=false,latest=getMetadata().chatStates?.[CHAT_ID]?.storage?.dbRevision;if(boot&&saved?._storageRevision&&latest&&saved._storageRevision!==latest){if(chatTree._storageRevision===latest)saved=hot=hotTree=chatTree;else if(!verify)return loadHistory(boot,1)}
-				if(!saved){if(hotTree){saved=hotTree;migrated=true}else{var oldLocal=localStorage.getItem('dse_chatTree');if(oldLocal){boot&&bootStatus('✓ Storage checked','Migrating legacy chat…');saved=JSON.parse(oldLocal);migrated=true}else{renderFullChat();updateTokenDisplay();updateSendBtn();boot&&bootStatus();return}}}
+				if(!saved){if(hotTree){saved=hotTree;migrated=true}else{var oldLocal=CHAT_ID==='default'&&localStorage.getItem('dse_chatTree');if(oldLocal){boot&&bootStatus('✓ Storage checked','Migrating legacy chat…');saved=JSON.parse(oldLocal);migrated=true}else{renderFullChat();updateTokenDisplay();updateSendBtn();boot&&bootStatus();return}}}
 				if(hotTree&&saved._storageRevision===hot._storageRevision){loadedTree=hotTree;treeModified=migrated||hotHealed.modified;boot&&bootStatus()}else{boot&&bootStatus(migrated?'✓ Legacy chat found':'✓ Saved tree received','Checking chat…');if(isTreeCorrupted(saved))await promptRepairBackup(saved);var healed=healTree(saved);boot&&bootStatus('✓ Chat checked','Restoring active path…');loadedTree=spawnHistory(healed.tree,boot);if(!loadedTree){boot&&bootStatus('✓ Saved tree ready','Waiting for active work…');treeAction(()=>loadHistory(boot),'Reload');return}treeModified=healed.modified||migrated}
 				try { var recovered=await applyStreamBuffer(loadedTree);
 				var lock = getMetadata().chatStates?.[CHAT_ID]?.writeLock, isAnotherTabActive = lock && lock.pid !== TAB_PID && (Date.now() - lock.epoch < 1500);
